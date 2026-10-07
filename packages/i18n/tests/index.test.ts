@@ -1,0 +1,3 @@
+import { test } from 'node:test';import assert from 'node:assert/strict';import { catalogs,locale,direction,translator,formatValue } from '../src/index.js';
+test('catalog keys match and direction derives from validated locale',()=>{assert.deepEqual(Object.keys(catalogs.en).sort(),Object.keys(catalogs.ar).sort());assert.equal(direction(locale('ar')),'rtl');assert.equal(direction(locale('unknown')),'ltr');assert.equal(translator('en')('refresh'),'Refresh');});
+test('formatting does not reinterpret opaque values',()=>{assert.equal(formatValue('001234','ar'),'001234');assert.equal(formatValue(null,'en'),'—');});

@@ -1,0 +1,27 @@
+packages:
+  - packages/*
+  - themes/*
+  - examples/*
+# Audited same-major transitive fixes while Nx 23.2.1 pins vulnerable versions.
+overrides:
+  'axios@1.18.1': '1.20.0'
+  'brace-expansion@5.0.9': '5.0.12'
+  'smol-toml@1.6.1': '1.9.0'
+allowBuilds:
+  '@scarf/scarf': false
+  esbuild: true
+  nx: true
+  sharp: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@typescript-eslint/eslint-plugin@8.71.1'
+  - '@typescript-eslint/parser@8.71.1'
+  - '@typescript-eslint/project-service@8.71.1'
+  - '@typescript-eslint/scope-manager@8.71.1'
+  - '@typescript-eslint/tsconfig-utils@8.71.1'
+  - '@typescript-eslint/type-utils@8.71.1'
+  - '@typescript-eslint/types@8.71.1'
+  - '@typescript-eslint/typescript-estree@8.71.1'
+  - '@typescript-eslint/utils@8.71.1'
+  - '@typescript-eslint/visitor-keys@8.71.1'
+  - typescript-eslint@8.71.1

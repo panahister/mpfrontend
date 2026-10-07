@@ -1,0 +1,61 @@
+# Verification only. No publish credentials, deployment, or registry publication.
+name: verify
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  session-replicas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NX_DAEMON: 'false'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.19.0'
+          package-manager-cache: false
+      - name: Install the selected package manager
+        run: npm install --global pnpm@11.25.0
+      - name: Frozen dependency installation
+        run: pnpm install --frozen-lockfile
+      - name: Isolated shared-session restart and outage gate
+        run: pnpm exec nx run security-bff:test-redis --skip-nx-cache
+      - name: Observe quota, snapshot and stale-authority negative controls fail
+        run: pnpm exec nx run distribution:negative-controls --skip-nx-cache
+  core:
+    runs-on: ubuntu-latest
+    container: node:24.19.0-bookworm-slim
+    timeout-minutes: 20
+    env:
+      NX_DAEMON: 'false'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the selected package manager
+        run: npm install --global pnpm@11.25.0
+      - name: Frozen dependency installation
+        run: pnpm install --frozen-lockfile
+      - name: Public repository boundary
+        run: pnpm public:verify
+      - name: Dependency vulnerability gate
+        run: pnpm audit --audit-level=moderate
+      - name: Uncached core verification
+        run: pnpm exec nx run-many -t lint typecheck test build --skip-nx-cache
+      - name: Portable packed-package gate
+        run: pnpm pack:local
+      - name: Fresh independent Nx consumer
+        run: pnpm exec nx run distribution:consumer-check
+      - name: Verification inventory
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-verification-inventory
+          path: artifacts/packages/inventory.json

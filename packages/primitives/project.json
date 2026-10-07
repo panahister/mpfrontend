@@ -1,0 +1,13 @@
+{
+  "name": "primitives",
+  "root": "packages/primitives",
+  "sourceRoot": "packages/primitives/src",
+  "projectType": "library",
+  "tags": ["scope:platform", "runtime:universal", "type:primitive"],
+  "targets": {
+    "build": {"executor": "nx:run-commands", "options": {"command": "tsc -p packages/primitives/tsconfig.json"}},
+    "typecheck": {"executor": "nx:run-commands", "options": {"command": "tsc -p packages/primitives/tsconfig.json --noEmit"}},
+    "lint": {"executor": "nx:run-commands", "options": {"command": "eslint packages/primitives/src packages/primitives/tests"}},
+    "test": {"executor": "nx:run-commands", "options": {"command": "node --import tsx --test packages/primitives/tests/*.test.ts", "env": {"TSX_TSCONFIG_PATH": "tsconfig.base.json"}}}
+  }
+}

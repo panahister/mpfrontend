@@ -1,0 +1,49 @@
+{
+  "name": "security-bff",
+  "root": "packages/security-bff",
+  "sourceRoot": "packages/security-bff/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:server",
+    "type:service"
+  ],
+  "targets": {
+    "test-redis": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": [{"target":"build","projects":["presentation-server"]}],
+      "options": {
+        "command": "node --import tsx --test packages/security-bff/tests/redis.integration.ts",
+        "env": {"TSX_TSCONFIG_PATH": "tsconfig.base.json"}
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/security-bff/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/security-bff/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/security-bff/src packages/security-bff/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/security-bff/tests/*.test.ts",
+        "env": {
+          "TSX_TSCONFIG_PATH": "tsconfig.base.json"
+        }
+      }
+    }
+  }
+}

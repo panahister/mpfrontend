@@ -1,0 +1,5 @@
+import {validBrand as validateBrand} from '@mpfrontend/tokens';
+// The app owns its approved theme registry. Core never inserts a product DLS.
+export const brands=['neutral'] as const;
+export type Brand=typeof brands[number];
+export function validBrand(value:unknown):Brand { return validateBrand(value,brands,'neutral'); }

@@ -1,0 +1,32 @@
+{
+  "name": "@mpfrontend/ftg-cli",
+  "version": "0.1.0-dev.18",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "DESIGN-SYNC.md"
+  ],
+  "dependencies": {
+    "@mpfrontend/ai-skills": "workspace:*",
+    "@mpfrontend/ftg-core": "workspace:*",
+    "@mpfrontend/nx-plugin": "workspace:*",
+    "@apidevtools/swagger-parser": "13.1.0",
+    "openapi-types": "12.1.3",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "yaml": "2.9.1"
+  },
+  "bin": {
+    "ftg": "./dist/cli.js",
+    "mpfrontend": "./dist/cli.js"
+  }
+}

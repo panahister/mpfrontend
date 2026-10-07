@@ -1,0 +1,13 @@
+{
+  "openapi": "../../contracts/openapi/presentation/__APP_NAME__/openapi.json",
+  "output": "src/features/catalog/model/generated",
+  "resources": [
+    {
+      "name": "catalog",
+      "operationId": "listCatalog",
+      "responsePath": [
+        "items"
+      ]
+    }
+  ]
+}

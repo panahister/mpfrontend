@@ -1,0 +1,26 @@
+{
+  "name": "distribution",
+  "projectType": "library",
+  "tags": ["scope:tooling", "runtime:build", "type:verification"],
+  "implicitDependencies": ["primitives", "ui", "tokens", "i18n", "access-core", "realtime-core", "security-bff", "presentation-server", "ftg-core", "ftg-cli", "nx-plugin", "ai-skills"],
+  "targets": {
+    "negative-controls": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": [{"target":"build","projects":["presentation-server"]}],
+      "options": {"command":"node tools/distribution/negative-controls.mjs"}
+    },
+    "consumer-check": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["pack-check"],
+      "options": { "command": "node --import tsx tools/distribution/consumer.mjs" }
+    },
+    "pack-check": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["^build"],
+      "options": {"command": "node tools/distribution/pack.mjs"}
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "realtime-core",
+  "root": "packages/realtime-core",
+  "sourceRoot": "packages/realtime-core/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:universal",
+    "type:contract"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/realtime-core/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/realtime-core/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/realtime-core/src packages/realtime-core/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/realtime-core/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

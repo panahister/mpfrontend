@@ -1,0 +1,38 @@
+/* Neutral fallback values. Consumers override the semantic contract in their own theme. */
+:root {
+  color-scheme:light;
+  --mp-font-family:system-ui,sans-serif;
+  --mp-surface-canvas:#fafafa; --mp-surface-panel:#ffffff; --mp-surface-subtle:#f1f1f1;
+  --mp-foreground-primary:#171717; --mp-foreground-secondary:#525252;
+  --mp-foreground-muted:#686868; --mp-foreground-disabled:#707070;
+  --mp-border-default:#a3a3a3; --mp-border-subtle:#d4d4d4;
+  --mp-action-primary:#262626; --mp-action-primaryhover:#404040; --mp-action-primarypressed:#171717;
+  --mp-on-primary:#ffffff; --mp-action-secondary:#eeeeee; --mp-action-secondaryhover:#dddddd;
+  --mp-status-error:#b91c1c; --mp-status-warning:#854d0e; --mp-status-warningsurface:#fef9c3;
+  --mp-focus-ring:#2563eb; --mp-radius-control:6px; --mp-radius-surface:10px;
+  --mp-control-height:2.75rem; --mp-control-padding:1rem; --mp-field-gap:0.5rem;
+}
+:root[data-mode="dark"] {
+  color-scheme:dark;
+  --mp-surface-canvas:#171717; --mp-surface-panel:#262626; --mp-surface-subtle:#333333;
+  --mp-foreground-primary:#fafafa; --mp-foreground-secondary:#d4d4d4;
+  --mp-foreground-muted:#b8b8b8; --mp-foreground-disabled:#a3a3a3;
+  --mp-border-default:#737373; --mp-border-subtle:#525252;
+  --mp-action-primary:#eeeeee; --mp-action-primaryhover:#ffffff; --mp-action-primarypressed:#d4d4d4;
+  --mp-on-primary:#171717; --mp-action-secondary:#404040; --mp-action-secondaryhover:#525252;
+  --mp-status-error:#fca5a5; --mp-status-warning:#fde68a; --mp-status-warningsurface:#422006;
+  --mp-focus-ring:#93c5fd;
+}
+@media(prefers-color-scheme:dark) {
+  :root[data-mode="system"] {
+    color-scheme:dark;
+    --mp-surface-canvas:#171717; --mp-surface-panel:#262626; --mp-surface-subtle:#333333;
+    --mp-foreground-primary:#fafafa; --mp-foreground-secondary:#d4d4d4;
+    --mp-foreground-muted:#b8b8b8; --mp-foreground-disabled:#a3a3a3;
+    --mp-border-default:#737373; --mp-border-subtle:#525252;
+    --mp-action-primary:#eeeeee; --mp-action-primaryhover:#ffffff; --mp-action-primarypressed:#d4d4d4;
+    --mp-on-primary:#171717; --mp-action-secondary:#404040; --mp-action-secondaryhover:#525252;
+    --mp-status-error:#fca5a5; --mp-status-warning:#fde68a; --mp-status-warningsurface:#422006;
+    --mp-focus-ring:#93c5fd;
+  }
+}

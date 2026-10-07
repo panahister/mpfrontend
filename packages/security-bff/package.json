@@ -1,0 +1,27 @@
+{
+  "name": "@mpfrontend/security-bff",
+  "version": "0.1.0-dev.6",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./session-store": {
+      "types": "./dist/session-store.d.ts",
+      "import": "./dist/session-store.js"
+    }
+  },
+  "dependencies": {
+    "@redis/client": "6.3.0"
+  },
+  "devDependencies": {
+    "@mpfrontend/presentation-server": "workspace:*"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

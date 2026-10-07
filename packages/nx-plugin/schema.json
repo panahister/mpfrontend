@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}$"
+    },
+    "directory": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "directory"
+  ],
+  "additionalProperties": false
+}

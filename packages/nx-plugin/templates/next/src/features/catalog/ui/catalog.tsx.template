@@ -1,0 +1,23 @@
+'use client';
+import {useRef,useState} from 'react';
+import {Button,Card,ResourceTable,Select,Field} from '@mpfrontend/ui';
+import {validMode,type Mode} from '@mpfrontend/tokens';
+import {brands,validBrand,type Brand} from '../../../theme/config';
+import {direction,locale,translator,formatValue,type Locale} from '@mpfrontend/i18n';
+import type {CatalogPage} from '../../../api/server/catalog';
+import {parseRead} from '../model/generated/read-models.gen';
+import {resources} from '../model/generated/resources.gen';
+import {title,labels} from '../model/overrides';
+function persist(key:string,value:string){document.cookie='__APP_NAME___'+key+'='+encodeURIComponent(value)+'; Path=/; SameSite=Lax; Max-Age=31536000'+(location.protocol==='https:'?'; Secure':'');}
+export function Catalog({initial,initialLocale,initialBrand,initialMode}:{initial:CatalogPage|undefined;initialLocale:Locale;initialBrand:Brand;initialMode:Mode}){
+  const [data,setData]=useState(initial),[language,setLanguage]=useState(initialLocale),[brand,setBrand]=useState(initialBrand),[mode,setMode]=useState(initialMode),[loading,setLoading]=useState(false),[error,setError]=useState(!initial),[search,setSearch]=useState('');
+  const generation=useRef(0),active=useRef<AbortController|null>(null);const t=translator(language);
+  async function refresh(page=1){active.current?.abort();const controller=new AbortController();active.current=controller;const current=++generation.current;setLoading(true);setError(false);
+    try{const response=await fetch('/api/catalog?'+new URLSearchParams({page:String(page),size:'12',search}),{signal:controller.signal,headers:{'Accept-Language':language},cache:'no-store'});if(!response.ok)throw new Error();const next=parseRead('catalog',await response.json());if(current===generation.current)setData(next);}
+    catch{if(current===generation.current && !controller.signal.aborted)setError(true);}finally{if(current===generation.current)setLoading(false);}
+  }
+  function changeLocale(value:string){const next=locale(value);active.current?.abort();generation.current++;setLoading(false);setLanguage(next);document.documentElement.lang=next;document.documentElement.dir=direction(next);persist('locale',next);}
+  function changeBrand(value:string){const next=validBrand(value);setBrand(next);document.documentElement.dataset.brand=next;persist('brand',next);}
+  function changeMode(value:string){const next=validMode(value);setMode(next);document.documentElement.dataset.mode=next;persist('mode',next);}
+  return <main className="mp-shell"><p className="mp-status">{t('source')}</p><h1>{title}</h1><nav><a href="/api/docs">{t('docs')}</a> · <a href="/components">Components</a></nav><div className="mp-controls"><Select label={t('language')} value={language} onChange={e=>changeLocale(e.target.value)}><option value="en">English</option><option value="ar">العربية</option></Select><Select label={t('brand')} value={brand} onChange={e=>changeBrand(e.target.value)}>{brands.map(value=><option key={value} value={value}>{value}</option>)}</Select><Select label={t('mode')} value={mode} onChange={e=>changeMode(e.target.value)}>{(['light','dark','system'] as const).map(value=><option key={value} value={value}>{t(value)}</option>)}</Select><Field label={t('search')} value={search} onChange={e=>setSearch(e.target.value)} /><Button onClick={()=>void refresh()} disabled={loading} tone="secondary">{loading?t('loading'):t('refresh')}</Button></div>{error&&<p role="alert" className="mp-alert">{t('unavailable')}</p>}<Card><p className="mp-status">{t('readOnly')}</p>{data&&<><ResourceTable fields={resources[0]!.fields} rows={data.items} caption={t('catalog')} format={value=>formatValue(value,language)} labels={labels}/>{data.items.length===0&&<p>{t('empty')}</p>}<div className="mp-controls"><Button tone="secondary" disabled={loading||data.number<=1} onClick={()=>void refresh(data.number-1)}>{t('previous')}</Button><span>{t('page')} {data.number} / {data.pageCount}</span><Button tone="secondary" disabled={loading||!data.hasMore} onClick={()=>void refresh(data.number+1)}>{t('next')}</Button></div></>}</Card></main>;
+}

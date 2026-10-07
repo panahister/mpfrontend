@@ -1,0 +1,9 @@
+node_modules/
+.nx/
+.next/
+dist/
+artifacts/
+*.tsbuildinfo
+.ftg-write.lock
+.env
+.env.*.local

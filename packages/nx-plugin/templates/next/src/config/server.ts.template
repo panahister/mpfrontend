@@ -1,0 +1,5 @@
+import 'server-only';
+export const bffOrigin=process.env.BFF_ORIGIN ?? 'http://127.0.0.1:4310';
+const parsed=new URL(bffOrigin);
+if(!['http:','https:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.pathname!=='/')throw new Error('INVALID_BFF_ORIGIN');
+export const appId='__APP_NAME__';

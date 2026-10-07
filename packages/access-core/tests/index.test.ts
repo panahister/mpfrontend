@@ -1,0 +1,5 @@
+import { test } from 'node:test';import assert from 'node:assert/strict';import { can,fieldAccess,projectFields,dirtyPatch, type PageAccess } from '../src/index.js';
+const access:PageAccess={contextRef:'c',revision:'1',expiresAt:100,capabilities:{read:true},fields:{name:{view:true,edit:true},secret:{view:false,edit:true},locked:{view:true,edit:false}}};
+test('unknown, expired and inconsistent grants deny',()=>{assert.equal(can(undefined,'read',1),false);assert.equal(can(access,'read',100),false);assert.deepEqual(fieldAccess(access,'secret',1),{view:false,edit:false});assert.equal(fieldAccess(access,'missing',1).view,false);});
+test('projected data omits forbidden values',()=>assert.deepEqual(projectFields({name:'n',secret:'s',unknown:'u'},access,1),{name:'n'}));
+test('dirty patch retains only changed editable fields and denies tampering',()=>{assert.deepEqual(dirtyPatch({name:'old',locked:'fixed'},{name:'new',locked:'fixed'},access,1),{name:'new'});assert.throws(()=>dirtyPatch({secret:'old'},{secret:'new'},access,1),/FORBIDDEN_FIELD/);});

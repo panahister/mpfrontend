@@ -1,0 +1,4 @@
+export async function GET(){
+  if(process.env.NODE_ENV==='production' && process.env.ENABLE_API_DOCS!=='true')return new Response(null,{status:404});
+  return new Response('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>API documentation</title><link rel="stylesheet" href="/api/docs/assets/swagger-ui.css"></head><body><div id="swagger-ui"></div><script src="/api/docs/assets/swagger-ui-bundle.js"></script><script src="/api/docs/assets/swagger-ui-standalone-preset.js"></script><script>window.onload=function(){SwaggerUIBundle({url:"/api/openapi",dom_id:"#swagger-ui",supportedSubmitMethods:[],presets:[SwaggerUIBundle.presets.apis,SwaggerUIStandalonePreset],layout:"StandaloneLayout"})}</script></body></html>',{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@mpfrontend/nx-plugin",
+  "version": "0.1.0-dev.17",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "templates",
+    "generators.json",
+    "schema.json"
+  ],
+  "dependencies": {
+    "@nx/devkit": "23.2.1"
+  },
+  "generators": "./generators.json"
+}

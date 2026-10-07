@@ -1,0 +1,2 @@
+/* Registers the compiled package output as a Tailwind v4 source in consuming applications. */
+@source "../dist/**/*.js";

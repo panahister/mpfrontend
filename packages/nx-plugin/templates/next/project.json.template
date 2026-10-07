@@ -1,0 +1,81 @@
+{
+  "name": "__APP_NAME__",
+  "projectType": "application",
+  "tags": [
+    "scope:__APP_NAME__",
+    "runtime:mixed",
+    "type:app"
+  ],
+  "targets": {
+    "ftg-generate": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": [
+        "{workspaceRoot}/contracts/openapi/presentation/__APP_NAME__/openapi.json",
+        "{projectRoot}/ftg.config.json"
+      ],
+      "outputs": [
+        "{projectRoot}/src/features/catalog/model/generated"
+      ],
+      "options": {
+        "command": "pnpm exec ftg generate --config apps/__APP_NAME__/ftg.config.json --json"
+      }
+    },
+    "generated-check": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "pnpm exec ftg check --config apps/__APP_NAME__/ftg.config.json --json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "^build",
+        "ftg-generate",
+        "runtime-assets"
+      ],
+      "outputs": [
+        "{projectRoot}/.next",
+        "{projectRoot}/runtime-assets"
+      ],
+      "options": {
+        "cwd": "apps/__APP_NAME__",
+        "command": "pnpm exec next build . --webpack"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "dependsOn": [
+        "build"
+      ],
+      "options": {
+        "command": "pnpm exec tsc -p apps/__APP_NAME__/tsconfig.json --noEmit"
+      }
+    },
+    "runtime-assets": {
+      "executor": "nx:run-commands",
+      "cache": true,
+      "inputs": ["{projectRoot}/prepare-runtime.mjs", "{projectRoot}/package.json", "{workspaceRoot}/pnpm-lock.yaml"],
+      "outputs": ["{projectRoot}/runtime-assets"],
+      "options": {"command": "node apps/__APP_NAME__/prepare-runtime.mjs"}
+    },
+    "dev": {
+      "dependsOn": ["runtime-assets"],
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/__APP_NAME__",
+        "command": "pnpm exec next dev . --webpack -p 4301"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "cwd": "apps/__APP_NAME__",
+        "command": "pnpm exec next start . -p 4301"
+      }
+    }
+  }
+}

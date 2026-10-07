@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "application": {
+      "factory": "./dist/generator.js",
+      "schema": "./schema.json",
+      "description": "Create a neutral Next.js consumer using MP Frontend public packages"
+    }
+  }
+}

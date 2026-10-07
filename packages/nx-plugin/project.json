@@ -1,0 +1,38 @@
+{
+  "name": "nx-plugin",
+  "root": "packages/nx-plugin",
+  "sourceRoot": "packages/nx-plugin/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:tooling",
+    "type:tool"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/nx-plugin/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/nx-plugin/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/nx-plugin/src packages/nx-plugin/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/nx-plugin/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

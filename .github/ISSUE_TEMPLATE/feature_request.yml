@@ -1,0 +1,33 @@
+name: Feature request
+description: Propose a reusable, product-neutral capability
+title: "[Proposal]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the product problem without prescribing an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: consumers
+    attributes:
+      label: Evidence from consumers
+      description: Name the concrete products or scenarios that need this capability.
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Proposed ownership boundary
+      description: Explain why this belongs in MP Frontend rather than one product.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance evidence
+      description: List positive, negative, compatibility, and independent-consumer checks.
+    validations:
+      required: true

@@ -1,0 +1,38 @@
+{
+  "name": "access-core",
+  "root": "packages/access-core",
+  "sourceRoot": "packages/access-core/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:universal",
+    "type:contract"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/access-core/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/access-core/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/access-core/src packages/access-core/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/access-core/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

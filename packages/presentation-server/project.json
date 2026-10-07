@@ -1,0 +1,9 @@
+{
+  "name":"presentation-server","root":"packages/presentation-server","sourceRoot":"packages/presentation-server/src","projectType":"library","tags":["scope:platform","runtime:server","type:service"],
+  "targets":{
+    "build":{"executor":"nx:run-commands","options":{"command":"tsc -p packages/presentation-server/tsconfig.json"}},
+    "typecheck":{"executor":"nx:run-commands","options":{"command":"tsc -p packages/presentation-server/tsconfig.json --noEmit"}},
+    "lint":{"executor":"nx:run-commands","options":{"command":"eslint packages/presentation-server/src packages/presentation-server/tests"}},
+    "test":{"executor":"nx:run-commands","options":{"command":"node --import tsx --test packages/presentation-server/tests/*.test.ts","env":{"TSX_TSCONFIG_PATH":"tsconfig.base.json"}}}
+  }
+}

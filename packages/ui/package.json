@@ -1,0 +1,29 @@
+{
+  "name": "@mpfrontend/ui",
+  "version": "0.1.0-dev.4",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./src/styles.css",
+    "./tailwind.css": "./src/tailwind.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "src/styles.css",
+    "src/tailwind.css"
+  ],
+  "dependencies": {
+    "@mpfrontend/primitives": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": ">=4 <5"
+  }
+}

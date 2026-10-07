@@ -1,0 +1,38 @@
+{
+  "name": "tokens",
+  "root": "packages/tokens",
+  "sourceRoot": "packages/tokens/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:universal",
+    "type:contract"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/tokens/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/tokens/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/tokens/src packages/tokens/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/tokens/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

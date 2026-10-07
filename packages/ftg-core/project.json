@@ -1,0 +1,38 @@
+{
+  "name": "ftg-core",
+  "root": "packages/ftg-core",
+  "sourceRoot": "packages/ftg-core/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:universal",
+    "type:contract"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/ftg-core/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/ftg-core/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/ftg-core/src packages/ftg-core/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/ftg-core/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

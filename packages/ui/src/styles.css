@@ -1,0 +1,27 @@
+.mp-button { font:inherit; background:var(--mp-action-primary); color:var(--mp-on-primary); cursor:pointer; }
+.mp-button:not(:disabled):hover { background:var(--mp-action-primaryhover); }
+.mp-button:not(:disabled):active { background:var(--mp-action-primarypressed); }
+.mp-button:focus-visible { outline:2px solid var(--mp-focus-ring); outline-offset:2px; }
+.mp-button[data-tone="secondary"] { background:var(--mp-action-secondary); color:var(--mp-foreground-primary); border:1px solid var(--mp-border-subtle); }
+.mp-button[data-tone="secondary"]:not(:disabled):hover { background:var(--mp-action-secondaryhover); }
+.mp-button[data-tone="ghost"] { background:transparent; color:var(--mp-foreground-primary); }
+.mp-button[data-tone="ghost"]:not(:disabled):hover { background:var(--mp-surface-subtle); }
+.mp-button[data-tone="danger"] { background:var(--mp-action-danger); color:var(--mp-foreground-inverse,var(--mp-on-primary)); }
+.mp-button[data-tone="danger"]:not(:disabled):hover { filter:brightness(0.92); }
+.mp-button:disabled { color:var(--mp-foreground-disabled); background:var(--mp-surface-subtle); cursor:not-allowed; }
+.mp-button-spinner { width:1rem; height:1rem; border:1.5px solid currentColor; border-inline-end-color:transparent; border-radius:50%; animation:mp-spin .8s linear infinite; }
+@keyframes mp-spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .mp-button-spinner { animation-duration:1.8s; } }
+.mp-field { font-family:var(--mp-font-family); }
+.mp-field-label { color:var(--mp-foreground-primary); }
+.mp-input,.mp-select { box-sizing:border-box; border-color:var(--mp-border-default); background:var(--mp-surface-panel); color:var(--mp-foreground-primary); font:inherit; }
+.mp-input::placeholder { color:var(--mp-foreground-muted); }
+.mp-input:disabled,.mp-select:disabled { color:var(--mp-foreground-disabled); background:var(--mp-surface-subtle); }
+.mp-input[aria-invalid="true"] { border-color:var(--mp-status-error); }
+.mp-field-helper { color:var(--mp-foreground-secondary); }
+.mp-field-error { color:var(--mp-status-error); }
+.mp-select-wrap[data-custom-icon="true"]>.mp-select { appearance:none; padding-inline-end:2.75rem; }
+.mp-card { background:var(--mp-surface-panel); border-color:var(--mp-border-default); }
+.mp-table-wrap th,.mp-table-wrap td { border-color:var(--mp-border-default); }
+.mp-table-wrap th { color:var(--mp-foreground-secondary); }
+.mp-table-wrap caption { text-align:start; padding-block:1rem; }
