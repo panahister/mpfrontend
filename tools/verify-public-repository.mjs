@@ -23,6 +23,11 @@ const forbiddenMarkers=[
   /Payment Git/,
 ];
 const failures=[];
+const distributionProject=JSON.parse(readFileSync(join(root,'tools','distribution','project.json'),'utf8'));
+const negativeControlDependencies=distributionProject.targets?.['negative-controls']?.dependsOn;
+if(!Array.isArray(negativeControlDependencies)||!negativeControlDependencies.includes('^build')){
+  failures.push('tools/distribution/project.json: negative-controls must build every declared dependency before isolated execution');
+}
 for(const path of documents){
   const content=readFileSync(path,'utf8');
   if(forbiddenLetters.test(content))failures.push(`${path}: Persian-specific text is not allowed`);

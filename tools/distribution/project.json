@@ -7,7 +7,7 @@
     "negative-controls": {
       "executor": "nx:run-commands",
       "cache": false,
-      "dependsOn": [{"target":"build","projects":["presentation-server"]}],
+      "dependsOn": ["^build"],
       "options": {"command":"node tools/distribution/negative-controls.mjs"}
     },
     "consumer-check": {

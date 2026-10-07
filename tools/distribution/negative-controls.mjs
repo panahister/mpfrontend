@@ -32,9 +32,9 @@ const mutations=[
     after:"if((error as {status?:number}).status!==503)await vault.remove('session',id);",
     expected:'a generic503 vault update failure',options:['--test-skip-pattern=the bounded real transport timeout']},
   {name:'bodyless-undefined-only-validation',package:'ftg-cli',test:'index.test.ts',file:'read-models.ts',
-    before:"'] = value => value === undefined;'",
-    after:"'] = value => true;'",expected:'Missing expected exception',
-    options:['--test-name-pattern=explicit bodyless mutation']},
+    before:"JSON.stringify(request.name)+'] = value => value === undefined;');",
+    after:"JSON.stringify(request.name)+'] = value => true;');",expected:'Missing expected exception',
+    exactMatches:1,options:['--test-name-pattern=explicit bodyless mutation']},
   {name:'browser-snapshot-close-code',package:'realtime-core',test:'browser-recovery.test.ts',file:'react.ts',
     before:"active.close(4013,'SNAPSHOT_UNAVAILABLE')",after:"active.close(1013,'SNAPSHOT_UNAVAILABLE')",
     expected:'InvalidAccessError'},
@@ -55,6 +55,9 @@ try{
     await symlink(join(root,'packages',mutation.package,'node_modules'),join(directory,'node_modules'),'dir');
     const path=join(directory,'src',mutation.file),original=await readFile(path,'utf8');
     assert.ok(original.includes(mutation.before),'mutation must match the actual implementation');
+    if(mutation.exactMatches!==undefined){
+      assert.equal(original.split(mutation.before).length-1,mutation.exactMatches,'mutation must match the declared implementation locations');
+    }
     await writeFile(path,original.replace(mutation.before,mutation.after));
     let result;
     try{result=await exec(process.execPath,['--import','tsx','--test',...(mutation.options??[]),join(directory,'tests',mutation.test)],{
