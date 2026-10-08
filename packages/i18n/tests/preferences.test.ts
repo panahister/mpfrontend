@@ -2,23 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createPreferenceCookie } from '../src/index.js';
 
-const cookie = createPreferenceCookie({ name: 'mp_preferences', locales: ['en', 'fa'], themes: ['light', 'dark', 'system'] });
+// A test fixture, never a built-in locale: a private-use pseudo-locale tag.
+const RTL = 'qps-plocm';
+
+const cookie = createPreferenceCookie({ name: 'mp_preferences', locales: ['en', RTL], themes: ['light', 'dark', 'system'] });
 
 test('the preference cookie carries an allowlisted language and theme only', () => {
-  assert.equal(cookie.value({ lang: 'fa', theme: 'dark' }), 'lang=fa&theme=dark');
-  assert.deepEqual(cookie.parse('lang=fa&theme=dark'), { lang: 'fa', theme: 'dark' });
+  assert.equal(cookie.value({ lang: RTL, theme: 'dark' }), 'lang=' + RTL + '&theme=dark');
+  assert.deepEqual(cookie.parse('lang=' + RTL + '&theme=dark'), { lang: RTL, theme: 'dark' });
   assert.deepEqual(cookie.read('other=1; mp_preferences=theme=light&lang=en; last=2'), { lang: 'en', theme: 'light' });
-  assert.deepEqual(cookie.read('mp_preferences=lang=fa'), { lang: 'fa' });
+  assert.deepEqual(cookie.read('mp_preferences=lang=' + RTL), { lang: RTL });
 });
 
 test('an invalid value is ignored and never echoed', () => {
-  for (const value of ['lang=de', 'lang=<script>&theme=dark2', 'theme=dark;lang=fa', 'role=admin&sub=1', 'x'.repeat(300), '', undefined, null]) {
+  for (const value of ['lang=qaa', 'lang=<script>&theme=dark2', 'theme=dark;lang=' + RTL, 'role=admin&sub=1', 'x'.repeat(300), '', undefined, null]) {
     const parsed = cookie.parse(value);
-    assert.ok(Object.values(parsed).every(entry => ['en', 'fa', 'light', 'dark', 'system'].includes(entry!)), String(value));
+    assert.ok(Object.values(parsed).every(entry => ['en', RTL, 'light', 'dark', 'system'].includes(entry!)), String(value));
   }
-  assert.deepEqual(cookie.parse('lang=de&theme=dark'), { theme: 'dark' });
-  assert.deepEqual(cookie.parse('lang=fa&lang=en'), { lang: 'fa' });
-  assert.throws(() => cookie.value({ lang: 'de' }), /INVALID_PREFERENCE_VALUE/);
+  assert.deepEqual(cookie.parse('lang=qaa&theme=dark'), { theme: 'dark' });
+  assert.deepEqual(cookie.parse('lang=' + RTL + '&lang=en'), { lang: RTL });
+  assert.throws(() => cookie.value({ lang: 'qaa' }), /INVALID_PREFERENCE_VALUE/);
 });
 
 test('the contract refuses an unsafe name or value', () => {

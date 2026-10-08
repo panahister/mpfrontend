@@ -1,30 +1,36 @@
 export const catalogs = {
   en: { title:'MP Frontend', catalog:'Catalog', refresh:'Refresh', loading:'Loading', unavailable:'Backend is unavailable. Try again.', empty:'No records found.', previous:'Previous', next:'Next', page:'Page', language:'Language', brand:'Brand', mode:'Appearance', light:'Light', dark:'Dark', system:'System', docs:'API documentation', source:'Connected to MP Core', search:'Search', apply:'Apply', readOnly:'Read-only public catalog', fields:'Fields', true:'Yes', false:'No', detail:'Details', back:'Back', save:'Save', forbidden:'This operation is not permitted.', invalid:'Check the permitted fields.', remoteChange:'Data changed remotely. Your edits are preserved.', skipToContent:'Skip to content', navigation:'Main navigation' },
-  ar: { title:'MP Frontend', catalog:'الكتالوج', refresh:'تحديث', loading:'جار التحميل', unavailable:'الخدمة غير متاحة. حاول مرة أخرى.', empty:'لا توجد سجلات.', previous:'السابق', next:'التالي', page:'الصفحة', language:'اللغة', brand:'العلامة', mode:'المظهر', light:'فاتح', dark:'داكن', system:'النظام', docs:'توثيق الواجهة', source:'متصل بـ MP Core', search:'بحث', apply:'تطبيق', readOnly:'كتالوج عام للقراءة فقط', fields:'الحقول', true:'نعم', false:'لا', detail:'التفاصيل', back:'رجوع', save:'حفظ', forbidden:'هذه العملية غير مسموحة.', invalid:'تحقق من الحقول المسموحة.', remoteChange:'تغيرت البيانات. تم الاحتفاظ بتعديلاتك.', skipToContent:'تخطَّ إلى المحتوى', navigation:'التنقل الرئيسي' }
 } as const;
 export type MessageKey = keyof typeof catalogs.en;
 const neutral = ['loading', 'unavailable', 'empty', 'previous', 'next', 'page', 'language', 'brand', 'mode', 'light', 'dark', 'system', 'search', 'apply', 'fields', 'true', 'false', 'detail', 'back', 'save', 'refresh', 'forbidden', 'invalid', 'remoteChange', 'skipToContent', 'navigation'] as const;
 export type CoreMessageKey = (typeof neutral)[number];
 /**
- * The neutral messages of MP Frontend, separate from any product text. A consumer catalog set overrides
- * any of them by defining the same key. `catalogs` keeps its earlier keys for compatibility.
+ * The neutral messages of MP Frontend, separate from any product text, in English: the only language that
+ * MP Frontend ships. A product's catalog set overrides any of them by defining the same key. A translator
+ * looks a message up in the requested locale and then in the set's default locale only, so a product whose
+ * default locale is not English never shows this English text. `catalogs` keeps its earlier keys.
  */
-export const coreMessages: Readonly<Record<'en' | 'ar', Readonly<Record<CoreMessageKey, string>>>> = {
+export const coreMessages: Readonly<{ en: Readonly<Record<CoreMessageKey, string>> }> = {
   en: Object.fromEntries(neutral.map(key => [key, catalogs.en[key]])) as Record<CoreMessageKey, string>,
-  ar: Object.fromEntries(neutral.map(key => [key, catalogs.ar[key]])) as Record<CoreMessageKey, string>,
 };
 export { createMessages, defineMessages, checkCatalogs, messageArguments, MessageError, type Catalog, type Translation, type MessageArguments, type ArgumentList, type Translate, type Messages, type MessageValue, type ArgumentShape, type CatalogProblem } from './messages.js';
 
 export type Direction = 'ltr' | 'rtl';
 /** One locale of a registry: its writing direction and, optionally, the digits Intl uses for it. */
 export type LocaleDefinition = Readonly<{ direction: Direction; numberingSystem?: string }>;
-/** The locales MP Frontend ships. A consumer adds a locale by configuration, never by editing core. */
+/**
+ * The one locale MP Frontend ships: English, left to right. A product registers its own locales, left to
+ * right or right to left, in its own repository with `createLocaleRegistry`, never by editing MP Frontend.
+ */
 export const builtInLocales = {
   en: { direction: 'ltr' },
-  ar: { direction: 'rtl' },
-  fa: { direction: 'rtl' },
 } as const satisfies Readonly<Record<string, LocaleDefinition>>;
-export type Locale = keyof typeof builtInLocales;
+/**
+ * A locale code (a BCP 47 language tag). MP Frontend enumerates no language: the set of locales is the
+ * product's, and `LocaleOf<typeof registry>` is the type of one product registry's codes.
+ */
+export type Locale = string;
+export type LocaleOf<R extends LocaleRegistry<string>> = R['locales'][number];
 
 export type LocaleRegistry<L extends string = string> = Readonly<{
   locales: readonly L[];
@@ -75,7 +81,10 @@ export function negotiateLocale<const L extends string>(header: string | null | 
   return defaultLocale;
 }
 
-/** A locale registry configured per app. The default is `en` when it is not set. */
+/**
+ * A locale registry configured per app. The default is `defaultLocale`, or `en` when it is not set; a
+ * registry without English names its own default, which may be its only locale.
+ */
 export function createLocaleRegistry<const L extends string>(options: Readonly<{
   locales: Readonly<Record<L, LocaleDefinition>>;
   defaultLocale?: NoInfer<L>;
@@ -100,20 +109,25 @@ export function createLocaleRegistry<const L extends string>(options: Readonly<{
   });
 }
 
-/** The shipped registry: en, ar and fa, with en as the default. */
+/** The built-in registry: English only, and the default. A product passes its own registry instead. */
 export const locales = createLocaleRegistry({ locales: builtInLocales });
 
 export function locale(value: unknown): Locale { return locales.locale(value); }
 export function direction(value: string): Direction { return locales.direction(value); }
-/** Missing keys fall back, key by key, to the default locale's message. */
+/** The built-in English messages; any other locale falls back, key by key, to English. */
 export function translator(value: string): (key: MessageKey) => string {
   const own = (catalogs as Readonly<Record<string, Partial<Record<MessageKey, string>>>>)[value];
   return key => own?.[key] ?? catalogs.en[key];
 }
-/** Numbers use the locale's own digits through Intl; strings and booleans are never reinterpreted. */
-export function formatValue(value: unknown, language: string, registry: LocaleRegistry = locales): string {
+/** The text of `true` and `false` from a product's own catalog. */
+export type BooleanLabels = Readonly<{ true: string; false: string }>;
+/**
+ * Numbers use the locale's own digits through Intl; strings are never reinterpreted. A boolean is shown
+ * with `labels`, the product's own text, or with the built-in English text when no labels are given.
+ */
+export function formatValue(value: unknown, language: string, registry: LocaleRegistry = locales, labels?: BooleanLabels): string {
   if (value === null || value === undefined) return '—';
-  if (typeof value === 'boolean') return translator(language)(value ? 'true' : 'false');
+  if (typeof value === 'boolean') return labels ? (value ? labels.true : labels.false) : translator(language)(value ? 'true' : 'false');
   if (typeof value === 'number') return formatNumber(value, language, {}, registry);
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);

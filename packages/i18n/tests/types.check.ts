@@ -9,8 +9,8 @@ const en = defineMessages({
   role: '{kind, select, owner {Owner} other {Member}}',
   since: 'Since {day, date, medium}',
 });
-const messages = createMessages({ defaultLocale: 'en', base: en, translations: { fa: { ...en } } });
-const t = messages.translator('fa');
+const messages = createMessages({ defaultLocale: 'en', base: en, translations: { 'qps-plocm': { ...en } } });
+const t = messages.translator('qps-plocm');
 
 t('plain');
 t('greeting', { name: 'Ada' });
@@ -32,7 +32,7 @@ t('pageOf', { page: 'one', count: 3 });
 // @ts-expect-error an unknown key
 t('missing');
 // @ts-expect-error another locale must have every key of the base catalog
-createMessages({ defaultLocale: 'en', base: en, translations: { ar: { plain: 'x' } } });
+createMessages({ defaultLocale: 'en', base: en, translations: { 'qps-plocm': { plain: 'x' } } });
 
 type Expect<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;

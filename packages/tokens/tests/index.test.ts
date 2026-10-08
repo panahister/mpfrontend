@@ -5,11 +5,11 @@ import { appearance,validBrand,validMode } from '../src/index.js';
 test('appearance and consumer-owned branding are independent',()=>{
   const brands=['example-a','example-b'] as const;
   let count=0;
-  for(const language of ['en','ar']) for(const brand of brands)
+  for(const direction of ['ltr','rtl']) for(const brand of brands)
     for(const [mode,dark,expected] of [['light',true,'light'],['dark',false,'dark'],['system',false,'light'],['system',true,'dark']] as const) {
       assert.equal(appearance(mode,dark),expected);
       assert.equal(validBrand(brand,brands,'example-a'),brand);
-      assert.ok(language);
+      assert.ok(direction);
       count++;
     }
   assert.equal(count,16);
