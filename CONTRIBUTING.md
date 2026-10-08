@@ -5,6 +5,8 @@ or more capable without pulling one product's domain model into the platform.
 
 ## Before opening a change
 
+- Read [Frontend engineering conventions](docs/FRONTEND-CONVENTIONS.md) before deciding that a product
+  concern belongs in a reusable package.
 - Search existing issues and proposals.
 - Explain which real consumer scenario requires the change.
 - Keep product behavior, credentials, brand assets, and private design exports in consumer repositories.
