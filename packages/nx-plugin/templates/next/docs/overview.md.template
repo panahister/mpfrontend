@@ -23,6 +23,21 @@ describe the structure that `mpfrontend create app` wrote.
   boundary beside them.
 - `src/config/` holds validated configuration; `src/theme/` holds the theme registry.
 
+## Languages
+
+The app starts with English only (`en`, left to right, the default), and its `lang` and `dir` follow the
+locale registry in `src/config/app.ts`. To add a locale in this repository:
+
+1. Register it with its direction, `'<code>': { direction: 'ltr' }` or `'<code>': { direction: 'rtl' }`, and
+   a `numberingSystem` when its digits differ from the default.
+2. Add `messages/<code>.ts` next to `messages/en.ts` in every catalog set, typed
+   `Translation<typeof base>`, and list it in the `translations` of that set.
+3. Run the `catalog-check` target: it names every set that lacks the catalog or a key.
+
+To use another locale instead of English, register only that locale and make it `defaultLocale`, rename
+every `messages/en.ts` to `messages/<code>.ts` with the text of that locale, and set the base import and
+`defaultLocale` of every set to `<code>`. New features then start from that locale's catalog.
+
 Add a feature with `mpfrontend create feature`, a screen with `mpfrontend create route` and a package
 that two apps need with `mpfrontend create package`; see the CLI guide of MP Frontend.
 

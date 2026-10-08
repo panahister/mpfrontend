@@ -1,6 +1,7 @@
 import { defineMessages } from '@mpfrontend/i18n';
 
 export default defineMessages({
+  description: 'Independent MP Frontend consumer',
   skipToContent: 'Skip to content',
   navigation: 'Main navigation',
   catalog: 'Catalog',

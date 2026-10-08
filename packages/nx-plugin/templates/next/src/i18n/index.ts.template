@@ -1,14 +1,13 @@
 import { coreMessages, createMessages } from '@mpfrontend/i18n';
 import { localeRegistry } from '../config/app';
 import base from './messages/en';
-import ar from './messages/ar';
-import fa from './messages/fa';
 
 /** The app-wide messages: the layout and app-level screens. Each feature has its own catalog set. */
 export const appMessages = createMessages({
   defaultLocale: 'en',
   base,
-  translations: { ar, fa },
+  // Each other locale of the registry: import its catalog and list it here.
+  translations: {},
   core: coreMessages,
   numberingSystem: localeRegistry.numberingSystem,
 });

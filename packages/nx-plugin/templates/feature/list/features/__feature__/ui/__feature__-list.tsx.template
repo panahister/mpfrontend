@@ -54,7 +54,9 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
             fields={fields}
             rows={page.items}
             caption={t('title')}
-            format={(value) => formatValue(value, language, localeRegistry)}
+            format={(value) =>
+              formatValue(value, language, localeRegistry, { true: t('yes'), false: t('no') })
+            }
             labels={{ ...labels, detail: t('detail') }}
             detail={(row) => (
               <a

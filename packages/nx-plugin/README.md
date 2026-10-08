@@ -48,10 +48,13 @@ feature-local output stays valid. Init also writes `CODEOWNERS` with placeholder
 [the CLI guide](../../docs/CLI-GUIDE.md).
 
 Every visible text of the application template is a catalog message: the app-wide set in
-`src/i18n/messages/<locale>.ts` and one set per feature in `model/messages/<locale>.ts`, for `en`, `ar` and
-`fa`. The app's `catalog-check` target runs `mpfrontend catalog check`. A generated feature gets a catalog
-per locale of the app's registry; locales other than the default start with the default text and are
-reported as `untranslated`.
+`src/i18n/messages/<locale>.ts` and one set per feature in `model/messages/<locale>.ts`. The template ships
+English only (`en`, the default); the product adds its own locales, left to right or right to left, to the
+registry in `src/config/app.ts` and a catalog per added locale to every set, or makes its own locale the
+default and only locale. The app's `catalog-check` target runs `mpfrontend catalog check`. A generated
+feature gets a catalog per locale of the app's registry, with the default locale's catalog as the base;
+locales other than the default start with the default text and are reported as `untranslated`. A list
+feature shows booleans with its own `yes` and `no` messages.
 
 The application template is framed by `@mpfrontend/app-layout` and compiles Tailwind CSS v4 with the UI
 and shell outputs as sources. `src/app/globals.css` imports Tailwind, the neutral tokens, the component

@@ -3,9 +3,14 @@ import { createLocaleRegistry, createPreferenceCookie } from '@mpfrontend/i18n';
 /** The app id, safe on the client and the server. */
 export const appId = '__APP_NAME__';
 
-/** The locales of this app; direction comes from here. The default is the first-visit locale. */
+/**
+ * The locales of this app; direction comes from here. The default is the first-visit locale. MP Frontend
+ * ships English only: add each locale of the product here with its direction, for example
+ * `'<code>': { direction: 'rtl' }`, and a `messages/<code>.ts` catalog to every catalog set (the catalog
+ * check lists the missing ones). A product locale may also replace English as the default and only locale.
+ */
 export const localeRegistry = createLocaleRegistry({
-  locales: { en: { direction: 'ltr' }, ar: { direction: 'rtl' }, fa: { direction: 'rtl' } },
+  locales: { en: { direction: 'ltr' } },
   defaultLocale: 'en',
 });
 

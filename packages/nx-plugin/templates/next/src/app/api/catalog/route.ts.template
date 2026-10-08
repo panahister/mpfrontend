@@ -1,11 +1,11 @@
 import { readCatalog } from '../../../api/server/catalog';
-import { locale } from '@mpfrontend/i18n';
+import { localeRegistry } from '../../../config/app';
 export async function GET(request: Request) {
   try {
     return Response.json(
       await readCatalog(
         new URL(request.url).searchParams,
-        locale(request.headers.get('Accept-Language')),
+        localeRegistry.negotiate(request.headers.get('Accept-Language')),
       ),
       { headers: { 'Cache-Control': 'no-store' } },
     );

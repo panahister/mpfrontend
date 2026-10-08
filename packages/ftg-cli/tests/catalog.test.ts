@@ -5,9 +5,10 @@ import {dirname,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {catalogCheck} from '../src/catalog.js';
 
+// The second locale is a test fixture, a private-use pseudo-locale tag, never a built-in locale.
 // The app lives under this package's dependency folder, so that `@mpfrontend/i18n` resolves as in an app.
 const cache=fileURLToPath(new URL('../node_modules/.cache/',import.meta.url));
-const registry="import { createLocaleRegistry } from '@mpfrontend/i18n';\nexport const localeRegistry = createLocaleRegistry({ locales: { en: { direction: 'ltr' }, fa: { direction: 'rtl' } }, defaultLocale: 'en' });\n";
+const registry="import { createLocaleRegistry } from '@mpfrontend/i18n';\nexport const localeRegistry = createLocaleRegistry({ locales: { en: { direction: 'ltr' }, 'qps-plocm': { direction: 'rtl' } }, defaultLocale: 'en' });\n";
 const base=(entries:Record<string,string>)=>"import { defineMessages } from '@mpfrontend/i18n';\nexport default defineMessages("+JSON.stringify(entries)+");\n";
 const other=(entries:Record<string,string>)=>"import type { Translation } from '@mpfrontend/i18n';\nimport type base from './en';\nexport default "+JSON.stringify(entries)+" satisfies Translation<typeof base>;\n";
 async function app(files:Record<string,string>){
@@ -19,10 +20,10 @@ async function app(files:Record<string,string>){
 }
 const clean={
   'src/i18n/messages/en.ts':base({title:'Orders',count:'{n, plural, one {# order} other {# orders}}'}),
-  'src/i18n/messages/fa.ts':other({title:'x',count:'{n, plural, other {# x}}'}),
+  'src/i18n/messages/qps-plocm.ts':other({title:'x',count:'{n, plural, other {# x}}'}),
   'src/app/page.tsx':"export const view = [t('title'), t('count', { n: 1 })];\n",
   'src/features/review/model/messages/en.ts':base({heading:'Review'}),
-  'src/features/review/model/messages/fa.ts':other({heading:'y'}),
+  'src/features/review/model/messages/qps-plocm.ts':other({heading:'y'}),
   'src/features/review/ui/review.tsx':"export const heading = t('heading');\n",
 };
 
@@ -39,16 +40,16 @@ test('a complete catalog of every registry locale, used by code, passes',async()
 test('a missing key, an unused key, a differing parameter and a missing locale fail the check',async()=>{
   const root=await app({...clean,
     'src/i18n/messages/en.ts':base({title:'Orders',count:'{n, plural, one {# order} other {# orders}}',spare:'Never used'}),
-    'src/i18n/messages/fa.ts':other({title:'x {name}',count:'{n, plural, other {# x}}'}),
+    'src/i18n/messages/qps-plocm.ts':other({title:'x {name}',count:'{n, plural, other {# x}}'}),
   });
   try{
-    await rm(join(root,'src/features/review/model/messages/fa.ts'));
+    await rm(join(root,'src/features/review/model/messages/qps-plocm.ts'));
     const result=await catalogCheck(root);
     assert.equal(result.ok,false);
     assert.deepEqual(result.problems.map(problem=>[problem.catalog,problem.code,problem.locale??'',problem.key??'']).sort(),[
-      ['src/features/review/model/messages','MISSING_LOCALE','fa',''],
-      ['src/i18n/messages','MISSING_KEY','fa','spare'],
-      ['src/i18n/messages','PARAMETER_MISMATCH','fa','title'],
+      ['src/features/review/model/messages','MISSING_LOCALE','qps-plocm',''],
+      ['src/i18n/messages','MISSING_KEY','qps-plocm','spare'],
+      ['src/i18n/messages','PARAMETER_MISMATCH','qps-plocm','title'],
       ['src/i18n/messages','UNUSED_KEY','','spare'],
     ]);
   }finally{await rm(root,{recursive:true,force:true});}

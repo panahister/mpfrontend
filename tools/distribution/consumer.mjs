@@ -1,7 +1,7 @@
 // Install real packed packages into a fresh, independent Nx workspace. Never import platform source.
 import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm, readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,delimiter,dirname} from 'node:path';
+import {join,delimiter,dirname,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {createServer as createNetServer} from 'node:net';
@@ -111,6 +111,18 @@ assert.equal(JSON.parse(await run('pnpm',['exec','mpfrontend','skills','check','
 assert.ok((await readFile(join(workspace,'.claude/skills/mpfrontend-review-design-drift/SKILL.md'),'utf8')).includes('read-only'));
 await verifyDesignConsumer({workspace,run});
 await run('pnpm',['exec','mpfrontend','create','app','--name','sample','--directory','apps/sample']);
+async function filesUnder(directory){
+  const result=[];
+  for(const entry of await readdir(directory,{withFileTypes:true})){
+    const path=join(directory,entry.name);
+    if(entry.isDirectory())result.push(...await filesUnder(path));else result.push(path);
+  }
+  return result;
+}
+// The application template ships English only: one English catalog per set and a registry with English alone.
+const templateCatalogs=(await filesUnder(join(workspace,'apps/sample/src'))).filter(path=>basename(dirname(path))==='messages');
+assert.ok(templateCatalogs.length>=3&&templateCatalogs.every(path=>basename(path)==='en.ts'),'TEMPLATE_NOT_ENGLISH_ONLY');
+assert.match(await readFile(join(workspace,'apps/sample/src/config/app.ts'),'utf8'),/locales: \{ en: \{ direction: 'ltr' \} \},\n  defaultLocale: 'en',/);
 // The feature, route and package generators on the fresh workspace: a screen feature and its route, a
 // second list feature over the template's read with a list and a detail route, and a shared package.
 const created=[];
@@ -125,6 +137,7 @@ for(const args of [['feature','--app','apps/sample','--name','order-review'],['r
   await run('pnpm',['exec','mpfrontend','create',...args,'--json'],{expectedCode:2});
 }
 assert.deepEqual(JSON.parse(await run('pnpm',['exec','mpfrontend','create','feature','--app','apps/sample','--name','archive-two','--resource','catalog','--json'],{capture:true})).kept.length,4);
+assert.ok((await filesUnder(join(workspace,'apps/sample/src'))).filter(path=>basename(dirname(path))==='messages').every(path=>basename(path)==='en.ts'),'GENERATED_CATALOG_NOT_ENGLISH');
 await rm(join(workspace,'apps/sample/src/features/archive-two'),{recursive:true});
 // The Nx generators are the same generators; a dry run writes nothing.
 await run('pnpm',['exec','nx','g','@mpfrontend/nx-plugin:package','--name','nx-probe','--dry-run','--no-interactive']);
@@ -175,6 +188,39 @@ const authored=(await readFile(overridePath,'utf8'))+'\n// Consumer-authored pre
 await writeFile(overridePath,authored);
 await run('pnpm',['exec','mpfrontend','create','app','--name','sample','--directory','apps/sample'],{expectedCode:2});
 assert.equal(await readFile(overridePath,'utf8'),authored);
+// A product whose only locale is its own, written right to left. The fixture is a private-use pseudo-locale
+// tag whose text is English, marked, so that any framework fallback would show unmarked English. The product
+// changes its own files only: its registry, its catalogs and the default locale of each catalog set.
+const RTL='qps-plocm',MARK='[rtl] ';
+await run('pnpm',['exec','mpfrontend','create','app','--name','product','--directory','apps/product']);
+// The product reads the same synthetic contract under its own app name.
+await mkdir(join(workspace,'contracts/openapi/presentation/product'),{recursive:true});
+await writeFile(join(workspace,'contracts/openapi/presentation/product/openapi.json'),JSON.stringify(contractFixture));
+const productApp=join(workspace,'apps/product');
+const productConfigPath=join(productApp,'src/config/app.ts'),productConfig=await readFile(productConfigPath,'utf8');
+const productRegistry=productConfig.replace(/createLocaleRegistry\(\{[\s\S]*?\n\}\);/,"createLocaleRegistry({\n  locales: { '"+RTL+"': { direction: 'rtl' } },\n  defaultLocale: '"+RTL+"',\n});");
+assert.notEqual(productRegistry,productConfig);await writeFile(productConfigPath,productRegistry);
+const replacedEnglish=[];
+for(const catalog of (await filesUnder(join(productApp,'src'))).filter(path=>basename(dirname(path))==='messages')){
+  assert.equal(basename(catalog),'en.ts');
+  const source=await readFile(catalog,'utf8');
+  const marked=source.replace(/(:\s*)'((?:\\.|[^'\\])*)'/g,(_,separator,text)=>{replacedEnglish.push(text);return separator+"'"+MARK+text+"'";});
+  assert.notEqual(marked,source);
+  await writeFile(join(dirname(catalog),RTL+'.ts'),marked);await rm(catalog);
+}
+let catalogSets=0;
+for(const file of (await filesUnder(join(productApp,'src'))).filter(path=>/\.tsx?$/.test(path))){
+  const source=await readFile(file,'utf8');
+  if(!source.includes("from './messages/en';"))continue;
+  const adopted=source.replace("from './messages/en';","from './messages/"+RTL+"';").replace("defaultLocale: 'en',","defaultLocale: '"+RTL+"',");
+  assert.ok(!adopted.includes("'en'"),file);await writeFile(file,adopted);catalogSets++;
+}
+assert.equal(catalogSets,3);
+// The feature generator follows the product's registry: its catalog is the base, and no English file exists.
+const productFeature=JSON.parse(await run('pnpm',['exec','mpfrontend','create','feature','--app','apps/product','--name','review','--json'],{capture:true}));
+assert.deepEqual(productFeature.files.filter(path=>path.includes('/model/messages')),['apps/product/src/features/review/model/messages.ts','apps/product/src/features/review/model/messages/'+RTL+'.ts']);
+assert.deepEqual(productFeature.untranslated,[]);
+console.log(JSON.stringify({stage:'product-only-locale',ok:true,locale:RTL,direction:'rtl',catalogSets,markedMessages:replacedEnglish.length}));
 // Resolve newly scaffolded public third-party dependencies once, then prove the exact
 // resulting lockfile can be installed without registry access. MP Frontend packages
 // remain forced to the locally packed archives by the workspace overrides.
@@ -210,6 +256,7 @@ await writeFile(join(workspace,'.prettierignore'),(await readFile(join(workspace
 await run('pnpm',['run','format']);
 // Generated output is produced and checked in before the gate, as after any ftg.config.json change.
 await run('pnpm',['exec','nx','run','sample:ftg-generate','--skip-nx-cache']);
+await run('pnpm',['exec','nx','run','product:ftg-generate','--skip-nx-cache']);
 await run('pnpm',['check','--skip-nx-cache']);
 // The app build compiles Tailwind v4 over the published UI and shell output: the structural class p-6 of
 // Card and the shell's content width are rules of the built CSS, and the app theme follows the neutral tokens.
@@ -227,31 +274,55 @@ assert.match(builtCss,/max-width:var\(--mp-shell-content-max\)/,'SHELL_STRUCTURA
 const fallback=builtCss.indexOf('--mp-surface-canvas:'),theme=builtCss.search(/:root\[data-brand=["']?neutral["']?\]\{--mp-shell-content-max:75rem/);
 assert.ok(fallback>=0&&theme>fallback,'THEME_FILE_NOT_AFTER_TOKEN_FALLBACK');
 console.log(JSON.stringify({stage:'built-css',ok:true,structuralClass:'p-6',shellClass:'max-w-[var(--mp-shell-content-max)]',themeAfterFallback:true}));
-// The built app serves Persian right to left with logical CSS, and an unknown locale falls back to the
-// default. The server binds a free loopback port and its BFF origin is a closed local port.
-const port=await new Promise((resolve,reject)=>{const probe=createNetServer();probe.once('error',reject);probe.listen(0,'127.0.0.1',()=>{const value=probe.address().port;probe.close(()=>resolve(value));});});
-const server=spawn(join(workspace,'apps/sample/node_modules/.bin/next'),['start','.','-p',String(port),'-H','127.0.0.1'],{cwd:join(workspace,'apps/sample'),detached:true,stdio:'ignore',
-  env:{...process.env,PATH:independentPath,NEXT_TELEMETRY_DISABLED:'1',BFF_ORIGIN:'http://127.0.0.1:9'}});
-try{
-  const page=async locale=>{
-    for(let attempt=0;attempt<120;attempt++){
-      try{const response=await fetch('http://127.0.0.1:'+port+'/catalog',{headers:locale?{cookie:'mp_preferences='+locale}:{}});if(response.ok)return await response.text();}catch{}
-      await new Promise(resolve=>setTimeout(resolve,250));
-    }
-    throw new Error('APP_DID_NOT_START');
-  };
-  // The first paint takes language, direction and theme from the shared preference cookie.
-  const persian=await page('lang=fa&theme=dark');
-  assert.match(persian,/<html lang="fa" dir="rtl" data-brand="neutral" data-mode="dark"/);
-  assert.match(persian,/focus:start-4/);assert.match(persian,/border-s-4/);
-  assert.doesNotMatch(persian,/\b(?:ml|mr|pl|pr|left|right)-\d/);
+// Each built app is served on a free loopback port; its BFF origin is a closed local port.
+async function served(directory,check){
+  const port=await new Promise((resolve,reject)=>{const probe=createNetServer();probe.once('error',reject);probe.listen(0,'127.0.0.1',()=>{const value=probe.address().port;probe.close(()=>resolve(value));});});
+  const server=spawn(join(directory,'node_modules/.bin/next'),['start','.','-p',String(port),'-H','127.0.0.1'],{cwd:directory,detached:true,stdio:'ignore',
+    env:{...process.env,PATH:independentPath,NEXT_TELEMETRY_DISABLED:'1',BFF_ORIGIN:'http://127.0.0.1:9'}});
+  try{
+    await check(async preference=>{
+      for(let attempt=0;attempt<120;attempt++){
+        try{const response=await fetch('http://127.0.0.1:'+port+'/catalog',{headers:preference?{cookie:'mp_preferences='+preference}:{}});if(response.ok)return await response.text();}catch{}
+        await new Promise(resolve=>setTimeout(resolve,250));
+      }
+      throw new Error('APP_DID_NOT_START');
+    });
+  }finally{try{process.kill(-server.pid,'SIGTERM');}catch{}}
+}
+const escapeExpression=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+// The template's English messages that a page shows as text, as an attribute value or in a serialized string.
+const englishShown=html=>replacedEnglish.filter(text=>!text.includes('{')&&new RegExp('[>"]'+escapeExpression(text)+'[<"\\\\]').test(html));
+let detectedOnEnglish=0;
+// The English-only app: the first paint takes language, direction and theme from the shared preference
+// cookie; the fixture locale is not a built-in locale, and an unknown or crafted value is the default.
+await served(join(workspace,'apps/sample'),async page=>{
+  const fixture=await page('lang='+RTL+'&theme=dark');
+  assert.match(fixture,/<html lang="en" dir="ltr" data-brand="neutral" data-mode="dark"/);
+  assert.match(fixture,/focus:start-4/);assert.match(fixture,/border-s-4/);
+  assert.doesNotMatch(fixture,/\b(?:ml|mr|pl|pr|left|right)-\d/);
   assert.match(await page('lang=xx'),/<html lang="en" dir="ltr"/);
   const crafted=await page('lang=%3Cprobe%3E&theme=%3Cprobe%3E');
   assert.match(crafted,/<html lang="en" dir="ltr" data-brand="neutral" data-mode="system"/);
   assert.ok(!crafted.includes('<probe>')&&!crafted.includes('%3Cprobe%3E'),'an invalid preference is never echoed');
-  assert.match(await page(),/<html lang="en" dir="ltr"/);
-  console.log(JSON.stringify({stage:'served-locales',ok:true,fa:'rtl',firstPaintTheme:'dark',unknown:'default-en',invalidPreference:'ignored-not-echoed'}));
-}finally{try{process.kill(-server.pid,'SIGTERM');}catch{}}
+  const english=await page();
+  assert.match(english,/<html lang="en" dir="ltr"/);
+  // The detector of English text finds the template's messages on the English app.
+  detectedOnEnglish=englishShown(english).length;
+  assert.ok(detectedOnEnglish>=10,'ENGLISH_DETECTOR_FOUND:'+detectedOnEnglish);
+});
+console.log(JSON.stringify({stage:'served-english',ok:true,default:'en',fixtureLocale:'not-built-in',firstPaintTheme:'dark',unknown:'default-en',invalidPreference:'ignored-not-echoed',englishMessagesDetected:detectedOnEnglish}));
+// The product-only app: its locale is the default and the only locale, the document is right to left on the
+// first visit, the layout is logical, and no English text replaces a message that the product supplied.
+await served(productApp,async page=>{
+  const first=await page();
+  assert.match(first,new RegExp('<html lang="'+RTL+'" dir="rtl" data-brand="neutral" data-mode="system"'));
+  for(const text of ['Skip to content','Main navigation','Catalog','The data is not available. Try again.','Independent MP Frontend consumer'])assert.ok(first.includes(MARK+text),'PRODUCT_TEXT_MISSING:'+text);
+  assert.match(first,/focus:start-4/);assert.match(first,/border-s-4/);
+  assert.doesNotMatch(first,/\b(?:ml|mr|pl|pr|left|right)-\d/);
+  assert.deepEqual(englishShown(first),[],'ENGLISH_FALLBACK_SHOWN');
+  assert.match(await page('lang=en&theme=dark'),new RegExp('<html lang="'+RTL+'" dir="rtl" data-brand="neutral" data-mode="dark"'));
+});
+console.log(JSON.stringify({stage:'served-product-locale',ok:true,locale:RTL,direction:'rtl',englishFallbackShown:0}));
 // A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
 await run('pnpm',['run','format:check']);
 // Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
@@ -270,14 +341,22 @@ console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailu
 for(const path of Object.keys(probes))await rm(join(workspace,path));
 await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
 await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
-// Negative control of the catalog check: a key that no code uses fails it; the catalog is then restored.
+// Negative controls of the catalog check: a key that no code uses, a registered locale without a catalog and a
+// catalog without a key of the base each fail it. The fixture locale is registered for the control only, and
+// the app is then restored.
 const catalogPath=join(workspace,'apps/sample/src/i18n/messages/en.ts'),catalogSource=await readFile(catalogPath,'utf8');
+const sampleConfigPath=join(workspace,'apps/sample/src/config/app.ts'),sampleConfig=await readFile(sampleConfigPath,'utf8');
+const incompleteCatalog=join(workspace,'apps/sample/src/i18n/messages/'+RTL+'.ts');
 await writeFile(catalogPath,catalogSource.replace("skipToContent: 'Skip to content',","skipToContent: 'Skip to content',\n  neverUsed: 'Never used',"));
+const withFixture=sampleConfig.replace("locales: { en: { direction: 'ltr' } },","locales: { en: { direction: 'ltr' }, '"+RTL+"': { direction: 'rtl' } },");
+assert.notEqual(withFixture,sampleConfig);await writeFile(sampleConfigPath,withFixture);
+await writeFile(incompleteCatalog,"export default { skipToContent: '"+MARK+"Skip to content' };\n");
 const catalogFailure=await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{expectedCode:3,capture:true});
-assert.ok(catalogFailure.includes('"UNUSED_KEY"')&&catalogFailure.includes('"MISSING_KEY"'),'CATALOG_NEGATIVE_CONTROL_MISSING');
-await writeFile(catalogPath,catalogSource);
+const catalogCodes=['UNUSED_KEY','MISSING_KEY','MISSING_LOCALE'];
+for(const code of catalogCodes)assert.ok(catalogFailure.includes('"'+code+'"'),'CATALOG_NEGATIVE_CONTROL_MISSING:'+code);
+await writeFile(catalogPath,catalogSource);await writeFile(sampleConfigPath,sampleConfig);await rm(incompleteCatalog);
 assert.equal(JSON.parse(await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{capture:true})).ok,true);
-console.log(JSON.stringify({stage:'catalog-negative-control',ok:true,observedFailures:['UNUSED_KEY','MISSING_KEY']}));
+console.log(JSON.stringify({stage:'catalog-negative-control',ok:true,observedFailures:catalogCodes}));
 const {parseRead}=await import(join(workspace,'apps/sample/src/api/generated/catalog/read-models.gen.ts'));
 const valid={items:[{name:'Consumer fixture'}],number:1,size:12,total:1,pageCount:1,hasMore:false};
 assert.equal(parseRead('catalog',valid),valid);
@@ -319,5 +398,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-fa-rtl/unknown-locale-default','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

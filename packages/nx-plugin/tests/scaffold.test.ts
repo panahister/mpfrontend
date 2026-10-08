@@ -45,10 +45,12 @@ async function files(root: string, directory = ''): Promise<string[]> {
 test('the template catalog example is the output of the feature and route generators', async () => {
   const app = await applicationFiles('web');
   const feature = await featureFiles('catalog', {resource: 'catalog', generatedOutput: 'src/api/generated/catalog'});
-  // The template translates its example's catalogs; every other generated file is used as generated.
-  const translated = ['src/features/catalog/model/messages/ar.ts', 'src/features/catalog/model/messages/fa.ts'];
-  for (const [path, content] of Object.entries(feature)) if (!translated.includes(path)) assert.equal(app[path], content, path);
-  for (const path of translated) assert.notEqual(app[path], feature[path], path + ' is translated');
+  // The template uses its example feature exactly as generated.
+  for (const [path, content] of Object.entries(feature)) assert.equal(app[path], content, path);
+  // The template ships English only: one catalog per set, and a registry with English alone.
+  const catalogs = Object.keys(app).filter(path => /\/messages\/[^/]+\.ts$/.test(path)).sort();
+  assert.deepEqual(catalogs, ['src/features/catalog/model/messages/en.ts', 'src/features/preferences/model/messages/en.ts', 'src/i18n/messages/en.ts']);
+  assert.match(app['src/config/app.ts']!, /locales: \{ en: \{ direction: 'ltr' \} \},\n  defaultLocale: 'en',/);
   for (const [path, content] of Object.entries({...routeFiles('catalog', 'catalog', 'CatalogScreen'),
     ...routeFiles('catalog/[position]', 'catalog', 'CatalogDetailScreen')})) assert.equal(app[path], content, path);
   for (const folder of ['ui', 'model', 'hooks', 'api', 'utils']) {
@@ -85,10 +87,10 @@ test('a screen feature has the five folders and an entry; dry-run writes nothing
     const feature = created.files.map(path => relative('apps/web/src/features/order-review', path));
     for (const folder of ['ui', 'model', 'hooks', 'api', 'utils']) assert.ok(feature.some(path => path.startsWith(folder + '/')), folder);
     assert.ok(feature.includes('index.ts'));
-    // A catalog per app locale; the base text is the starting point of every translation.
-    for (const code of ['en', 'ar', 'fa']) assert.ok(feature.includes('model/messages/' + code + '.ts'), code);
+    // A catalog per app locale: the template's app has English only.
+    assert.deepEqual(feature.filter(path => path.startsWith('model/messages/')), ['model/messages/en.ts']);
     assert.ok(feature.includes('model/messages.ts'));
-    assert.deepEqual(created.untranslated, ['apps/web/src/features/order-review/model/messages/ar.ts', 'apps/web/src/features/order-review/model/messages/fa.ts']);
+    assert.deepEqual(created.untranslated, []);
     assert.match(await readFile(join(root, 'apps/web/src/features/order-review/model/messages/en.ts'), 'utf8'), /title: 'Order review'/);
     for (const path of created.files) {
       const content = await readFile(join(root, path), 'utf8');
@@ -103,6 +105,40 @@ test('a screen feature has the five folders and an entry; dry-run writes nothing
     delete manifest.dependencies['@mpfrontend/app-layout'];
     await writeFile(manifestPath, JSON.stringify(manifest));
     await assert.rejects(createFeature({app: 'apps/web', name: 'other', root}), /APP_PREREQUISITE_MISSING:@mpfrontend\/app-layout/);
+  } finally {
+    await rm(root, {recursive: true, force: true});
+  }
+});
+
+// A test fixture, never a built-in locale: a private-use pseudo-locale tag, written right to left.
+const RTL = 'qps-plocm';
+async function registry(root: string, locales: string, defaultLocale: string) {
+  const path = join(root, 'apps/web/src/config/app.ts');
+  const source = await readFile(path, 'utf8');
+  const next = source.replace(/createLocaleRegistry\(\{[\s\S]*?\n\}\);/, 'createLocaleRegistry({\n  locales: ' + locales + ',\n  defaultLocale: ' + JSON.stringify(defaultLocale).replaceAll('"', "'") + ',\n});');
+  assert.notEqual(next, source);
+  await writeFile(path, next);
+}
+
+test('a feature follows the app registry: a product locale next to English, or as the only locale', async () => {
+  const root = await workspace();
+  try {
+    await registry(root, "{ en: { direction: 'ltr' }, '" + RTL + "': { direction: 'rtl' } }", 'en');
+    const added = await createFeature({app: 'apps/web', name: 'order-review', root});
+    assert.deepEqual(added.untranslated, ['apps/web/src/features/order-review/model/messages/' + RTL + '.ts']);
+    const messages = await readFile(join(root, 'apps/web/src/features/order-review/model/messages.ts'), 'utf8');
+    assert.match(messages, /import qps_plocm from '\.\/messages\/qps-plocm';/);
+    assert.match(messages, /translations: \{ 'qps-plocm': qps_plocm \},/);
+    assert.match(await readFile(join(root, 'apps/web/src/features/order-review/model/messages/' + RTL + '.ts'), 'utf8'), /satisfies Translation<typeof base>/);
+    // A product whose only locale is its own: that locale's catalog is the base, and no English file exists.
+    await registry(root, "{ '" + RTL + "': { direction: 'rtl' } }", RTL);
+    const only = await createFeature({app: 'apps/web', name: 'review', root});
+    assert.deepEqual(only.files.filter(path => path.includes('/model/messages')), ['apps/web/src/features/review/model/messages.ts', 'apps/web/src/features/review/model/messages/' + RTL + '.ts']);
+    assert.deepEqual(only.untranslated, []);
+    const base = await readFile(join(root, 'apps/web/src/features/review/model/messages.ts'), 'utf8');
+    assert.match(base, /import base from '\.\/messages\/qps-plocm';/);
+    assert.match(base, /defaultLocale: 'qps-plocm',/);
+    assert.match(base, /translations: \{\},/);
   } finally {
     await rm(root, {recursive: true, force: true});
   }

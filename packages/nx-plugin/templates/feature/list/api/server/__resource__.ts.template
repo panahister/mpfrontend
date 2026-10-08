@@ -1,5 +1,6 @@
 import 'server-only';
 import { bffOrigin, appId } from '../../config/server';
+import { localeRegistry } from '../../config/app';
 import type { __Resource__Page } from '../../entities/__resource__';
 import { parseRead } from '__SERVER_TO_OUTPUT__/read-models.gen';
 
@@ -23,7 +24,7 @@ export function queryParameters(input: URLSearchParams): URLSearchParams {
 
 export async function read__Resource__(
   query = new URLSearchParams(),
-  language = 'en',
+  language: string = localeRegistry.defaultLocale,
 ): Promise<__Resource__Page> {
   const path = '/' + appId + '/__resource__?' + queryParameters(query);
   const response = await fetch(bffOrigin + path, {

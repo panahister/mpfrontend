@@ -17,7 +17,8 @@ const prefix=(directory:string,files:Record<string,string>)=>Object.fromEntries(
 // ---------------------------------------------------------------------------------------------------- messages
 /** The locales of an app: the base catalog is the default locale's. */
 export type AppLocales=Readonly<{defaultLocale:string;locales:readonly string[]}>;
-export const TEMPLATE_LOCALES:AppLocales={defaultLocale:'en',locales:['en','ar','fa']};
+/** The application template ships English only; a product adds its own locales to its registry. */
+export const TEMPLATE_LOCALES:AppLocales={defaultLocale:'en',locales:['en']};
 const localeCode=/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
 /** Reads the registry of `src/config/app.ts` as the application template writes it. */
 export function readAppLocales(source:string):AppLocales|undefined{
@@ -50,7 +51,8 @@ ${others.map(code=>`import ${identifier(code)} from './messages/${code}';`).join
 export const messages = createMessages({
   defaultLocale: ${quote(locales.defaultLocale)},
   base,
-  translations: { ${others.map(code=>code.includes('-')?quote(code)+': '+identifier(code):code).join(', ')} },
+  // Each other locale of the registry: import its catalog and list it here.
+  translations: {${others.length?' '+others.map(code=>code.includes('-')?quote(code)+': '+identifier(code):code).join(', ')+' ':''}},
   core: coreMessages,
   numberingSystem: localeRegistry.numberingSystem,
 });
@@ -60,6 +62,7 @@ export const messages = createMessages({
 const listMessages=(name:string)=>({
   title:humanize(name),search:'Search',apply:'Apply',unavailable:'The data is not available. Try again.',empty:'No records found.',
   detail:'Details',back:'Back',pagination:'Pages',pageOf:'Page {page, number} of {count, number}',previous:'Previous',next:'Next',
+  yes:'Yes',no:'No',
 });
 const screenMessages=(name:string)=>({
   title:humanize(name),run:'Run',running:'Running',done:'Done',failed:'Not completed. Try again.',unbound:'Not available yet.',

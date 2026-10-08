@@ -6,10 +6,11 @@ import { appId, localeRegistry } from '../config/app';
 import { appMessages } from '../i18n';
 import './globals.css';
 
-export const metadata = {
-  title: appId + ' | MP Frontend',
-  description: 'Independent MP Frontend consumer',
-};
+export async function generateMetadata() {
+  const saved = await cookies();
+  const t = appMessages.translator(readPreferences((name) => saved.get(name)?.value).locale);
+  return { title: appId + ' | MP Frontend', description: t('description') };
+}
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const saved = await cookies();

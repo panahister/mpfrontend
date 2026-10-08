@@ -1,14 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { localeRegistry } from '../../../config/app';
 import { readPreferences } from './preferences';
 
 const jar = (values: Record<string, string>) => (name: string) => values[name];
+// The test follows the app's registry, so it holds when the product adds or replaces locales.
+const chosen = localeRegistry.locales[localeRegistry.locales.length - 1]!;
 
 test('preferences come from the shared preference cookie and the brand cookie', () => {
   assert.deepEqual(
-    readPreferences(jar({ mp_preferences: 'lang=fa&theme=dark', __APP_NAME___brand: 'neutral' })),
+    readPreferences(
+      jar({ mp_preferences: 'lang=' + chosen + '&theme=dark', __APP_NAME___brand: 'neutral' }),
+    ),
     {
-      locale: 'fa',
+      locale: chosen,
       brand: 'neutral',
       mode: 'dark',
     },
@@ -16,7 +21,7 @@ test('preferences come from the shared preference cookie and the brand cookie', 
 });
 
 test('missing or invalid values fall back to the defaults and are never echoed', () => {
-  const defaults = { locale: 'en', brand: 'neutral', mode: 'system' };
+  const defaults = { locale: localeRegistry.defaultLocale, brand: 'neutral', mode: 'system' };
   assert.deepEqual(readPreferences(jar({})), defaults);
   assert.deepEqual(
     readPreferences(
