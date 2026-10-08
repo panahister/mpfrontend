@@ -78,3 +78,58 @@ test('production requires durable sessions',()=>{
   try{assert.throws(()=>createBff({publicOrigin:'http://localhost:1',issuer:'http://localhost:2/realms/test',clientId:'web',audience:'api',cookieName:'test_session',development:true,routes:[]}),/DURABLE_SESSION_STORE_REQUIRED/);}
   finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
 });
+
+test('the upstream Accept-Language is negotiated from the configured allowlist and never forwarded as given',async()=>{
+  const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
+  let nonce='',issuer='';const received:string[]=[];
+  const jwt=(aud:string,extra:Record<string,unknown>={})=>{
+    const header=Buffer.from(JSON.stringify({alg:'RS256',kid:'test'})).toString('base64url');
+    const payload=Buffer.from(JSON.stringify({iss:issuer,aud,sub:'person-1',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+300,...extra})).toString('base64url');
+    return header+'.'+payload+'.'+sign('RSA-SHA256',Buffer.from(header+'.'+payload),privateKey).toString('base64url');
+  };
+  const provider=createServer(async(req,res)=>{
+    res.setHeader('content-type','application/json');
+    if(req.url?.endsWith('/certs'))res.end(JSON.stringify({keys:[{...publicKey.export({format:'jwk'}),kid:'test',alg:'RS256',use:'sig'}]}));
+    else if(req.url?.endsWith('/token'))res.end(JSON.stringify({access_token:jwt('api'),refresh_token:'server-only-refresh',id_token:jwt('web',{nonce})}));
+    else if(req.url?.startsWith('/v1/items')){received.push(String(req.headers['accept-language']));res.end('{}');}
+    else res.end('{}');
+  });
+  await new Promise<void>(resolve=>provider.listen(0,'127.0.0.1',resolve));
+  const providerOrigin='http://127.0.0.1:'+(provider.address() as {port:number}).port;issuer=providerOrigin+'/realms/test';
+  const settings={publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',development:true as const,routes:[{method:'GET',pattern:/^\/v1\/items$/,origin:providerOrigin}]};
+  const servers=[createServer(createBff({...settings,apiLocales:{supported:['fa','en'],defaultLocale:'fa'}})),createServer(createBff(settings))];
+  for(const server of servers)await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    assert.throws(()=>createBff({...settings,apiLocales:{supported:['fa','en'],defaultLocale:'de'}}),/INVALID_API_LOCALES/);
+    assert.throws(()=>createBff({...settings,apiLocales:{supported:['fa\r\n'],defaultLocale:'fa\r\n'}}),/INVALID_API_LOCALES/);
+    const sessions:string[]=[];
+    for(const server of servers){
+      const base='http://127.0.0.1:'+(server.address() as {port:number}).port;
+      const login=await fetch(base+'/login',{redirect:'manual'}),location=new URL(login.headers.get('location')!);
+      nonce=location.searchParams.get('nonce')!;
+      const callback=await fetch(base+'/callback?code=ok&state='+location.searchParams.get('state'),{headers:{cookie:login.headers.getSetCookie()[0]!.split(';')[0]!},redirect:'manual'});
+      assert.equal(callback.status,303);sessions.push(base+'|'+callback.headers.getSetCookie()[0]!.split(';')[0]!);
+    }
+    const ask=async(index:number,language?:string)=>{
+      const [base,cookie]=sessions[index]!.split('|') as [string,string];
+      const response=await fetch(base+'/v1/items',{headers:{cookie,...(language===undefined?{}:{'accept-language':language})}});
+      assert.equal(response.status,200);return received.at(-1);
+    };
+    // A consumer that serves Persian configures it; the browser's own header never reaches the backend.
+    assert.equal(await ask(0,'fa-IR,fa;q=0.9,en;q=0.8'),'fa');
+    assert.equal(await ask(0,'en-US,en;q=0.9'),'en');
+    assert.equal(await ask(0,'de'),'fa');
+    assert.equal(await ask(0),'fa');
+    for(const crafted of ['fa;q=1, <script>alert(1)</script>','en;q=0.1,fa-XX-x-crafted;q=0.2','x'.repeat(400),'fa,'.repeat(40)]){
+      assert.ok(['fa','en'].includes((await ask(0,crafted))!),crafted);
+    }
+    // Without configuration only en and ar are ever forwarded, as before.
+    assert.equal(await ask(1,'fa'),'en');
+    assert.equal(await ask(1,'ar'),'ar');
+    assert.equal(await ask(1,'ar-SA,ar;q=0.9'),'ar');
+    assert.ok(received.every(value=>['fa','en','ar'].includes(value)));
+  }finally{
+    for(const server of [...servers,provider])server.closeAllConnections();
+    await Promise.all([...servers,provider].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));
+  }
+});

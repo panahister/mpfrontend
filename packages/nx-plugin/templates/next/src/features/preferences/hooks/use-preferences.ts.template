@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { direction } from '@mpfrontend/i18n';
+import { localeRegistry } from '../../../config/app';
 import { persistPreference } from '../api/preference-cookie';
 import { readPreferences, type PreferenceKey, type Preferences } from '../model/preferences';
 
@@ -14,7 +14,7 @@ export function usePreferences(initial: Preferences) {
     setPreferences(next);
     const root = document.documentElement;
     root.lang = next.locale;
-    root.dir = direction(next.locale);
+    root.dir = localeRegistry.direction(next.locale);
     root.dataset.brand = next.brand;
     root.dataset.mode = next.mode;
     persistPreference(key, next[key]);

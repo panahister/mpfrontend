@@ -11,6 +11,12 @@ An application can declare an allowlist with `supportedUiLocales`. A matching `u
 authorization request; unlisted values are ignored and an explicit query value wins over the cookie.
 The identity provider remains responsible for translated login, registration and recovery messages.
 
+`apiLocales: {supported, defaultLocale}` is the allowlist for the `Accept-Language` header the BFF sends
+upstream. The browser's header is negotiated against it by quality, exact range and primary language;
+only an allowlisted token is ever sent, and the default replaces anything else, including malformed or
+crafted input. Without configuration only `en` or `ar` is sent, as before; a consumer whose backends
+answer in Persian lists `fa`.
+
 The default memory vault remains a single-process development profile; restart signs users out.
 The `./session-store` export provides `SessionVault`, `createMemorySessionVault` and
 `createRedisSessionVault`. Supply an initialized Redis vault through `createBff({sessionVault, ...})`.

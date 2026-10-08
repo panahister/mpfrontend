@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { locale } from '@mpfrontend/i18n';
-import { preferenceCookie } from '../../../config/app';
+import { localeRegistry, preferenceCookie } from '../../../config/app';
 import { load__Feature__Item } from '../api/__feature__';
 import { fields } from '../model/__feature__-fields';
 import type { __Feature__ScreenProps } from './__feature__-screen';
@@ -10,7 +9,7 @@ import { __Feature__Detail } from './__feature__-detail';
 /** The detail screen: a child route of the list, so an item can be linked and refreshed. */
 export async function __Feature__DetailScreen({ params, basePath }: __Feature__ScreenProps) {
   const position = Number((await params)?.position);
-  const language = locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  const language = localeRegistry.locale((await cookies()).get(preferenceCookie('locale'))?.value);
   const item = await load__Feature__Item(position, language).catch(() => null);
   if (item === undefined) notFound();
   return <__Feature__Detail item={item} fields={fields} language={language} basePath={basePath} />;

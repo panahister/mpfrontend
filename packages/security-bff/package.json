@@ -15,7 +15,8 @@
     }
   },
   "dependencies": {
-    "@redis/client": "6.3.0"
+    "@redis/client": "6.3.0",
+    "@mpfrontend/i18n": "workspace:*"
   },
   "devDependencies": {
     "@mpfrontend/presentation-server": "workspace:*"

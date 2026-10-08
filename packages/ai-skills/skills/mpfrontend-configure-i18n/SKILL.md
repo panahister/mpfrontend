@@ -1,32 +1,34 @@
 ---
 name: mpfrontend-configure-i18n
-description: Configure the existing English and Arabic MP Frontend locale helpers and consumer-owned translations with RTL behavior. Not an arbitrary-locale generator or automatic backend content translation.
+description: Configure the MP Frontend locale registry (English, Arabic and Persian ship; a consumer adds others by configuration), consumer-owned translations, right-to-left behavior, locale-aware digits and the locale the BFF sends upstream. Not automatic backend content translation.
 ---
 
-# Configure the finite English/Arabic profile
+# Configure locales
 
-Read the consumer's locale policy, instructions and installed `@mpfrontend/i18n` exports. The current
-registry supports en/ar: `locale`, `direction`, `translator`, `formatValue`, Locale and MessageKey.
-Unknown locale input falls back to English; do not claim another locale is registered by adding a
-dropdown item. Product labels and domain catalogs stay in the consumer; core copy stays neutral.
+Read the consumer's locale policy, instructions and installed `@mpfrontend/i18n` exports. The registry
+ships `en` (left to right), `ar` and `fa` (right to left). `createLocaleRegistry({locales, defaultLocale})`
+configures the app's own set: each entry names its direction and, optionally, a `numberingSystem` for
+Intl digits. The default locale is configured per app and is `en` when unset. Direction always comes from
+the registry; never derive it from a list of codes in feature code. `locale`, `direction`, `translator`,
+`formatValue`, `formatNumber`, `negotiateLocale`, Locale and MessageKey remain the public helpers.
 
-Validate persisted/requested locale with `locale`, set document lang and dir together, and use
-logical CSS start/end rather than hard-coded left/right. Preserve the existing persistence mechanism
-and avoid SSR/hydration disagreement or browser globals during server rendering. Changing locale
-must not reset auth, cart or an editing draft. Pass the selected locale through the approved API
-language boundary; do not expand it to unsupported backend locales silently.
+Keep the app's registry in `src/config/app.ts`. Validate a persisted or requested locale with the
+registry's `locale`; an unknown value is the default. Set document `lang` and `dir` together from the
+registry, and use logical CSS start/end rather than left/right. Preserve the existing persistence and
+avoid SSR/hydration disagreement. Changing locale must not reset auth, cart or an editing draft.
 
-Use `translator` for existing core MessageKey values and a typed consumer catalog for product copy.
-Use Intl with the selected locale for domain prices, currencies and dates; `formatValue` is a basic
-display helper, not a domain money/date serializer. Preserve identifiers and machine payload values.
-Backend localized resources need backend-owned changes; unknown free-text notes are not translated
-or reinterpreted by replacing strings. Keep Arabic glyph coverage in a licensed consumer font, with
-fonts and their distribution notices outside core. Do not change a Figma file to solve a font gap.
+Upstream language is an allowlist in the Security BFF: `apiLocales: {supported, defaultLocale}`. The BFF
+negotiates the browser's Accept-Language against it and sends only an allowlisted token, the default
+otherwise; without configuration it sends only `en` or `ar`, as before. A consumer whose backends answer
+in Persian lists `fa` there. The login `ui_locales` allowlist (`supportedUiLocales`) is separate.
 
-Test supported and unknown locales, matching lang/dir, catalog key parity and number formatting.
-In the browser verify locale switching and reload, Arabic form labels/errors/tables, logical layout,
-mixed-direction identifiers, mobile overflow and protected reads without identity changes. Distinguish
-translated UI/backend resources from user-authored free text. Run actual Nx gates uncached.
+Use `translator` for core MessageKey values and a typed consumer catalog for product copy; a key missing
+in a locale falls back, key by key, to the default locale. Numbers use the locale's digits through Intl
+(`formatNumber`, `formatValue`); a `numberingSystem` in the registry overrides them. Preserve identifiers
+and machine payload values; never translate free text that users wrote. Fonts with Arabic and Persian
+glyph coverage, and their licences, are consumer-owned.
 
-Report exactly which locales and surfaces passed. Adding a third locale requires a separate scoped
-registry/catalog/API compatibility change; this finite skill does not implement that capability.
+Test supported and unknown locales, matching lang/dir, catalog key parity, digits and the forwarded
+Accept-Language for a crafted header. In the browser verify locale switching and reload, right-to-left
+forms, tables and logical layout, and mixed-direction identifiers. Run actual Nx gates uncached and report
+exactly which locales and surfaces passed.

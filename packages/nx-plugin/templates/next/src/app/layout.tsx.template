@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
-import { direction, translator } from '@mpfrontend/i18n';
+import { translator } from '@mpfrontend/i18n';
 import { AppFrame, AppHeader, Navigation } from '@mpfrontend/app-layout';
 import { PreferenceControls, readPreferences } from '../features/preferences';
-import { appId, preferenceCookie } from '../config/app';
+import { appId, localeRegistry, preferenceCookie } from '../config/app';
 import './globals.css';
 
 export const metadata = {
@@ -24,7 +24,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html
       lang={preferences.locale}
-      dir={direction(preferences.locale)}
+      dir={localeRegistry.direction(preferences.locale)}
       data-brand={preferences.brand}
       data-mode={preferences.mode}
     >

@@ -40,7 +40,7 @@ run in that local fixture.
 | OpenAPI normalization and finite read/write generation | Implemented for selected profiles | Required/optional JSON, bodyless requests, typed responses, and explicit empty responses |
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
-| English/Arabic and LTR/RTL foundations | Implemented | Runtime primitives and Tiffin consumer tests |
+| English, Arabic and Persian; LTR/RTL foundations | Implemented | A configurable locale registry (`en`, `ar` and `fa` ship; direction and digits per locale), an allowlisted upstream Accept-Language in the Security BFF, i18n and BFF tests, and the packed consumer serving `fa` right to left with logical CSS; Persian product text is the consumer's catalog |
 | Shared application frame and template styling | Implemented | `@mpfrontend/app-layout` markup tests in both directions and for the keyboard path; the packed consumer's build compiles Tailwind v4 over the UI and shell output (`p-6` of Card is a rule of the built CSS) and loads the app theme after the neutral tokens. A browser check of a generated app in English and Arabic was run once by hand; it is not an automated gate |
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |

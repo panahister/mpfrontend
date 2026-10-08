@@ -1,5 +1,13 @@
+import { createLocaleRegistry } from '@mpfrontend/i18n';
+
 /** The app id, safe on the client and the server. It prefixes the app's presentation-preference cookies. */
 export const appId = '__APP_NAME__';
+
+/** The locales of this app; direction comes from here. The default is the first-visit locale. */
+export const localeRegistry = createLocaleRegistry({
+  locales: { en: { direction: 'ltr' }, ar: { direction: 'rtl' }, fa: { direction: 'rtl' } },
+  defaultLocale: 'en',
+});
 
 export function preferenceCookie(key: 'locale' | 'brand' | 'mode'): string {
   return appId + '_' + key;

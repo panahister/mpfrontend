@@ -14,7 +14,10 @@ Configure authorization code plus PKCE through the server BFF. Keep access, refr
 the server; the browser receives only the bounded opaque `HttpOnly`, `Secure` production cookie. Apply
 same-origin and CSRF controls to state-changing BFF routes, validate state/nonce/issuer/audience/time,
 and use explicit route/method/role allowlists. Forward only an allowlisted locale through standard
-`ui_locales`; the identity provider remains responsible for translating its own forms.
+`ui_locales`; the identity provider remains responsible for translating its own forms. Configure
+`apiLocales: {supported, defaultLocale}` for the Accept-Language that the BFF sends upstream (for example
+`fa` and `en` for a backend that answers in Persian); the BFF negotiates the browser's header against it
+and never forwards the header as given.
 
 Use the in-memory session store only for local development. The package refuses it under production;
 do not bypass that guard or describe the current Redis proof as a production HA claim. Never log tokens,

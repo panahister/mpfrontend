@@ -277,7 +277,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Workspace quality profile | Shared formatter, lint and TypeScript configuration; module boundaries, raw-colour and hand-written-CSS rules; a workspace `check` and a CI-neutral gate | Rules cover literals and stylesheets, not colours computed at run time |
 | OpenAPI integration | Selected OpenAPI 3.1 reads and mutations, types, field metadata, standalone validators, and presentation adapters | Finite profiles only; unsupported ambiguity fails |
 | UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, composable React UI, and a shared application frame | No product theme, icons, typography, or screen ownership |
-| Internationalization | Locale negotiation and direction-aware English/Arabic foundations | Product copy and complete locale QA remain consumer responsibilities |
+| Internationalization | A configurable locale registry with English, Arabic, and Persian, direction and digits per locale, and allowlisted Accept-Language negotiation | Product copy and complete locale QA remain consumer responsibilities |
 | Access presentation | Capability, field, and record visibility plus stale-authority fences | Not backend authorization |
 | OIDC session boundary | Authorization Code + PKCE, opaque cookies, Redis-backed encrypted records, refresh coordination, revocation, CSRF and allowlists | Current package refuses production startup pending production security gates |
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |

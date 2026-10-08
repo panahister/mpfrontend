@@ -142,6 +142,9 @@ importers:
 
   packages/security-bff:
     dependencies:
+      '@mpfrontend/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@redis/client':
         specifier: 6.3.0
         version: 6.3.0

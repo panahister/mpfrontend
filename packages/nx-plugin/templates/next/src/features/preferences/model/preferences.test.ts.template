@@ -7,10 +7,10 @@ test('stored preferences are validated and unknown values fall back to the defau
     readPreferences(() => undefined),
     { locale: 'en', brand: 'neutral', mode: 'system' },
   );
-  const stored: Record<string, string> = { locale: 'ar', brand: 'neutral', mode: 'dark' };
+  const stored: Record<string, string> = { locale: 'fa', brand: 'neutral', mode: 'dark' };
   assert.deepEqual(
     readPreferences((key) => stored[key]),
-    { locale: 'ar', brand: 'neutral', mode: 'dark' },
+    { locale: 'fa', brand: 'neutral', mode: 'dark' },
   );
   const crafted: Record<string, string> = { locale: '<x>', brand: 'other', mode: 'bright' };
   assert.deepEqual(

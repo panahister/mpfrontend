@@ -4,6 +4,7 @@ import {tmpdir} from 'node:os';
 import {join,delimiter,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
+import {createServer as createNetServer} from 'node:net';
 import assert from 'node:assert/strict';
 import {parse,stringify} from 'yaml';
 import {verifyDesignConsumer} from './design-consumer.mjs';
@@ -225,6 +226,27 @@ assert.match(builtCss,/max-width:var\(--mp-shell-content-max\)/,'SHELL_STRUCTURA
 const fallback=builtCss.indexOf('--mp-surface-canvas:'),theme=builtCss.search(/:root\[data-brand=["']?neutral["']?\]\{--mp-shell-content-max:75rem/);
 assert.ok(fallback>=0&&theme>fallback,'THEME_FILE_NOT_AFTER_TOKEN_FALLBACK');
 console.log(JSON.stringify({stage:'built-css',ok:true,structuralClass:'p-6',shellClass:'max-w-[var(--mp-shell-content-max)]',themeAfterFallback:true}));
+// The built app serves Persian right to left with logical CSS, and an unknown locale falls back to the
+// default. The server binds a free loopback port and its BFF origin is a closed local port.
+const port=await new Promise((resolve,reject)=>{const probe=createNetServer();probe.once('error',reject);probe.listen(0,'127.0.0.1',()=>{const value=probe.address().port;probe.close(()=>resolve(value));});});
+const server=spawn(join(workspace,'apps/sample/node_modules/.bin/next'),['start','.','-p',String(port),'-H','127.0.0.1'],{cwd:join(workspace,'apps/sample'),detached:true,stdio:'ignore',
+  env:{...process.env,PATH:independentPath,NEXT_TELEMETRY_DISABLED:'1',BFF_ORIGIN:'http://127.0.0.1:9'}});
+try{
+  const page=async locale=>{
+    for(let attempt=0;attempt<120;attempt++){
+      try{const response=await fetch('http://127.0.0.1:'+port+'/catalog',{headers:locale?{cookie:'sample_locale='+locale}:{}});if(response.ok)return await response.text();}catch{}
+      await new Promise(resolve=>setTimeout(resolve,250));
+    }
+    throw new Error('APP_DID_NOT_START');
+  };
+  const persian=await page('fa');
+  assert.match(persian,/<html lang="fa" dir="rtl"/);
+  assert.match(persian,/focus:start-4/);assert.match(persian,/border-s-4/);
+  assert.doesNotMatch(persian,/\b(?:ml|mr|pl|pr|left|right)-\d/);
+  assert.match(await page('xx'),/<html lang="en" dir="ltr"/);
+  assert.match(await page(),/<html lang="en" dir="ltr"/);
+  console.log(JSON.stringify({stage:'served-locales',ok:true,fa:'rtl',unknown:'default-en'}));
+}finally{try{process.kill(-server.pid,'SIGTERM');}catch{}}
 // A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
 await run('pnpm',['run','format:check']);
 // Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
@@ -282,5 +304,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-fa-rtl/unknown-locale-default','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

@@ -1,6 +1,7 @@
 'use client';
 import { Select } from '@mpfrontend/ui';
 import { translator } from '@mpfrontend/i18n';
+import { localeRegistry } from '../../../config/app';
 import { brands } from '../../../theme/config';
 import { usePreferences } from '../hooks/use-preferences';
 import { modes, type Preferences } from '../model/preferences';
@@ -16,8 +17,11 @@ export function PreferenceControls({ initial }: { initial: Preferences }) {
         value={preferences.locale}
         onChange={(event) => change('locale', event.target.value)}
       >
-        <option value="en">English</option>
-        <option value="ar">العربية</option>
+        {localeRegistry.locales.map((code) => (
+          <option key={code} value={code} lang={code}>
+            {new Intl.DisplayNames([code], { type: 'language' }).of(code)}
+          </option>
+        ))}
       </Select>
       <Select
         label={t('brand')}
