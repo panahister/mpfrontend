@@ -44,3 +44,4 @@ export function ResourceForm({fields,values,onChange,onSubmit,labels={},saveLabe
 }
 export {Dialog,nextFocus,type DialogProps} from './dialog.js';
 export {OneTimeCodeField,ConfirmWithCode,codeDigits,type OneTimeCodeFieldProps,type ConfirmWithCodeProps} from './one-time-code.js';
+export {Tree,visibleRows,descendantIds,treeKey,type TreeNode,type TreeRow,type TreeColumn,type TreeMove,type TreeProps} from './tree.js';

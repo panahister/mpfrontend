@@ -1,13 +1,13 @@
 ---
 name: mpfrontend-use-ui
-description: Compose the existing neutral MP Frontend components (Button, Field, Select, Card, ResourceTable, ResourceForm, Dialog, OneTimeCodeField, ConfirmWithCode) with consumer-owned DLS styling. Not a complete Figma component library or design-sync workflow.
+description: Compose the existing neutral MP Frontend components (Button, Field, Select, Card, ResourceTable, ResourceForm, Dialog, OneTimeCodeField, ConfirmWithCode, Tree) with consumer-owned DLS styling. Not a complete Figma component library or design-sync workflow.
 ---
 
 # Use the neutral component boundary
 
 Read the consumer instructions and installed `@mpfrontend/ui` types before implementation. The
 current public kit has Button, Field, Select, Card, ResourceTable, ResourceForm, Dialog,
-OneTimeCodeField and ConfirmWithCode.
+OneTimeCodeField, ConfirmWithCode and Tree.
 Use those exports rather than private package internals or copying core into the product. Read and
 request forms have different metadata; route to the installed table/form procedures when applicable.
 
@@ -41,6 +41,11 @@ For a sensitive action confirmed by a code sent to the person, use `ConfirmWithC
 `OneTimeCodeField`): its `onConfirm` posts the code through the BFF with the CSRF token and an idempotency
 key, and the server alone checks it. Never check a code in the browser, keep it in storage or put it in a
 URL. Pass every label from the catalog; verify Tab, Shift+Tab, Escape and focus return in both directions.
+
+For a hierarchy (menus and the elements under them, for example), use the controlled `Tree`, with
+`columns` for a tree table. Keep `expanded` and the node states in the feature's state; write the state
+rule (including any change over the current children) in the feature model and call it from
+`onActivate`. The tree decides no access; the server's projection decides which nodes and states exist.
 
 If a missing reusable component is requested, record its neutral behavioral contract and test it
 before extending core; do not label an invented component as a verified Figma implementation.

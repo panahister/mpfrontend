@@ -28,3 +28,15 @@ never checks the code, and the code is cleared on close and on failure and never
 storage, a URL or a log. DOM behaviour (keyboard, focus, names, clearing) is tested with happy-dom 20.14.5,
 a test-only dependency chosen because the tests need focus and keyboard events without a browser.
 
+## Tree
+
+`Tree` is a controlled tree view on the WAI-ARIA tree pattern; with `columns` it is a tree table
+(`treegrid`). The consumer owns `expanded` (`onExpandedChange`) and the per-node `states`, a set it defines,
+with `stateLabels` for their visible text. Arrows move, open and close (the horizontal arrows swap in a
+right-to-left context), Home and End jump, and Enter and Space call `onActivate`, where the consumer's own
+rule decides what changes; `descendantIds(node)` helps a rule over the current children. The component has
+no access decision and no inheritance between states, and never changes the nodes it receives. Rows are
+virtualized at a fixed `rowHeight` inside a `height` viewport: ten thousand nodes render only the rows in
+view, and the focused row stays rendered. Each item carries `aria-level`, `aria-setsize`, `aria-posinset`
+and `aria-expanded`, and its accessible name includes its state label.
+
