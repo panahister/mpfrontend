@@ -3,18 +3,29 @@ import {useEffect,useId,useRef,useState,type FormEvent,type ReactNode} from 'rea
 import {Button} from './index.js';
 import {Dialog} from './dialog.js';
 
+const decimalDigit=/^\p{Nd}$/u;
 /**
- * The digits of typed or pasted input, at most `length` of them: Arabic-Indic (U+0660 to U+0669) and
- * Extended Arabic-Indic (U+06F0 to U+06F9) digits become ASCII digits, and every other character (spaces,
- * dashes, letters) is dropped. The value is never checked here.
+ * The value of a Unicode decimal digit (general category Nd), or `undefined` for any other character.
+ * Unicode encodes decimal digits in contiguous runs of ten, zero first, so a digit's value is its distance
+ * from the start of its run of digits, modulo ten.
+ */
+function digitValue(point:number):number|undefined{
+  if(!decimalDigit.test(String.fromCodePoint(point)))return undefined;
+  let start=point;
+  while(start>0&&decimalDigit.test(String.fromCodePoint(start-1)))start--;
+  return (point-start)%10;
+}
+
+/**
+ * The digits of typed or pasted input, at most `length` of them: every Unicode decimal digit, of any script,
+ * becomes its ASCII digit, and every other character (spaces, dashes, letters, other numerals) is dropped.
+ * The value is never checked here.
  */
 export function codeDigits(input:string,length:number):string{
   let digits='';
   for(const character of input){
-    const point=character.codePointAt(0)!;
-    if(point>=0x30&&point<=0x39)digits+=character;
-    else if(point>=0x660&&point<=0x669)digits+=String(point-0x660);
-    else if(point>=0x6f0&&point<=0x6f9)digits+=String(point-0x6f0);
+    const value=digitValue(character.codePointAt(0)!);
+    if(value!==undefined)digits+=String(value);
     if(digits.length===length)break;
   }
   return digits;

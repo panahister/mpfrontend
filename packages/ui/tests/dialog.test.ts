@@ -59,6 +59,26 @@ for(const direction of ['ltr','rtl'] as const){
   });
 }
 
+test('every decimal digit that Intl writes becomes its ASCII digit, and other numerals are dropped',()=>{
+  // The oracle is independent of the implementation: each numbering system of the runtime writes 0 to 9.
+  let systems=0;
+  for(const numberingSystem of Intl.supportedValuesOf('numberingSystem')){
+    const written=Array.from({length:10},(_,digit)=>new Intl.NumberFormat('en',{numberingSystem,useGrouping:false}).format(digit));
+    if(!written.every(value=>/^\p{Nd}$/u.test(value)))continue;
+    assert.equal(codeDigits(written.join(''),10),'0123456789',numberingSystem);
+    systems++;
+  }
+  assert.ok(systems>=20,'the runtime writes digits in '+systems+' numbering systems');
+  // Unicode encodes decimal digits in runs of ten, zero first; the conversion relies on it.
+  let start=-1;
+  for(let point=0;point<=0x110000;point++){
+    const digit=point<0x110000&&/^\p{Nd}$/u.test(String.fromCodePoint(point));
+    if(digit&&start<0)start=point;
+    if(!digit&&start>=0){assert.equal((point-start)%10,0,start.toString(16));start=-1;}
+  }
+  assert.equal(codeDigits(String.fromCodePoint(0xb2,0x2167,0x3007),6),'','superscripts, letter numerals and ideographic zero are not decimal digits');
+});
+
 test('focus wraps at both ends of the trap',()=>{
   assert.equal(nextFocus(['a','b','c'],'c',false),'a');
   assert.equal(nextFocus(['a','b','c'],'a',true),'c');
@@ -70,8 +90,8 @@ test('the code field takes digits only, of its length, from typing or a formatte
   const logs:unknown[]=[];const original=console.log;console.log=(...values:unknown[])=>{logs.push(values);};
   try{
     assert.equal(codeDigits('12a3-45 6',6),'123456');
-    const persian=String.fromCodePoint(...[1,2,3,4,5,6].map(d=>0x6f0+d)),arabic=String.fromCodePoint(...[9,8,7,6].map(d=>0x660+d));
-    assert.equal(codeDigits(persian,6),'123456');assert.equal(codeDigits(arabic,4),'9876');
+    // Decimal digits of other scripts, built from the code point of their zero, become ASCII digits.
+    for(const zero of [0x660,0x6f0,0xff10,0x1d7ce])assert.equal(codeDigits(String.fromCodePoint(...[9,8,7,6,5,4].map(d=>zero+d)),6),'987654',zero.toString(16));
     assert.equal(codeDigits('123456789',6),'123456');
     let value='';
     function Field(){const [code,setCode]=useState('');value=code;return createElement(OneTimeCodeField,{label:'Code',value:code,onChange:setCode,length:6,error:code==='000000'?'Wrong':undefined});}

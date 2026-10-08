@@ -19,7 +19,7 @@ close button), and it uses logical properties only.
 
 `OneTimeCodeField` accepts digits only, up to a configured `length` (4 to 10, 6 by default), with
 `autocomplete="one-time-code"` and a numeric keyboard; a pasted code keeps its digits and drops spaces,
-dashes and other characters, and Arabic-Indic and Persian digits become ASCII digits (`codeDigits`). It
+dashes and other characters, and a decimal digit of any script becomes its ASCII digit (`codeDigits`). It
 has an error state and never logs or stores the value.
 
 `ConfirmWithCode` confirms a sensitive action in a `Dialog`: `onConfirm(code, signal)` sends the code to
