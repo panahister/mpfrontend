@@ -37,6 +37,23 @@ The `./session-store` export provides `SessionVault`, `createMemorySessionVault`
 `redisVaultSecurity` and `createVaultTicketStore`. A development configuration (`development: true`)
 behaves as before and is still refused when `NODE_ENV=production`.
 
+## Client authentication
+
+`clientAuthentication` configures how the BFF authenticates to the token endpoint, per BFF:
+
+- `{method: 'private_key_jwt', key}` (RFC 7523): each token and revocation request carries a client
+  assertion signed with the host's private key, with `iss` and `sub` the client id, `aud` the issuer's
+  token endpoint, a unique `jti` and a lifetime of `CLIENT_ASSERTION_LIFETIME_SECONDS` (60 seconds). `key`
+  is `{keyId, privateKey, algorithm?}` (RS256, PS256 or ES256) or a function that returns the current one,
+  so that the provider can rotate keys by key id. No shared secret goes over the wire.
+- `{method: 'client_secret_basic', secret}`: the secret, or a function that returns it, goes only into the
+  `Authorization: Basic` header of provider requests (RFC 6749 section 2.3.1).
+- `{method: 'none', publicClient: true}`: a public client, sent with its client id only.
+
+The key or secret is supplied by the host and only referenced: the package never stores it in a session,
+logs it, returns it in an error or a response, or puts it in `/context`. The PKCE, state and nonce checks
+are unchanged.
+
 ## Production profile
 
 A production configuration replaces `development: true` with a typed profile:
@@ -52,7 +69,7 @@ unmet conditions (`productionRefusals(config)` lists them without starting):
 | The vault is reached over TLS | `SESSION_VAULT_TLS_REQUIRED` |
 | The vault connection is authenticated | `SESSION_VAULT_AUTHENTICATION_REQUIRED` |
 | The vault's key ring is supplied by the host | `HOST_KEY_RING_REQUIRED` |
-| Client authentication is configured | `CLIENT_AUTHENTICATION_REQUIRED` |
+| Client authentication is configured: a confidential method, or a public client declared explicitly with `publicClient: true` | `CLIENT_AUTHENTICATION_REQUIRED` |
 | Session cookies are `Secure` | `SECURE_COOKIES_REQUIRED` |
 
 A vault describes itself through `security` (`durable`, `tls`, `authenticated`, `hostKeyRing`); a vault

@@ -26,7 +26,11 @@ Use the in-memory session store only for local development. Beyond developer mac
 production profile, `production: {sessionVault, clientAuthentication, secureCookies: true}`, with a Redis
 vault over `rediss:` with host-supplied credentials and key ring; the package refuses any unmet condition
 by name (`PRODUCTION_PROFILE_REFUSED:...`). Resolve the named condition in the deployment; never bypass a
-refusal or describe the profile as a production HA claim. Never log tokens,
+refusal or describe the profile as a production HA claim. Each front end is the confidential client of its
+issuer: configure `clientAuthentication` with `private_key_jwt` (the host's private key and key id, or a
+function returning the current one for rotation) or `client_secret_basic`; a public client must be declared
+with `publicClient: true`. Keep the key or secret in the host's secret store; never put it in a file of the
+repository, a log or an error. Never log tokens,
 authorization codes, cookies, client secrets or personal data.
 
 Add focused tests for login/callback, state replay, nonce/issuer/audience/expiry rejection, logout,

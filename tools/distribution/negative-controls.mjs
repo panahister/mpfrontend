@@ -60,6 +60,11 @@ const mutations=[
   {name:'production-no-memory-fallback',package:'security-bff',test:'production.test.ts',file:'index.ts',
     before:'const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();',
     after:'const vault=createMemorySessionVault();',expected:'readiness and requests fail with 503'},
+  {name:'client-assertion-unique-jti',package:'security-bff',test:'client-authentication.test.ts',file:'index.ts',
+    before:'jti:randomUUID(),',after:"jti:'fixed',",expected:'private_key_jwt: the assertion names the token endpoint'},
+  {name:'client-secret-header-only',package:'security-bff',test:'client-authentication.test.ts',file:'index.ts',
+    before:"      return {authorization:'Basic '+",after:"      parameters.set('client_secret',secret);return {authorization:'Basic '+",
+    expected:'client_secret_basic: the secret travels only in the Authorization header'},
   {name:'presentation-shared-tickets',package:'presentation-server',test:'production.test.ts',file:'index.ts',
     before:"  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');\n",after:'',
     expected:'refuses each missing condition by name and has no memory default'}

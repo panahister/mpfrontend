@@ -1,4 +1,4 @@
-import {createHash,createPublicKey,randomBytes,verify,timingSafeEqual,type JsonWebKey} from 'node:crypto';
+import {createHash,createPublicKey,randomBytes,randomUUID,sign as signData,verify,timingSafeEqual,type JsonWebKey,type KeyObject} from 'node:crypto';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {setTimeout as delay} from 'node:timers/promises';
 import {createPreferenceCookie,negotiateLocale,type PreferenceCookieContract} from '@mpfrontend/i18n';
@@ -15,7 +15,35 @@ type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clie
  * How the BFF authenticates to the token endpoint. A public client sends only its client id; the
  * production profile accepts it only when the configuration declares it explicitly.
  */
-export type ClientAuthentication=Readonly<{method:'none';publicClient:true}>;
+export type ClientAuthentication=
+  | Readonly<{method:'none';publicClient:true}>
+  | Readonly<{method:'client_secret_basic';secret:string|(()=>string)}>
+  | Readonly<{method:'private_key_jwt';key:SigningKey|(()=>SigningKey)}>;
+/**
+ * A private key held by the host, identified by its key id so that the identity provider can rotate keys:
+ * a function returns the current key at each use. The package never stores, logs or returns it.
+ */
+export type SigningKey=Readonly<{keyId:string;privateKey:KeyObject;algorithm?:'RS256'|'PS256'|'ES256'}>;
+/** A client assertion lives this long (RFC 7523 recommends a short lifetime). */
+export const CLIENT_ASSERTION_LIFETIME_SECONDS=60;
+function signingKey(source:SigningKey|(()=>SigningKey)):SigningKey{
+  const key=typeof source==='function'?source():source;
+  if(!key||typeof key.keyId!=='string'||!/^[\x21-\x7e]{1,128}$/.test(key.keyId)||key.privateKey?.type!=='private')throw new Error('INVALID_CLIENT_SIGNING_KEY');
+  const algorithm=key.algorithm??(key.privateKey.asymmetricKeyType==='ec'?'ES256':'RS256');
+  const type=key.privateKey.asymmetricKeyType;
+  if(!((algorithm==='ES256'&&type==='ec')||((algorithm==='RS256'||algorithm==='PS256')&&(type==='rsa'||type==='rsa-pss'))))throw new Error('INVALID_CLIENT_SIGNING_KEY');
+  return {...key,algorithm};
+}
+/** A private_key_jwt client assertion (RFC 7523 section 3): iss and sub are the client, aud the token endpoint. */
+export function clientAssertion(clientId:string,audience:string,source:SigningKey|(()=>SigningKey),now=Date.now()):string{
+  const key=signingKey(source),issued=Math.floor(now/1000);
+  const header=Buffer.from(JSON.stringify({alg:key.algorithm,kid:key.keyId,typ:'JWT'})).toString('base64url');
+  const payload=Buffer.from(JSON.stringify({iss:clientId,sub:clientId,aud:audience,jti:randomUUID(),iat:issued,exp:issued+CLIENT_ASSERTION_LIFETIME_SECONDS})).toString('base64url');
+  const input=Buffer.from(header+'.'+payload);
+  const signature=key.algorithm==='ES256'?signData('sha256',input,{key:key.privateKey,dsaEncoding:'ieee-p1363'})
+    :key.algorithm==='PS256'?signData('sha256',input,{key:key.privateKey,padding:6,saltLength:32}):signData('sha256',input,key.privateKey);
+  return header+'.'+payload+'.'+signature.toString('base64url');
+}
 /** Today's single-process development profile, refused when NODE_ENV is production. */
 export type DevelopmentBffConfig=CommonConfig&{development:true;production?:never;sessionVault?:SessionVault;clientAuthentication?:ClientAuthentication};
 /** Every field is required; createBff refuses to start, with a named reason, when a condition does not hold. */
@@ -34,7 +62,11 @@ export function productionRefusals(config:ProductionBffConfig):string[]{
   if(!security?.authenticated)refusals.push('SESSION_VAULT_AUTHENTICATION_REQUIRED');
   if(!security?.hostKeyRing)refusals.push('HOST_KEY_RING_REQUIRED');
   const client=profile?.clientAuthentication;
-  if(!client||!(client.method==='none'&&client.publicClient===true))refusals.push('CLIENT_AUTHENTICATION_REQUIRED');
+  // A public client counts only when the configuration declares it explicitly.
+  const configured=client?.method==='none'?client.publicClient===true
+    :client?.method==='client_secret_basic'?client.secret!==undefined&&client.secret!==''
+    :client?.method==='private_key_jwt'?client.key!==undefined:false;
+  if(!configured)refusals.push('CLIENT_AUTHENTICATION_REQUIRED');
   if(profile?.secureCookies!==true)refusals.push('SECURE_COOKIES_REQUIRED');
   return refusals;
 }
@@ -124,9 +156,29 @@ export function createBff(config:BffConfig){
     if(nonce!==undefined&&claims.nonce!==nonce)fail(401,'INVALID_NONCE');
     return claims;
   }
-  async function tokenRequest(parameters:URLSearchParams){
+  const clientAuthentication=production?production.clientAuthentication:(config as DevelopmentBffConfig).clientAuthentication;
+  if(clientAuthentication?.method==='private_key_jwt')signingKey(clientAuthentication.key);
+  if(clientAuthentication?.method==='client_secret_basic'&&(typeof clientAuthentication.secret==='string'?!clientAuthentication.secret:typeof clientAuthentication.secret!=='function'))throw new Error('INVALID_CLIENT_SECRET');
+  // The assertion audience is the token endpoint as the issuer names it, not an internal provider origin.
+  const tokenEndpoint=issuer+'/protocol/openid-connect/token';
+  /** Client authentication for a request to the provider; the credential goes only into this request. */
+  function authenticate(parameters:URLSearchParams):Record<string,string>{
     parameters.set('client_id',config.clientId);
-    const response=await identityResponse('token',{method:'POST',body:parameters});
+    if(clientAuthentication?.method==='client_secret_basic'){
+      const secret=typeof clientAuthentication.secret==='function'?clientAuthentication.secret():clientAuthentication.secret;
+      // RFC 6749 section 2.3.1: both parts are form-urlencoded before Base64.
+      const encode=(value:string)=>encodeURIComponent(value).replace(/%20/g,'+');
+      return {authorization:'Basic '+Buffer.from(encode(config.clientId)+':'+encode(secret)).toString('base64')};
+    }
+    if(clientAuthentication?.method==='private_key_jwt'){
+      parameters.set('client_assertion_type','urn:ietf:params:oauth:client-assertion-type:jwt-bearer');
+      parameters.set('client_assertion',clientAssertion(config.clientId,tokenEndpoint,clientAuthentication.key));
+    }
+    return {};
+  }
+  async function tokenRequest(parameters:URLSearchParams){
+    const headers=authenticate(parameters);
+    const response=await identityResponse('token',{method:'POST',body:parameters,headers});
     if(!response.ok)fail(401,'LOGIN_REQUIRED');
     const result=await response.json() as {access_token:string;refresh_token:string;id_token?:string};
     if(!result.access_token||!result.refresh_token)fail(401,'INVALID_TOKEN_RESPONSE');return result;
@@ -216,7 +268,8 @@ export function createBff(config:BffConfig){
       if(url.pathname==='/logout'&&method==='POST'){
         await vault.remove('session',current.id);
         // Revoke the server-held refresh token; local logout succeeds even when the provider is down.
-        await fetch(provider('logout'),{method:'POST',body:new URLSearchParams({client_id:config.clientId,refresh_token:current.value.refresh}),signal:AbortSignal.timeout(5000)}).catch(()=>undefined);
+        const revocation=new URLSearchParams({refresh_token:current.value.refresh});
+        await Promise.resolve().then(()=>fetch(provider('logout'),{method:'POST',body:revocation,headers:authenticate(revocation),signal:AbortSignal.timeout(5000)})).catch(()=>undefined);
         res.setHeader('set-cookie',cookie(config.cookieName,'',0));write(res,200,{authenticated:false});return;
       }
       // An explicit route per operation; URL normalization and redirects cannot escape the allowlist.
