@@ -63,13 +63,13 @@ test('readiness and requests fail with 503 while the shared vault is unavailable
     const id='a'.repeat(43);
     await shared.vault.create('session',id,{access:'x',refresh:'y',claims:{sub:'s'},csrf:'c',expires:Date.now()+600000,absoluteExpires:Date.now()+600000},Date.now()+600000);
     assert.equal((await fetch(base+'/health')).status,200);
-    assert.equal((await fetch(base+'/context',{headers:{cookie:'app_session='+id}})).status,200);
+    assert.equal((await fetch(base+'/context',{headers:{cookie:'__Host-app_session='+id}})).status,200);
     shared.setUnavailable(true);
     const ready=await fetch(base+'/health');assert.equal(ready.status,503);assert.equal((await ready.json() as {title:string}).title,'SERVICE_UNAVAILABLE');
-    assert.equal((await fetch(base+'/context',{headers:{cookie:'app_session='+id}})).status,503);
+    assert.equal((await fetch(base+'/context',{headers:{cookie:'__Host-app_session='+id}})).status,503);
     const login=await fetch(base+'/login',{redirect:'manual'});assert.equal(login.status,503,'a login cannot fall back to process memory');
     shared.setUnavailable(false);
-    assert.equal((await fetch(base+'/context',{headers:{cookie:'app_session='+id}})).status,200);
+    assert.equal((await fetch(base+'/context',{headers:{cookie:'__Host-app_session='+id}})).status,200);
     const started=await fetch(base+'/login',{redirect:'manual'});
     assert.ok(started.headers.getSetCookie().every(header=>header.includes('; Secure')),'production cookies are Secure');
   }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}

@@ -10,7 +10,7 @@ export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];orig
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** The previous behaviour: only en and ar were ever forwarded, en by default. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
-type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;loginRateLimit?:(peer:string)=>Promise<boolean>};
+type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;loginRateLimit?:(peer:string)=>Promise<boolean>};
 /**
  * How the BFF authenticates to the token endpoint. A public client sends only its client id; the
  * production profile accepts it only when the configuration declares it explicitly.
@@ -47,7 +47,9 @@ export function clientAssertion(clientId:string,audience:string,source:SigningKe
 /** Today's single-process development profile, refused when NODE_ENV is production. */
 export type DevelopmentBffConfig=CommonConfig&{development:true;production?:never;sessionVault?:SessionVault;clientAuthentication?:ClientAuthentication};
 /** Every field is required; createBff refuses to start, with a named reason, when a condition does not hold. */
-export type ProductionProfile=Readonly<{sessionVault:SessionVault;clientAuthentication:ClientAuthentication;secureCookies:true}>;
+export type ProductionProfile=Readonly<{sessionVault:SessionVault;clientAuthentication:ClientAuthentication;secureCookies:true;
+  /** The session cookie carries the __Host- prefix unless this is false. */
+  hostPrefix?:boolean}>;
 export type ProductionBffConfig=CommonConfig&{production:ProductionProfile;development?:never};
 export type BffConfig=DevelopmentBffConfig|ProductionBffConfig;
 /** The unmet conditions of a production configuration, in a stable order; empty when it may start. */
@@ -71,9 +73,19 @@ export function productionRefusals(config:ProductionBffConfig):string[]{
   return refusals;
 }
 type Claims={iss:string;aud:string|string[];azp?:string;sub:string;exp:number;iat:number;nbf?:number;nonce?:string;preferred_username?:string;tenant_id?:string;realm_access?:{roles?:string[]};[claim:string]:unknown};
+/**
+ * The session cookie and lifetimes. SameSite applies to the session cookie only; the short login transaction
+ * cookie stays Lax so that the provider's redirect back can carry it. Lifetimes have bounded maxima; a value
+ * above a maximum refuses startup rather than being shortened.
+ */
+export type SessionPolicy=Readonly<{sameSite?:'Strict'|'Lax';idleTimeoutSeconds?:number;absoluteLifetimeSeconds?:number;
+  /** Claims whose change at refresh rotates the session id. */
+  authorizationClaims?:readonly string[]}>;
+export const SESSION_LIMITS=Object.freeze({defaultIdleTimeoutSeconds:1800,maxIdleTimeoutSeconds:86400,defaultAbsoluteLifetimeSeconds:28800,maxAbsoluteLifetimeSeconds:604800});
+export const defaultAuthorizationClaims:readonly string[]=Object.freeze(['realm_access','resource_access','groups','scope','tenant_id']);
 /** A projected claim value: plain data only, never an object, never a token. */
 export type ClaimValue=string|number|boolean|readonly string[];
-type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number};
+type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number;lastSeen?:number};
 type Transaction={verifier:string;nonce:string;expires:number};
 const opaque=()=>randomBytes(32).toString('base64url');
 const jsonHeaders={'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'};
@@ -113,7 +125,7 @@ export function createBff(config:BffConfig){
   const production='production' in config&&config.production!==undefined?config.production:undefined;
   const publicOrigin=origin(config.publicOrigin),issuer=config.issuer.replace(/\/$/,'');
   const providerOrigin=config.providerOrigin?origin(config.providerOrigin):new URL(issuer).origin;
-  if(!/^[a-z][a-z0-9_]{1,60}$/.test(config.cookieName))throw new Error('INVALID_COOKIE_NAME');
+  if(!/^(?:__Host-)?[a-z][a-z0-9_]{1,60}$/.test(config.cookieName))throw new Error('INVALID_COOKIE_NAME');
   const supportedUiLocales=new Set(config.supportedUiLocales??[]);
   if([...supportedUiLocales].some(value=>!/^[-a-zA-Z0-9]{2,16}$/.test(value)))throw new Error('INVALID_UI_LOCALE');
   if(config.uiLocaleCookie&&!/^[a-z][a-z0-9_]{1,60}$/.test(config.uiLocaleCookie))throw new Error('INVALID_UI_LOCALE_COOKIE');
@@ -127,9 +139,25 @@ export function createBff(config:BffConfig){
   // Production never uses the memory vault; development keeps it as its default.
   const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();
   let keys:{kid:string;jwk:JsonWebKey}[]=[],keysUntil=0;
-  const transactionCookie=config.cookieName+'_login';
+  // __Host-: Secure, Path=/ and no Domain, so no other host or path can set or read the session cookie.
+  const productionPrefix=production!==undefined&&production.hostPrefix!==false;
+  const sessionCookie=config.cookieName.startsWith('__Host-')||!productionPrefix?config.cookieName:'__Host-'+config.cookieName;
+  if(sessionCookie.startsWith('__Host-')&&!publicOrigin.startsWith('https:'))throw new Error('HOST_PREFIX_REQUIRES_HTTPS');
+  const transactionCookie=sessionCookie+'_login';
+  const policy=config.session??{};
+  const sameSite=policy.sameSite??(production?'Strict':'Lax');
+  const idleSeconds=policy.idleTimeoutSeconds??SESSION_LIMITS.defaultIdleTimeoutSeconds;
+  const absoluteSeconds=policy.absoluteLifetimeSeconds??SESSION_LIMITS.defaultAbsoluteLifetimeSeconds;
+  if(sameSite!=='Strict'&&sameSite!=='Lax')throw new Error('INVALID_SESSION_POLICY');
+  if(!Number.isSafeInteger(idleSeconds)||idleSeconds<60||idleSeconds>SESSION_LIMITS.maxIdleTimeoutSeconds)throw new Error('INVALID_SESSION_POLICY');
+  if(!Number.isSafeInteger(absoluteSeconds)||absoluteSeconds<300||absoluteSeconds>SESSION_LIMITS.maxAbsoluteLifetimeSeconds||idleSeconds>absoluteSeconds)throw new Error('INVALID_SESSION_POLICY');
+  const authorizationClaims=[...(policy.authorizationClaims??defaultAuthorizationClaims)];
+  const authority=(claims:Readonly<Record<string,unknown>>)=>JSON.stringify(authorizationClaims.map(name=>claims[name]??null));
+  // Activity is recorded at most this often, so that an idle timeout does not cost a write per request.
+  const touchMs=Math.min(60000,idleSeconds*100);
   const secure=production!==undefined||publicOrigin.startsWith('https:');
-  const cookie=(name:string,value:string,maxAge:number)=>name+'='+value+'; HttpOnly; SameSite=Lax; Path=/; Max-Age='+maxAge+(secure?'; Secure':'');
+  const cookie=(name:string,value:string,maxAge:number,site:'Strict'|'Lax'='Lax')=>name+'='+value+'; HttpOnly; SameSite='+site+'; Path=/; Max-Age='+maxAge+(secure||name.startsWith('__Host-')?'; Secure':'');
+  const sessionSetCookie=(id:string,maxAge:number)=>cookie(sessionCookie,id,maxAge,sameSite);
   const provider=(path:string)=>providerOrigin+new URL(issuer).pathname+'/protocol/openid-connect/'+path;
   async function identityResponse(path:string,options:RequestInit={}){
     let response:Response;
@@ -183,14 +211,28 @@ export function createBff(config:BffConfig){
     const result=await response.json() as {access_token:string;refresh_token:string;id_token?:string};
     if(!result.access_token||!result.refresh_token)fail(401,'INVALID_TOKEN_RESPONSE');return result;
   }
-  async function session(req:IncomingMessage,refresh=true){
-    const id=cookieValue(req.headers.cookie,config.cookieName);
+  async function session(req:IncomingMessage,refresh=true):Promise<{id:string;value:Session;rotated?:boolean}>{
+    const id=cookieValue(req.headers.cookie,sessionCookie);
     if(!id||!/^[-_a-zA-Z0-9]{43}$/.test(id))fail(401,'LOGIN_REQUIRED');
     const deadline=Date.now()+10000;
     for(;;){
       const record=await vault.read<Session>('session',id),value=record?.value;
       if(!record||!value||value.absoluteExpires<=Date.now())fail(401,'LOGIN_REQUIRED');
-      if(!refresh||value.expires>=Date.now()+30000)return {id,value};
+      // An idle session fails closed and is removed; activity is the last authenticated request.
+      if((value.lastSeen??Date.now())+idleSeconds*1000<=Date.now()){await vault.remove('session',id);fail(401,'LOGIN_REQUIRED');}
+      const stale=Date.now()-(value.lastSeen??0)>=touchMs;
+      if(!refresh||value.expires>=Date.now()+30000){
+        if(!stale)return {id,value};
+        // Record activity under the lease; a busy lease means another request is already writing.
+        const owner=opaque();
+        if(!await vault.acquire(id,owner,30000))return {id,value};
+        try{
+          const current=await vault.read<Session>('session',id);
+          if(!current)fail(401,'LOGIN_REQUIRED');
+          const next={...current.value,lastSeen:Date.now()};
+          return {id,value:await vault.update(id,current,next,owner)?next:current.value};
+        }finally{await vault.release(id,owner);}
+      }
       const owner=opaque();
       if(!await vault.acquire(id,owner,30000)){
         if(Date.now()>=deadline)fail(503,'SESSION_REFRESH_BUSY');
@@ -208,7 +250,14 @@ export function createBff(config:BffConfig){
         let identity=current.value.identity;
         if(claimSource==='access')identity=projectClaims(claims,contextClaims);
         else if(tokens.id_token){const refreshed=await validate(tokens.id_token,config.clientId);if(refreshed.sub!==claims.sub)fail(401,'SESSION_CHANGED');identity=projectClaims(refreshed,contextClaims);}
-        const next={...current.value,access:tokens.access_token,refresh:tokens.refresh_token,claims,...(identity?{identity}:{}),expires:claims.exp*1000};
+        const next={...current.value,access:tokens.access_token,refresh:tokens.refresh_token,claims,...(identity?{identity}:{}),expires:claims.exp*1000,lastSeen:Date.now()};
+        if(authority(claims)!==authority(current.value.claims)){
+          // Changed roles or authorization claims rotate the session id: a new record, the old one removed.
+          const rotated=opaque();
+          await vault.create('session',rotated,next,current.value.absoluteExpires);
+          await vault.remove('session',id);
+          return {id:rotated,value:next,rotated:true};
+        }
         // CAS requires both the original revision and the still-owned lease. Logout cannot be undone.
         if(!await vault.update(id,current,next,owner))fail(401,'LOGIN_REQUIRED');
         return {id,value:next};
@@ -251,13 +300,23 @@ export function createBff(config:BffConfig){
         if(!tokens.id_token)fail(401,'ID_TOKEN_REQUIRED');
         const identity=await validate(tokens.id_token,config.clientId,transaction.nonce),claims=await validate(tokens.access_token,config.audience);
         if(identity.sub!==claims.sub||(config.requireTenant&&!claims.tenant_id&&!config.tenantExemptRoles?.some(role=>claims.realm_access?.roles?.includes(role))))fail(401,'INVALID_IDENTITY');
-        const old=cookieValue(req.headers.cookie,config.cookieName);if(old)await vault.remove('session',old);
-        const id=opaque(),absoluteExpires=Date.now()+8*3600000;
+        // Sign-in always issues a new session id; a session id from before sign-in is removed.
+        const old=cookieValue(req.headers.cookie,sessionCookie);if(old)await vault.remove('session',old);
+        const id=opaque(),absoluteExpires=Date.now()+absoluteSeconds*1000;
         const projected=projectClaims(claimSource==='id'?identity:claims,contextClaims);
-        await vault.create('session',id,{access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires},absoluteExpires);
-        res.writeHead(303,{'location':publicOrigin+'/','set-cookie':[cookie(config.cookieName,id,28800),cookie(transactionCookie,'',0)],'cache-control':'no-store'});res.end();return;
+        await vault.create('session',id,{access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires,lastSeen:Date.now()},absoluteExpires);
+        const cookies=[sessionSetCookie(id,absoluteSeconds),cookie(transactionCookie,'',0)];
+        if(sameSite==='Strict'){
+          // A Strict cookie set at the end of a cross-site redirect chain is not sent on the next hop of that
+          // chain; a same-origin page that moves on lets the browser send it.
+          res.writeHead(200,{'content-type':'text/html; charset=utf-8','set-cookie':cookies,'cache-control':'no-store','referrer-policy':'no-referrer',
+            'content-security-policy':"default-src 'none'; frame-ancestors 'none'"});
+          res.end('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/">');return;
+        }
+        res.writeHead(303,{'location':publicOrigin+'/','set-cookie':cookies,'cache-control':'no-store'});res.end();return;
       }
       const current=await session(req,!(url.pathname==='/logout'&&method==='POST'));
+      if(current.rotated)res.setHeader('set-cookie',sessionSetCookie(current.id,Math.max(1,Math.floor((current.value.absoluteExpires-Date.now())/1000))));
       if(method!=='GET'){
         if(req.headers.origin!==publicOrigin||typeof req.headers['x-csrf-token']!=='string'||!equal(current.value.csrf,req.headers['x-csrf-token']))fail(403,'CSRF_REJECTED');
         if(req.headers['content-type']?.split(';')[0]!=='application/json')fail(415,'JSON_REQUIRED');
@@ -270,7 +329,7 @@ export function createBff(config:BffConfig){
         // Revoke the server-held refresh token; local logout succeeds even when the provider is down.
         const revocation=new URLSearchParams({refresh_token:current.value.refresh});
         await Promise.resolve().then(()=>fetch(provider('logout'),{method:'POST',body:revocation,headers:authenticate(revocation),signal:AbortSignal.timeout(5000)})).catch(()=>undefined);
-        res.setHeader('set-cookie',cookie(config.cookieName,'',0));write(res,200,{authenticated:false});return;
+        res.setHeader('set-cookie',sessionSetCookie('',0));write(res,200,{authenticated:false});return;
       }
       // An explicit route per operation; URL normalization and redirects cannot escape the allowlist.
       const route=config.routes.find(r=>r.method===method&&r.pattern.test(url.pathname));

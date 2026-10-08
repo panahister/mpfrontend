@@ -30,7 +30,10 @@ refusal or describe the profile as a production HA claim. Each front end is the 
 issuer: configure `clientAuthentication` with `private_key_jwt` (the host's private key and key id, or a
 function returning the current one for rotation) or `client_secret_basic`; a public client must be declared
 with `publicClient: true`. Keep the key or secret in the host's secret store; never put it in a file of the
-repository, a log or an error. Never log tokens,
+repository, a log or an error. Set the session policy for the product's risk: a
+`__Host-` session cookie (default in production), `sameSite: 'Strict'`, an idle timeout (default 30
+minutes) and an absolute lifetime within their bounds; never shorten a lifetime the product owner set, and
+expect 401 on an idle or expired session and a rotated session cookie after a role change. Never log tokens,
 authorization codes, cookies, client secrets or personal data.
 
 Add focused tests for login/callback, state replay, nonce/issuer/audience/expiry rejection, logout,

@@ -54,6 +54,27 @@ The key or secret is supplied by the host and only referenced: the package never
 logs it, returns it in an error or a response, or puts it in `/context`. The PKCE, state and nonce checks
 are unchanged.
 
+## Session cookie and lifetimes
+
+`session: {sameSite, idleTimeoutSeconds, absoluteLifetimeSeconds, authorizationClaims}` sets the session
+policy:
+
+- The session cookie may carry the `__Host-` prefix (Secure, `Path=/`, no `Domain`); the production
+  profile adds it by default (`production.hostPrefix: false` opts out), and the prefix requires an https
+  public origin. The cookie holds only the opaque session id, never a token or a claim.
+- `sameSite` applies to the session cookie: `Strict` is recommended and is the production default; the
+  development default stays `Lax`. The login transaction cookie is always `Lax`, so that the provider's
+  redirect back carries it. With `Strict`, the callback answers with a small same-origin page that moves on
+  to `/`, because a browser does not send a Strict cookie on the next hop of a cross-site redirect chain.
+- `idleTimeoutSeconds` (default 1800, 60 to 86400) and `absoluteLifetimeSeconds` (default 28800, 300 to
+  604800, at least the idle timeout): a value outside its bounds refuses startup rather than being
+  shortened. An idle or expired session fails closed with 401 and is removed. Activity is recorded under
+  the session lease at most once a minute.
+- The session id is new after every sign-in (an earlier id in the request is removed), and it rotates at
+  refresh when an authorization claim changes (`realm_access`, `resource_access`, `groups`, `scope`,
+  `tenant_id` by default); the response sets the new cookie and the old id stops working. A change of
+  subject or tenant still ends the session.
+
 ## Production profile
 
 A production configuration replaces `development: true` with a typed profile:
@@ -88,7 +109,7 @@ key migration or key-management service is implemented. `close()` closes the own
 
 `GETDEL` consumes login state once across replicas. Refresh uses a 30-second owner lease and an atomic
 Lua CAS on both the original record and current lease. Losing a lease or racing logout cannot recreate
-a revoked session. Session TTL is absolute (eight hours), not renewed on refresh. A bounded provider
+a revoked session. The absolute session lifetime is not renewed on refresh. A bounded provider
 transport/timeout or HTTP429/5xx failure denies the current request with generic503; only the unchanged
 verified server record is retained until its existing absolute expiry. No cached identity/API authority
 is served, no automatic retry occurs, and no unverified rotated token is saved. A later request may
