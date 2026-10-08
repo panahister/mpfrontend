@@ -75,3 +75,12 @@ test('the catalog check finds missing, extra and unused keys and differing param
   ]);
   assert.deepEqual(checkCatalogs({ defaultLocale: 'en', locales: ['en'], catalogs: { en: { a: 'Hello {name' } }, isUsed: () => true }), [{ code: 'INVALID_MESSAGE', locale: 'en', key: 'a' }]);
 });
+
+test('the digits of the registry apply to a locale that the runtime Intl data does not know', () => {
+  // A private-use pseudo-locale tag: Intl resolves it to its default locale and drops a -u-nu- extension.
+  const unknown = 'qps-plocm';
+  const wide = (n: number) => new Intl.NumberFormat('en', { numberingSystem: 'fullwide' }).format(n);
+  const digits = createMessages({ defaultLocale: 'en', base: en, translations: { [unknown]: en }, numberingSystem: code => code === unknown ? 'fullwide' : undefined });
+  assert.equal(digits.translator(unknown)('pageOf', { page: 2, count: 3 }), 'Page ' + wide(2) + ' of ' + wide(3));
+  assert.equal(digits.translator('en')('pageOf', { page: 2, count: 3 }), 'Page 2 of 3');
+});

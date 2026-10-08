@@ -1,4 +1,4 @@
-import { IntlMessageFormat } from 'intl-messageformat';
+import { IntlMessageFormat, type Formatters } from 'intl-messageformat';
 import { parse, TYPE, type MessageFormatElement } from '@formatjs/icu-messageformat-parser';
 
 /**
@@ -62,6 +62,25 @@ export type Messages<M extends Catalog, L extends string = string> = Readonly<{
 export class MessageError extends Error {}
 
 /**
+ * Intl formatters that pass the registry's digits as an option. A Unicode extension in the locale tag
+ * (`-u-nu-`) is dropped when the runtime's Intl data does not know the locale, so a product's own locale
+ * would lose its digits; an option applies to whatever locale Intl resolves.
+ */
+const digitFormatters = new Map<string, Formatters>();
+function formattersWith(numberingSystem: string): Formatters {
+  let formatters = digitFormatters.get(numberingSystem);
+  if (!formatters) {
+    formatters = {
+      getNumberFormat: (locales, options) => new Intl.NumberFormat(locales, { ...(options as Intl.NumberFormatOptions | undefined), numberingSystem }),
+      getDateTimeFormat: (locales, options) => new Intl.DateTimeFormat(locales, { ...options, numberingSystem }),
+      getPluralRules: (locales, options) => new Intl.PluralRules(locales, options),
+    };
+    digitFormatters.set(numberingSystem, formatters);
+  }
+  return formatters;
+}
+
+/**
  * Builds the translators of one catalog set: the base catalog of the default locale, which defines the
  * keys and parameters, and its translations. `core` holds messages that the set may override, such as the
  * neutral MP Frontend messages; the set's own keys win. `numberingSystem` returns the Intl digits of a
@@ -96,11 +115,10 @@ export function createMessages<const M extends Catalog, const L extends string>(
         if (!found) throw new MessageError('UNKNOWN_MESSAGE:' + key);
         const [source, message] = found;
         const numbering = options.numberingSystem?.(source);
-        const tag = numbering ? source + '-u-nu-' + numbering : source;
-        const cacheKey = tag + '\u0000' + key + '\u0000' + message;
+        const cacheKey = source + '\u0000' + (numbering ?? '') + '\u0000' + key + '\u0000' + message;
         let formatter = formatters.get(cacheKey);
         if (!formatter) {
-          formatter = new IntlMessageFormat(message, tag, undefined, { ignoreTag: true });
+          formatter = new IntlMessageFormat(message, source, undefined, { ignoreTag: true, ...(numbering ? { formatters: formattersWith(numbering) } : {}) });
           formatters.set(cacheKey, formatter);
         }
         try {
