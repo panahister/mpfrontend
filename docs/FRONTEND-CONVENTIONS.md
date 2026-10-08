@@ -131,7 +131,8 @@ flowchart LR
    view focused on rendering and intent.
 7. **Test the contract and the experience.** Cover valid and invalid payloads, expected failures,
    cancellation, accessibility, localization, and the state transition the user sees.
-8. **Run focused targets first.** Use the app's lint, typecheck, test, and build targets for fast feedback.
+8. **Run focused targets first.** Use the app's format, lint, typecheck, test, and build targets for fast
+   feedback.
 9. **Run the drift gate.** `generated-check` must prove that checked-in output matches the contract and
    configuration.
 10. **Run the repository gate and a real mode.** Complete the uncached gate, then exercise the feature in
@@ -141,6 +142,8 @@ Typical commands in a consumer Nx workspace are:
 
 ```bash
 pnpm exec nx run <app>:ftg-generate
+pnpm exec nx run <app>:format
+pnpm exec nx run <app>:format:check --skip-nx-cache
 pnpm exec nx run <app>:test --skip-nx-cache
 pnpm exec nx run <app>:lint --skip-nx-cache
 pnpm exec nx run <app>:typecheck --skip-nx-cache
@@ -149,8 +152,26 @@ pnpm exec nx run <app>:generated-check --skip-nx-cache
 pnpm check --skip-nx-cache
 ```
 
-Use the consumer repository's exact project names and live workflow. A passing generation command alone
-does not prove the feature.
+`mpfrontend init` and `mpfrontend create app` write every target above. Use the consumer repository's
+exact project names and live workflow. A passing generation command alone does not prove the feature.
+
+## Quality profile
+
+A generated workspace takes its formatter, lint and TypeScript configuration from
+`@mpfrontend/workspace-config`, upgraded with the MP Frontend cohort. The root `eslint.config.mjs` and
+`prettier.config.mjs` re-export the shared profile; an app or a package appends only its own additions.
+`pnpm check` runs the format check, then lint, typecheck, test, build, and generated-check of every
+project. `tools/ci/check.sh` runs a frozen install and the uncached check in any CI.
+
+| Rule | What fails lint |
+|---|---|
+| Module boundaries | An app importing another app; a shared package importing an app; a dependency that crosses the `type:*`, `scope:*`, or `runtime:*` tag constraints |
+| No raw colour | Hex, `rgb()`, `rgba()`, `hsl()`, `hsla()`, and named colours in TS, TSX, and CSS, and Tailwind palette or arbitrary colour utilities such as `bg-[#123456]`, outside the theme files |
+| No hand-written CSS | A stylesheet outside the theme layer and the one global entry; class or id rules in the global entry; inline style objects other than CSS custom properties |
+
+Colours come from design tokens (`var(--mp-*)`) and the theme file; layout comes from framework
+components and utility classes. The allowed paths and tag constraints are options of the shared
+configuration, not edits to it. Fix the code rather than weakening a rule to make the check pass.
 
 ## Generated and handwritten ownership
 
@@ -188,6 +209,7 @@ ambiguous. It must not choose a business rule merely because one implementation 
 | React, [Thinking in React](https://react.dev/learn/thinking-in-react) and [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) | Component decomposition, one-way data flow, derived state, and effect discipline |
 | Next.js, [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components) | Explicit server/client and trust boundaries |
 | Nx, [Enforce Module Boundaries](https://nx.dev/features/enforce-module-boundaries) | Dependency direction and tag-enforced repository boundaries |
+| ESLint, [Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files), and [Prettier](https://prettier.io/docs/) | One shared flat configuration and formatter profile that each project extends |
 | Testing Library, [Guiding Principles](https://testing-library.com/docs/guiding-principles) | Tests emphasize observable behavior over implementation detail |
 | OpenAPI Initiative, [Specification](https://spec.openapis.org/oas/latest.html) | The captured API description is a reviewed contract input |
 | Robert C. Martin, *Clean Architecture* (2017) | Dependencies point toward stable policy rather than transport and frameworks |

@@ -33,7 +33,7 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is currently a verified **public source proof of concept**. Its twelve packages are not
+> MP Frontend is currently a verified **public source proof of concept**. Its thirteen packages are not
 > published to a package registry, and no stable public API guarantee is declared yet. The supported
 > evaluation path is this source repository plus the immutable, hash-checked cohort in the
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
@@ -274,6 +274,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Capability | What exists today | Boundary |
 |---|---|---|
 | Workspace scaffolding | New pnpm/Nx workspace and application shell with explicit design-source mode | Refuses existing or symlink destinations; does not install dependencies, initialize Git, or deploy |
+| Workspace quality profile | Shared formatter, lint and TypeScript configuration; module boundaries, raw-colour and hand-written-CSS rules; a workspace `check` and a CI-neutral gate | Rules cover literals and stylesheets, not colours computed at run time |
 | OpenAPI integration | Selected OpenAPI 3.1 reads and mutations, types, field metadata, standalone validators, and presentation adapters | Finite profiles only; unsupported ambiguity fails |
 | UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, and composable React UI | No product theme, icons, typography, or screen ownership |
 | Internationalization | Locale negotiation and direction-aware English/Arabic foundations | Product copy and complete locale QA remain consumer responsibilities |
@@ -282,7 +283,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Twelve archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
+| Distribution verification | Thirteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
 
 ## OpenAPI contract generation
 
@@ -453,7 +454,7 @@ security review remain deployment gates. Read [Security BFF](packages/security-b
 
 ## Package catalog
 
-The workspace contains twelve domain-neutral packages:
+The workspace contains thirteen domain-neutral packages:
 
 | Package | Runtime | Responsibility |
 |---|---|---|
@@ -461,6 +462,7 @@ The workspace contains twelve domain-neutral packages:
 | [`@mpfrontend/nx-plugin`](packages/nx-plugin) | Tooling | Repeatable Nx workspace/application generators and project wiring |
 | [`@mpfrontend/ftg-core`](packages/ftg-core) | Universal | Finite OpenAPI normalization and request/response metadata |
 | [`@mpfrontend/ai-skills`](packages/ai-skills) | Tooling | Eighteen repository-scoped Codex and Claude Code engineering procedures |
+| [`@mpfrontend/workspace-config`](packages/workspace-config) | Tooling | Shared ESLint, Prettier and TypeScript profile with module-boundary, raw-colour and hand-written-CSS rules |
 | [`@mpfrontend/primitives`](packages/primitives) | Universal | Pure product-neutral interaction and accessibility state contracts |
 | [`@mpfrontend/tokens`](packages/tokens) | Universal | Semantic token types and product-theme boundaries |
 | [`@mpfrontend/i18n`](packages/i18n) | Universal | Locale negotiation and direction-aware foundations |
@@ -518,8 +520,8 @@ The published source checkpoint currently records:
 
 | Evidence | Observed result |
 |---|---:|
-| Complete Nx workspace | 48/48 uncached lint, typecheck, test, and build targets |
-| Package cohort | 12/12 archives, manifests, digests, and export checks |
+| Complete Nx workspace | 52/52 uncached lint, typecheck, test, and build targets |
+| Package cohort | 13/13 archives, manifests, digests, and export checks |
 | Distribution negative controls | 10/10 expected failures observed |
 | AI procedure format validation | 18/18 procedures |
 | Installed independent-consumer security assertions | 12/12 |
@@ -561,6 +563,7 @@ production-certified platform.
 │   ├── nx-plugin/             deterministic Nx generators
 │   ├── ftg-core/              finite API contract normalization
 │   ├── ai-skills/             canonical repository-scoped AI procedures
+│   ├── workspace-config/      shared formatter, lint and TypeScript profile
 │   ├── primitives/            pure interaction and accessibility state
 │   ├── tokens/                semantic design-token boundaries
 │   ├── i18n/                  locale and direction foundations
@@ -668,7 +671,7 @@ grant credentials, approve a design, publish a release, or guarantee identical d
 <summary><strong>Can I use only one package?</strong></summary>
 
 The packages are intentionally modular and have explicit runtime roles. However, the current public
-distribution evidence validates one locked twelve-package cohort, and no registry API stability contract
+distribution evidence validates one locked thirteen-package cohort, and no registry API stability contract
 exists yet. Evaluate isolated adoption against the package's documented boundary and your own tests.
 </details>
 

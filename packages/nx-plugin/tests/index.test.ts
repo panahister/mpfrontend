@@ -42,7 +42,7 @@ test('generated application does not depend on a project in the original workspa
   const files=await applicationFiles('sample');
   const project=JSON.parse(files['project.json']!);
   assert.deepEqual(project.implicitDependencies ?? [],[]);
-  assert.ok(files['next.config.mjs']?.includes("new URL('../..',import.meta.url)"));
+  assert.ok(files['next.config.mjs']?.includes("new URL('../..', import.meta.url)"));
   assert.equal(project.targets.build.options.cwd,'apps/sample');
   assert.equal(project.targets.build.options.command,'pnpm exec next build . --webpack');
 });
@@ -52,7 +52,7 @@ test('Swagger assets are prepared outside webpack and served as UTF-8',async()=>
   assert.ok(project.targets.build?.dependsOn?.includes('runtime-assets'));
   assert.ok(project.targets.build?.dependsOn?.includes('^build'),'dependent workspace libraries must build before a generated app');
   assert.equal(project.targets['runtime-assets']?.options?.command,'node apps/sample/prepare-runtime.mjs');
-  assert.ok(files['prepare-runtime.mjs']?.includes("require.resolve('swagger-ui-dist/'+file)"));
+  assert.ok(files['prepare-runtime.mjs']?.includes("require.resolve('swagger-ui-dist/' + file)"));
   const route=files['src/app/api/docs/assets/[file]/route.ts']!;
   assert.ok(!route.includes('createRequire'));
   assert.ok(route.includes('apps/sample/runtime-assets/swagger'));

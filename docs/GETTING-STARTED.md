@@ -34,9 +34,10 @@ pnpm pack:local
 pnpm exec nx run distribution:consumer-check
 ```
 
-The first command produces and verifies the twelve package archives. The second creates an independent
+The first command produces and verifies the thirteen package archives. The second creates an independent
 consumer, installs the packed cohort, exercises both supported design-source modes, installs all eighteen
-AI procedures, and runs the consumer-level security, realtime, generation, drift, and preservation checks.
+AI procedures, runs the consumer-level security, realtime, generation, drift, and preservation checks, and
+then runs the generated workspace's own `pnpm check` and its lint negative controls.
 
 Generated archives and temporary consumers are verification output. They are not committed releases.
 
@@ -73,6 +74,15 @@ mpfrontend design status --directory ./acme-portal --json
 
 Use `existing` when the product already owns an approved design system. The binding and normalized export
 remain local to that consumer. MP Frontend does not fetch or publish the design source.
+
+Both modes write the same quality profile. The workspace pins `@mpfrontend/workspace-config`, ESLint,
+Prettier and tsx, and its root `eslint.config.mjs` and `prettier.config.mjs` re-export the shared profile.
+`pnpm check` runs the format check, then lint, typecheck, test, build, and generated-check of every
+project; `tools/ci/check.sh` runs a frozen install and the uncached check in any CI, and
+`.github/workflows/check.yml` runs that script on GitHub Actions. Every app that `mpfrontend create app`
+writes has `format`, `format:check`, `lint` and `test` targets. Lint enforces module boundaries, refuses
+raw colours outside the theme files and refuses hand-written CSS outside the theme layer; see
+[Frontend engineering conventions](FRONTEND-CONVENTIONS.md#quality-profile).
 
 Until registry publication exists, the supported public evaluation path is the vendored, hash-checked
 cohort in [MP Frontend Tiffin Reference](https://github.com/panahister/mpfrontend-tiffin-reference).

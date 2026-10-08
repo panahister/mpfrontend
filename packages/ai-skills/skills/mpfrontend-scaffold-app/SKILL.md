@@ -34,6 +34,13 @@ Place the approved contract at the path named by the
 generated `ftg.config.json`; never fabricate business fields. Install dependencies and validate a frozen
 install, then run the app's actual Nx `build`, `typecheck` and `generated-check` targets uncached.
 
+Init writes the quality profile: root `eslint.config.mjs` and `prettier.config.mjs` that re-export
+`@mpfrontend/workspace-config`, a `check` script, `tools/ci/check.sh` and a GitHub Actions workflow that
+runs it. Create app gives the app `format`, `format:check`, `lint` and `test` targets and an app
+`eslint.config.mjs` that spreads the workspace profile. Run `pnpm check --skip-nx-cache` on the new
+workspace; it runs the format check, lint, typecheck, test, build and generated-check. A lint failure on
+module boundaries, raw colours or hand-written CSS is fixed in the code, never by switching a rule off.
+
 Inspect exports and imports: the new app must consume published/packed core packages and its own
 authored code, not the platform source checkout or a sample-only Nx target. Preserve authored
 overrides and demonstrate FTG regeneration/check. Report the commands and observed output; a

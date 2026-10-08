@@ -2,7 +2,7 @@
   "name": "distribution",
   "projectType": "library",
   "tags": ["scope:tooling", "runtime:build", "type:verification"],
-  "implicitDependencies": ["primitives", "ui", "tokens", "i18n", "access-core", "realtime-core", "security-bff", "presentation-server", "ftg-core", "ftg-cli", "nx-plugin", "ai-skills"],
+  "implicitDependencies": ["primitives", "ui", "tokens", "i18n", "access-core", "realtime-core", "security-bff", "presentation-server", "ftg-core", "ftg-cli", "nx-plugin", "ai-skills", "workspace-config"],
   "targets": {
     "negative-controls": {
       "executor": "nx:run-commands",

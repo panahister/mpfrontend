@@ -10,25 +10,29 @@ from the work required for a stable package and production deployment.
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
 | `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 28/28 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 6/6 |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 11/11 |
 | `@mpfrontend/ftg-core` | `0.1.0-dev.5` | included in source and consumer gates |
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 7/7 plus 18/18 procedure format validation |
+| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 64/64 |
 | `@mpfrontend/security-bff` | `0.1.0-dev.6` | 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
-| Complete Nx workspace | twelve packages | 48/48 lint, typecheck, test, and build targets |
-| Local package cohort | twelve archives | 12/12 pack and manifest verification |
+| Complete Nx workspace | thirteen packages | 52/52 lint, typecheck, test, and build targets |
+| Local package cohort | thirteen archives | 13/13 pack and manifest verification |
 
-Fresh independent consumer `mpfrontend-packed-consumer-zrga7r` executed the packed CLI rather than the
+Fresh independent consumer `mpfrontend-packed-consumer-SoUd1G` executed the packed CLI rather than the
 source workspace. It passed code-first and consumer-owned design initialization, explicit refusal of the
 removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
-design lifecycle commands, security and realtime assertions, six direct Nx targets, generated-contract
-checks, and authored-file preservation. Dependency audit was explicitly not run in that local fixture.
+design lifecycle commands, security and realtime assertions, the generated workspace's own uncached
+`pnpm check` (format check, then lint, typecheck, test, build and generated-check), three lint negative
+controls, generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
+run in that local fixture.
 
 ## Capability status
 
 | Capability | Current state | Evidence boundary |
 |---|---|---|
 | Deterministic workspace and feature scaffolding | Implemented | Source and packed-consumer gates |
+| Workspace quality profile | Implemented | Shared ESLint, Prettier and TypeScript configuration; the packed consumer's own `pnpm check` (format, lint, typecheck, test, build, generated-check) and three lint negative controls (app-to-app import, raw colour, hand-written CSS) |
 | OpenAPI normalization and finite read/write generation | Implemented for selected profiles | Required/optional JSON, bodyless requests, typed responses, and explicit empty responses |
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |

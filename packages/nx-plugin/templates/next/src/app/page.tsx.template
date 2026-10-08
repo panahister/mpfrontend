@@ -1,12 +1,23 @@
-import {cookies} from 'next/headers';
-import {locale} from '@mpfrontend/i18n';
-import {validMode} from '@mpfrontend/tokens';
-import {validBrand} from '../theme/config';
-import {Catalog} from '../features/catalog/ui/catalog';
-import {readCatalog} from '../api/server/catalog';
-export const dynamic='force-dynamic';
-export default async function Page(){
-  const saved=await cookies();const language=locale(saved.get('__APP_NAME___locale')?.value);
-  const data=await readCatalog(new URLSearchParams(),language).catch(()=>undefined);
-  return <Catalog initial={data} initialLocale={language} initialBrand={validBrand(saved.get('__APP_NAME___brand')?.value)} initialMode={validMode(saved.get('__APP_NAME___mode')?.value)} />;
+import { cookies } from 'next/headers';
+import { locale } from '@mpfrontend/i18n';
+import { validMode } from '@mpfrontend/tokens';
+import { validBrand } from '../theme/config';
+import { preferenceCookie } from '../config/app';
+import { Catalog } from '../features/catalog/ui/catalog';
+import { readCatalog } from '../api/server/catalog';
+
+export const dynamic = 'force-dynamic';
+
+export default async function Page() {
+  const saved = await cookies();
+  const language = locale(saved.get(preferenceCookie('locale'))?.value);
+  const data = await readCatalog(new URLSearchParams(), language).catch(() => undefined);
+  return (
+    <Catalog
+      initial={data}
+      initialLocale={language}
+      initialBrand={validBrand(saved.get(preferenceCookie('brand'))?.value)}
+      initialMode={validMode(saved.get(preferenceCookie('mode'))?.value)}
+    />
+  );
 }

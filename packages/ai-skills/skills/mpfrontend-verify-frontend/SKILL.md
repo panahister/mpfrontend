@@ -11,8 +11,11 @@ fixes, restarts, business writes and release actions require the corresponding u
 
 Check `pnpm exec mpfrontend --version` and `pnpm exec mpfrontend skills check --json`.
 Find the actual Nx targets in `project.json`/workspace configuration; do not report success when Nx
-says no tasks ran. Run the affected `lint`, `typecheck`, `test`, `build` and `generated-check` targets
-uncached where defined. Verify frozen dependencies, consumer-authored override preservation and
+says no tasks ran. Run the affected `format:check`, `lint`, `typecheck`, `test`, `build` and
+`generated-check` targets uncached where defined, then `pnpm check --skip-nx-cache`. Lint carries the
+shared quality profile: module boundaries, no raw colour outside the theme files and no hand-written CSS
+outside the theme layer. Report a rule switched off, an `eslint-disable` without a reason or a widened
+allowed path as a finding, not as a pass. Verify frozen dependencies, consumer-authored override preservation and
 the OpenAPI hash consumed by FTG/Swagger. Missing tests are a gap, not a passing test count.
 
 For UI/API changes, verify the actual deployed surface, response status and failure state. Use the

@@ -1,0 +1,9 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { brands, validBrand } from './config';
+
+test('the brand registry accepts its own brands and falls back to its default', () => {
+  for (const brand of brands) assert.equal(validBrand(brand), brand);
+  assert.equal(validBrand('unregistered'), 'neutral');
+  assert.equal(validBrand(undefined), 'neutral');
+});

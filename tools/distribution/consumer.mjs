@@ -1,5 +1,5 @@
 // Install real packed packages into a fresh, independent Nx workspace. Never import platform source.
-import {mkdtemp, readFile, writeFile, mkdir, cp, lstat} from 'node:fs/promises';
+import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,delimiter} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -119,7 +119,8 @@ generatedProject.implicitDependencies=['fixture-foundation'];
 await writeFile(projectPath,JSON.stringify(generatedProject,null,2));
 const foundation=join(workspace,'packages/foundation');await mkdir(join(foundation,'src'),{recursive:true});
 await writeFile(join(foundation,'package.json'),JSON.stringify({name:'@independent/foundation',version:'0.0.0',private:true,type:'module',exports:{'.':{types:'./dist/index.d.ts',import:'./dist/index.js'}}}));
-await writeFile(join(foundation,'project.json'),JSON.stringify({name:'fixture-foundation',projectType:'library',targets:{build:{executor:'nx:run-commands',outputs:['{projectRoot}/dist'],options:{command:'node packages/foundation/build.mjs'}}}}));
+// A consumer package carries the boundary tags of the quality profile; an app may depend only on type:package.
+await writeFile(join(foundation,'project.json'),JSON.stringify({name:'fixture-foundation',projectType:'library',tags:['type:package','scope:shared','runtime:universal'],targets:{build:{executor:'nx:run-commands',outputs:['{projectRoot}/dist'],options:{command:'node packages/foundation/build.mjs'}}}}));
 await writeFile(join(foundation,'src/index.js'),'export const fixtureFoundation="Consumer-owned foundation";\n');
 await writeFile(join(foundation,'build.mjs'),'import {mkdir,readFile,writeFile} from "node:fs/promises";const root=new URL("./",import.meta.url);await mkdir(new URL("dist/",root),{recursive:true});await writeFile(new URL("dist/index.js",root),await readFile(new URL("src/index.js",root)));await writeFile(new URL("dist/index.d.ts",root),"export declare const fixtureFoundation:string;\\n");');
 await assert.rejects(lstat(join(foundation,'dist')),{code:'ENOENT'});
@@ -178,8 +179,28 @@ const earliestTenthAdmission=Array.from({length:9},(_,attempt)=>reconnectDelay(a
 assert.equal(earliestTenthAdmission,60750);
 if(onlineAudit)await run('pnpm',['audit','--audit-level=moderate']);
 else console.log(JSON.stringify({stage:'dependency-audit',status:'not-run',reason:'EXPLICIT_METADATA_UPLOAD_AUTHORIZATION_REQUIRED'}));
-await run('pnpm',['exec','nx','run-many','-t','build','typecheck','--projects=sample','--skip-nx-cache']);
-await run('pnpm',['exec','nx','run','sample:generated-check','--skip-nx-cache']);
+// The consumer formats its own edits, then runs the gate that init wrote: the format check, then lint,
+// typecheck, test, build and generated-check of every project, uncached. The design fixture is a
+// hash-bound export, so the consumer lists it in its formatter ignore file as the generated file asks.
+await writeFile(join(workspace,'.prettierignore'),(await readFile(join(workspace,'.prettierignore'),'utf8'))+'design-fixture/\n');
+await run('pnpm',['run','format']);
+// Generated output is produced and checked in before the gate, as after any ftg.config.json change.
+await run('pnpm',['exec','nx','run','sample:ftg-generate','--skip-nx-cache']);
+await run('pnpm',['check','--skip-nx-cache']);
+// A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
+await run('pnpm',['run','format:check']);
+// Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
+await run('pnpm',['exec','mpfrontend','create','app','--name','other','--directory','apps/other']);
+const probes={'apps/sample/src/boundary-probe.ts':"import { appId } from '../../other/src/config/app';\nexport const probe = appId;\n",
+  'apps/sample/src/colour-probe.tsx':'export const Probe = () => <p className="bg-[#123456]" />;\n',
+  'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n'};
+for(const [path,content]of Object.entries(probes))await writeFile(join(workspace,path),content);
+const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css'];
+for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
+console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
+for(const path of Object.keys(probes))await rm(join(workspace,path));
+await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
 const {parseRead}=await import(join(workspace,'apps/sample/src/features/catalog/model/generated/read-models.gen.ts'));
 const valid={items:[{name:'Consumer fixture'}],number:1,size:12,total:1,pageCount:1,hasMore:false};
 assert.equal(parseRead('catalog',valid),valid);
@@ -221,5 +242,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

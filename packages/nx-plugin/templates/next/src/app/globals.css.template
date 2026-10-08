@@ -1,11 +1,27 @@
-* { box-sizing:border-box; }
-body { margin:0; background:var(--mp-surface-canvas); color:var(--mp-foreground-primary); font-family:var(--mp-font-family); }
-a { color:inherit; text-underline-offset:3px; }
-button,input,select { font:inherit; }
-:focus-visible { outline:2px solid var(--mp-focus-ring); outline-offset:2px; }
-.mp-shell { max-width:1200px; margin:0 auto; padding:2rem; }
-.mp-controls { display:flex; gap:1rem; flex-wrap:wrap; align-items:end; margin-block:1rem 2rem; }
-.mp-controls>.mp-field { width:180px; }
-.mp-status { color:var(--mp-foreground-secondary); }
-.mp-alert { border-inline-start:4px solid var(--mp-status-warning); padding:1rem; background:var(--mp-status-warningsurface); }
-@media(max-width:600px) { .mp-shell { padding:1rem; } }
+/* The global entry: imports and base element rules only. Layout comes from framework components and
+   utility classes; token values come from the theme layer. */
+@import 'tailwindcss';
+@import '@mpfrontend/ui/tailwind.css';
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--mp-surface-canvas);
+  color: var(--mp-foreground-primary);
+  font-family: var(--mp-font-family);
+}
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--mp-focus-ring);
+  outline-offset: 2px;
+}

@@ -1,2 +1,26 @@
-import {Button,Field,Select,Card} from '@mpfrontend/ui';
-export default function Components(){return <main className="mp-shell"><h1>MP Frontend component foundation</h1><a href="/">Back to catalog</a><Card><div className="mp-controls"><Button>Continue</Button><Button tone="secondary">Continue</Button><Button disabled>Continue</Button></div><div className="mp-controls"><Field label="Field label" placeholder="Enter value" helper="Helper text"/><Select label="Account" defaultValue=""><option value="" disabled>Select an option</option><option value="example">Example account</option></Select></div></Card></main>;}
+import { Button, Field, Select, Card } from '@mpfrontend/ui';
+
+export default function Components() {
+  return (
+    <main className="mx-auto max-w-[75rem] p-8 max-sm:p-4">
+      <h1>MP Frontend component foundation</h1>
+      <a href="/">Back to catalog</a>
+      <Card>
+        <div className="mt-4 mb-8 flex flex-wrap items-end gap-4">
+          <Button>Continue</Button>
+          <Button tone="secondary">Continue</Button>
+          <Button disabled>Continue</Button>
+        </div>
+        <div className="mt-4 mb-8 flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
+          <Field label="Field label" placeholder="Enter value" helper="Helper text" />
+          <Select label="Account" defaultValue="">
+            <option value="" disabled>
+              Select an option
+            </option>
+            <option value="example">Example account</option>
+          </Select>
+        </div>
+      </Card>
+    </main>
+  );
+}

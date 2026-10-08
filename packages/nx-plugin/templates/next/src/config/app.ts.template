@@ -1,0 +1,6 @@
+/** The app id, safe on the client and the server. It prefixes the app's presentation-preference cookies. */
+export const appId = '__APP_NAME__';
+
+export function preferenceCookie(key: 'locale' | 'brand' | 'mode'): string {
+  return appId + '_' + key;
+}

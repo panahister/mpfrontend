@@ -1,13 +1,29 @@
-import type {ReactNode} from 'react';
-import {cookies} from 'next/headers';
-import {locale,direction} from '@mpfrontend/i18n';
-import {validMode} from '@mpfrontend/tokens';
-import {validBrand} from '../theme/config';
+import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
+import { locale, direction } from '@mpfrontend/i18n';
+import { validMode } from '@mpfrontend/tokens';
+import { validBrand } from '../theme/config';
+import { appId, preferenceCookie } from '../config/app';
 import '@mpfrontend/tokens/styles.css';
 import '@mpfrontend/ui/styles.css';
 import './globals.css';
-export const metadata={title:'__APP_NAME__ | MP Frontend',description:'Independent MP Frontend consumer'};
-export default async function RootLayout({children}:{children:ReactNode}){
-  const saved=await cookies();const language=locale(saved.get('__APP_NAME___locale')?.value);
-  return <html lang={language} dir={direction(language)} data-brand={validBrand(saved.get('__APP_NAME___brand')?.value)} data-mode={validMode(saved.get('__APP_NAME___mode')?.value)}><body>{children}</body></html>;
+
+export const metadata = {
+  title: appId + ' | MP Frontend',
+  description: 'Independent MP Frontend consumer',
+};
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const saved = await cookies();
+  const language = locale(saved.get(preferenceCookie('locale'))?.value);
+  return (
+    <html
+      lang={language}
+      dir={direction(language)}
+      data-brand={validBrand(saved.get(preferenceCookie('brand'))?.value)}
+      data-mode={validMode(saved.get(preferenceCookie('mode'))?.value)}
+    >
+      <body>{children}</body>
+    </html>
+  );
 }

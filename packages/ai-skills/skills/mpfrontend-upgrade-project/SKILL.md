@@ -21,6 +21,15 @@ when the distribution supports it, affected Nx `lint`, `typecheck`, `test`, `bui
 `generated-check`/`design-verify`, skills check and a clean packed-consumer check appropriate to the
 change. Compare artifact identities and browser-critical behavior before and after.
 
+The quality profile is part of the cohort: `@mpfrontend/workspace-config` moves with the other
+packages, and its rules change only by upgrading it. A workspace created before the profile adopts it as
+a bounded upgrade: create a scratch workspace and app with the upgraded CLI outside the repository, copy
+the root `eslint.config.mjs`, `prettier.config.mjs`, `.prettierignore`, `check` script,
+`tools/ci/check.sh` and the pinned devDependencies, then give each project the `format`, `format:check`,
+`lint` and `test` targets and an `eslint.config.mjs` that spreads the root profile. Run `pnpm format` as
+its own formatting-only change, then fix every lint finding; do not widen allowed paths or switch a rule
+off to pass.
+
 If a gate fails, preserve diagnostics and restore only files owned by this upgrade when the user's
 authorized rollback is unambiguous; never overwrite unrelated local work. Report old/new cohort,
 changed files, exact evidence and known migration gaps.

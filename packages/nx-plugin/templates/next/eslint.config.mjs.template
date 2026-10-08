@@ -1,0 +1,4 @@
+import workspace from '../../eslint.config.mjs';
+
+// The workspace profile applies unchanged; app-specific additions go after it.
+export default [...workspace];

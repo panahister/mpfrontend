@@ -1,7 +1,12 @@
-import {readFile} from 'node:fs/promises';
-import {resolve} from 'node:path';
-export async function GET(){
-  if(process.env.NODE_ENV==='production' && process.env.ENABLE_API_DOCS!=='true')return new Response(null,{status:404});
-  const path=resolve(process.cwd(),'contracts/openapi/presentation/__APP_NAME__/openapi.json');
-  const bytes=await readFile(path,'utf8');return new Response(bytes,{headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+const app = '__APP_NAME__';
+export async function GET() {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_API_DOCS !== 'true')
+    return new Response(null, { status: 404 });
+  const path = resolve(process.cwd(), 'contracts/openapi/presentation', app, 'openapi.json');
+  const bytes = await readFile(path, 'utf8');
+  return new Response(bytes, {
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
 }

@@ -1,0 +1,38 @@
+{
+  "name": "workspace-config",
+  "root": "packages/workspace-config",
+  "sourceRoot": "packages/workspace-config/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:tooling",
+    "type:tool"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/workspace-config/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/workspace-config/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/workspace-config/src packages/workspace-config/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/workspace-config/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

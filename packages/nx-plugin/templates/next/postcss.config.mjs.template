@@ -1,0 +1,2 @@
+// Tailwind CSS v4 compiles the utility classes of the app and of the MP Frontend UI components.
+export default { plugins: { '@tailwindcss/postcss': {} } };

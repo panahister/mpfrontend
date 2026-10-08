@@ -5,9 +5,7 @@
     {
       "name": "catalog",
       "operationId": "listCatalog",
-      "responsePath": [
-        "items"
-      ]
+      "responsePath": ["items"]
     }
   ]
 }
