@@ -13,7 +13,8 @@ Reconnect always requests fresh authoritative snapshots; this profile does not r
 Limits: 32 connections/process, 2/session, 6 subscriptions, 4 KiB incoming frames, 64 KiB outgoing
 buffer, 5-second admission timeout, 3-second minimum polling and 30-second ping/pong.
 Network/backend uncertainty sends a resync-required frame, never a fabricated event. Editors keep
-drafts and show a refresh notice; readonly consumers may refetch. Production startup is refused.
+drafts and show a refresh notice; readonly consumers may refetch. Production startup requires the
+production profile below.
 
 Sources: [Next custom servers](https://nextjs.org/docs/app/guides/custom-server),
 [ws authentication and upgrades](https://github.com/websockets/ws#client-authentication),
@@ -26,6 +27,13 @@ all replicas must use the same app-scoped namespace/keyring. Tickets remain cook
 and expire after 20 seconds. First-frame authority is checked again before ready/invalidation.
 Storage errors close admission; no local fallback is used. Concurrent subscribe frames are rejected.
 
-Shared tickets do **not** provide global connection/issuance quotas, retained event replay or a
-production profile. Connection counts and polling cursors remain process-local. Production startup
-is still rejected, even with a shared ticket store. See the core shared-runtime acceptance document.
+## Production profile
+
+`createPresentationRealtime({production: {ticketStore, connectionBudget}, ...})` starts only with an `https`
+public origin, a ticket store that every replica shares (`shared: true`, for example
+`createVaultTicketStore(vault)` of `@mpfrontend/security-bff/session-store`) and a shared connection budget
+(`vault.limits.connections` of a Redis vault); otherwise it refuses with `PRODUCTION_PROFILE_REFUSED:` and
+the names `HTTPS_PUBLIC_ORIGIN_REQUIRED`, `SHARED_TICKET_STORE_REQUIRED` or
+`SHARED_CONNECTION_BUDGET_REQUIRED`. There is no process-memory default in this profile. The development
+profile (`development: true`) is unchanged and still refused under `NODE_ENV=production`. Retained event
+replay is not part of either profile. See the core shared-runtime acceptance document.

@@ -22,8 +22,11 @@ and never forwards the header as given. Project only the claims the UI needs int
 never write a claim into a cookie and never treat a projected claim as authorization. Configure
 `preferenceCookie` with the shared language and theme cookie so that login pages receive `ui_locales`.
 
-Use the in-memory session store only for local development. The package refuses it under production;
-do not bypass that guard or describe the current Redis proof as a production HA claim. Never log tokens,
+Use the in-memory session store only for local development. Beyond developer machines configure the
+production profile, `production: {sessionVault, clientAuthentication, secureCookies: true}`, with a Redis
+vault over `rediss:` with host-supplied credentials and key ring; the package refuses any unmet condition
+by name (`PRODUCTION_PROFILE_REFUSED:...`). Resolve the named condition in the deployment; never bypass a
+refusal or describe the profile as a production HA claim. Never log tokens,
 authorization codes, cookies, client secrets or personal data.
 
 Add focused tests for login/callback, state replay, nonce/issuer/audience/expiry rejection, logout,

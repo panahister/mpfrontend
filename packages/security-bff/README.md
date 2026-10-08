@@ -33,10 +33,35 @@ crafted input. Without configuration only `en` or `ar` is sent, as before; a con
 answer in Persian lists `fa`.
 
 The default memory vault remains a single-process development profile; restart signs users out.
-The `./session-store` export provides `SessionVault`, `createMemorySessionVault` and
-`createRedisSessionVault`. Supply an initialized Redis vault through `createBff({sessionVault, ...})`.
-The Redis adapter is a **validation profile**, not permission to deploy in production. The handler
-still rejects `NODE_ENV=production`, including when a Redis vault is supplied.
+The `./session-store` export provides `SessionVault`, `createMemorySessionVault`, `createRedisSessionVault`,
+`redisVaultSecurity` and `createVaultTicketStore`. A development configuration (`development: true`)
+behaves as before and is still refused when `NODE_ENV=production`.
+
+## Production profile
+
+A production configuration replaces `development: true` with a typed profile:
+`production: {sessionVault, clientAuthentication, secureCookies: true}`. `createBff` starts only when every
+condition holds, and otherwise refuses with `PRODUCTION_PROFILE_REFUSED:` followed by the names of the
+unmet conditions (`productionRefusals(config)` lists them without starting):
+
+| Condition | Refusal name |
+|---|---|
+| The public origin is `https` | `HTTPS_PUBLIC_ORIGIN_REQUIRED` |
+| The issuer and provider origin are `https` | `HTTPS_IDENTITY_PROVIDER_REQUIRED` |
+| The session vault is durable (never the memory vault) | `DURABLE_SESSION_VAULT_REQUIRED` |
+| The vault is reached over TLS | `SESSION_VAULT_TLS_REQUIRED` |
+| The vault connection is authenticated | `SESSION_VAULT_AUTHENTICATION_REQUIRED` |
+| The vault's key ring is supplied by the host | `HOST_KEY_RING_REQUIRED` |
+| Client authentication is configured | `CLIENT_AUTHENTICATION_REQUIRED` |
+| Session cookies are `Secure` | `SECURE_COOKIES_REQUIRED` |
+
+A vault describes itself through `security` (`durable`, `tls`, `authenticated`, `hostKeyRing`); a vault
+without it is treated as unknown and refused. A Redis vault is durable with a host key ring, uses TLS for a
+`rediss:` URL and is authenticated by `password` (or URL credentials). The production profile has no
+memory fallback: `/health` answers 503 and every request fails with 503 while the vault is unavailable.
+Errors carry codes only; no secret is logged. The negative controls remove each condition and observe the
+production tests fail. The profile does not by itself prove HA, durability policy, key custody or a
+reviewed deployment.
 
 Redis records use AES-256-GCM with random 96-bit IVs and record-address associated data. Raw session
 IDs are hashed in keys; access/refresh tokens, CSRF, identity and PKCE data are encrypted. The active

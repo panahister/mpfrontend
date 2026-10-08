@@ -7,19 +7,39 @@ export type {ConnectionBudget} from './connection-budget.js';
 export type SocketContext={subject:string;tenant:string|null;roles:string[];csrf:string};
 export type AdmissionTicket={cookieHash:string;revision:string;expires:number};
 /** consume must be atomic across all presentation replicas. */
-export type AdmissionTicketStore={issue:(id:string,ticket:AdmissionTicket)=>Promise<void>;consume:(id:string)=>Promise<AdmissionTicket|undefined>};
-export type SocketConfig={publicOrigin:string;bffOrigin:string;resolve:(resource:string,context:SocketContext)=>string|undefined;pollMs?:number;development:true;ticketStore?:AdmissionTicketStore;connectionBudget?:ConnectionBudget};
+export type AdmissionTicketStore={readonly shared?:boolean;issue:(id:string,ticket:AdmissionTicket)=>Promise<void>;consume:(id:string)=>Promise<AdmissionTicket|undefined>};
+type CommonSocketConfig={publicOrigin:string;bffOrigin:string;resolve:(resource:string,context:SocketContext)=>string|undefined;pollMs?:number};
+/** Today's single-process development profile, refused when NODE_ENV is production. */
+export type DevelopmentSocketConfig=CommonSocketConfig&{development:true;production?:never;ticketStore?:AdmissionTicketStore;connectionBudget?:ConnectionBudget};
+/** Shared, durable admission across replicas; no process-memory default exists in this profile. */
+export type PresentationProductionProfile=Readonly<{ticketStore:AdmissionTicketStore;connectionBudget:ConnectionBudget}>;
+export type ProductionSocketConfig=CommonSocketConfig&{production:PresentationProductionProfile;development?:never};
+export type SocketConfig=DevelopmentSocketConfig|ProductionSocketConfig;
+/** The unmet conditions of a production configuration; empty when it may start. */
+export function presentationProductionRefusals(config:ProductionSocketConfig):string[]{
+  const refusals:string[]=[];
+  let https=false;try{https=new URL(config.publicOrigin).protocol==='https:';}catch{https=false;}
+  if(!https)refusals.push('HTTPS_PUBLIC_ORIGIN_REQUIRED');
+  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');
+  if(config.production?.connectionBudget?.shared!==true)refusals.push('SHARED_CONNECTION_BUDGET_REQUIRED');
+  return refusals;
+}
 const digest=(value:string)=>createHash('sha256').update(value).digest('base64url');
 const authority=(c:SocketContext)=>digest(JSON.stringify([c.subject,c.tenant,[...c.roles].sort()]));
 function checkedOrigin(value:string){const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw new Error('INVALID_ORIGIN');return url.origin;}
 function json(res:ServerResponse,status:number,value:unknown){res.writeHead(status,{'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(value));}
 
 export function createPresentationRealtime(config:SocketConfig){
-  if(config.development!==true||process.env.NODE_ENV==='production')throw new Error('DURABLE_REALTIME_PROFILE_REQUIRED');
+  const production='production' in config&&config.production!==undefined?config.production:undefined;
+  if(production){
+    const refusals=presentationProductionRefusals(config as ProductionSocketConfig);
+    if(refusals.length)throw new Error('PRODUCTION_PROFILE_REFUSED:'+refusals.join(','));
+  }else if((config as DevelopmentSocketConfig).development!==true||process.env.NODE_ENV==='production')throw new Error('DURABLE_REALTIME_PROFILE_REQUIRED');
+  const development=production?undefined:config as DevelopmentSocketConfig;
   const publicOrigin=checkedOrigin(config.publicOrigin),bff=checkedOrigin(config.bffOrigin);
   const interval=Math.max(3000,config.pollMs??3000),tickets=new Map<string,AdmissionTicket>();
-  const connectionBudget=config.connectionBudget??createMemoryConnectionBudget();
-  const ticketStore=config.ticketStore??{
+  const connectionBudget=production?production.connectionBudget:development?.connectionBudget??createMemoryConnectionBudget();
+  const ticketStore=production?production.ticketStore:development?.ticketStore??{
     async issue(id:string,ticket:AdmissionTicket){
       for(const[key,value]of tickets)if(value.expires<=Date.now())tickets.delete(key);
       if(tickets.size>=256)throw Object.assign(new Error('TICKET_LIMIT'),{status:429});

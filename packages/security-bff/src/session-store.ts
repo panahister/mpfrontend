@@ -4,10 +4,14 @@ import {runtimeBudget,type RuntimeBudgetPolicy,type SharedRuntimeLimits} from '.
 export type {RuntimeBudgetPolicy,SharedRuntimeLimits,ConnectionBudget} from './runtime-limits.js';
 
 export type VaultKind = 'session' | 'transaction';
+/** How a vault is reached and keyed; the production profile starts only with every property true. */
+export type VaultSecurity = Readonly<{durable:boolean; tls:boolean; authenticated:boolean; hostKeyRing:boolean}>;
 export type VaultRecord<T> = {value:T; revision:string; expiresAt:number};
 /** Implementations must be shared and atomic; never emulate CAS with GET followed by SET. */
 export interface SessionVault {
   readonly profile:'memory-development'|'redis-validation';
+  /** Absent means unknown, which the production profile refuses. */
+  readonly security?:VaultSecurity;
   read<T>(kind:VaultKind,id:string):Promise<VaultRecord<T>|undefined>;
   create<T>(kind:VaultKind,id:string,value:T,expiresAt:number):Promise<void>;
   consume<T>(kind:VaultKind,id:string):Promise<VaultRecord<T>|undefined>;
@@ -27,6 +31,7 @@ export function createMemorySessionVault():SessionVault {
   };
   return {
     profile:'memory-development',
+    security:Object.freeze({durable:false,tls:false,authenticated:false,hostKeyRing:false}),
     async read<T>(kind:VaultKind,id:string){return read<T>(kind,id);},
     async create(kind,id,value,expiresAt){
       for(const[k,r]of records)if(r.expiresAt<=Date.now())records.delete(k);
@@ -50,7 +55,14 @@ export function createMemorySessionVault():SessionVault {
   };
 }
 
-export type RedisVaultConfig={url:string;namespace:string;activeKeyId:string;keys:Readonly<Record<string,Uint8Array>>;budget?:Partial<RuntimeBudgetPolicy>};
+export type RedisVaultConfig={url:string;namespace:string;activeKeyId:string;keys:Readonly<Record<string,Uint8Array>>;budget?:Partial<RuntimeBudgetPolicy>;
+  /** Credentials supplied by the host; prefer these to credentials in the URL. Never logged. */
+  username?:string;password?:string};
+/** TLS (`rediss:`) and authentication of a Redis vault, read from its configuration without connecting. */
+export function redisVaultSecurity(config:Pick<RedisVaultConfig,'url'|'password'>):VaultSecurity{
+  const url=new URL(config.url);
+  return Object.freeze({durable:true,tls:url.protocol==='rediss:',authenticated:Boolean(config.password||url.password),hostKeyRing:true});
+}
 /** Validation profile only. Deployment TLS/ACL, HA durability and key custody are separate acceptance gates. */
 export async function createRedisSessionVault(config:RedisVaultConfig):Promise<SessionVault & {limits:SharedRuntimeLimits;close():Promise<void>}> {
   if(!/^[a-z][a-z0-9-]{2,63}$/.test(config.namespace))throw new Error('INVALID_VAULT_NAMESPACE');
@@ -59,7 +71,8 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
     return [id,Buffer.from(key)] as const;
   }));
   if(!keys.has(config.activeKeyId))throw new Error('ACTIVE_VAULT_KEY_REQUIRED');
-  const client=createClient({url:config.url,disableOfflineQueue:true,
+  const security=redisVaultSecurity(config);
+  const client=createClient({url:config.url,...(config.username?{username:config.username}:{}),...(config.password?{password:config.password}:{}),disableOfflineQueue:true,
     socket:{connectTimeout:2000,reconnectStrategy:false},commandOptions:{timeout:2000}});
   // No URL, credentials, ciphertext, tokens or provider errors in application logs.
   const policy=Object.freeze(runtimeBudget(config.budget));
@@ -111,6 +124,7 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
           arguments:[String(window),String(ticket?policy.tickets:policy.logins),String(ticket?policy.ticketsPerSession:policy.loginsPerPeer),randomUUID()]})===1;
     });},
     connections:{
+      shared:true,
       async reserve(subject,id){return safely(async()=>{
         const result=await client.eval(time+
           "for _,key in ipairs(KEYS) do redis.call('ZREMRANGEBYSCORE',key,'-inf',now) end; "+
@@ -134,6 +148,7 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
   };
   return {
     profile:'redis-validation',
+    security,
     limits,
     async read<T>(kind:VaultKind,id:string){return safely(async()=>{
       const key=address(kind,id),raw=await client.get(key);if(!raw)return undefined;
@@ -164,4 +179,13 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
     async healthy(){return safely(async()=>await client.ping()==='PONG');},
     async close(){if(client.isOpen)client.destroy();}
   };
+}
+
+/** A presentation admission-ticket store over a shared vault: one-time, atomic, expiring with the ticket. */
+export function createVaultTicketStore<T extends {expires:number}>(vault:SessionVault){
+  return Object.freeze({
+    shared:vault.security?.durable===true,
+    async issue(id:string,ticket:T){await vault.create('transaction','ticket:'+id,ticket,ticket.expires);},
+    async consume(id:string){return (await vault.consume<T>('transaction','ticket:'+id))?.value;},
+  });
 }

@@ -43,7 +43,26 @@ const mutations=[
     expected:'Expected values to be strictly deep-equal'},
   {name:'realtime-admission-retry-floor',package:'realtime-core',test:'index.test.ts',file:'index.ts',
     before:'return Math.floor(ceiling/2+random()*ceiling/2);',after:'return Math.floor(random()*ceiling);',
-    expected:'250 !== 375'}
+    expected:'250 !== 375'},
+  // Each production startup condition of the Security BFF and the presentation server is a guard.
+  {name:'production-https-origin',package:'security-bff',test:'production.test.ts',file:'index.ts',
+    before:"  if(!https(config.publicOrigin))refusals.push('HTTPS_PUBLIC_ORIGIN_REQUIRED');\n",after:'',
+    expected:'the production profile refuses each missing condition by name'},
+  {name:'production-durable-vault',package:'security-bff',test:'production.test.ts',file:'index.ts',
+    before:"  if(!security?.durable)refusals.push('DURABLE_SESSION_VAULT_REQUIRED');\n",after:'',
+    expected:'the production profile refuses each missing condition by name'},
+  {name:'production-vault-tls',package:'security-bff',test:'production.test.ts',file:'index.ts',
+    before:"  if(!security?.tls)refusals.push('SESSION_VAULT_TLS_REQUIRED');\n",after:'',
+    expected:'the production profile refuses each missing condition by name'},
+  {name:'production-client-authentication',package:'security-bff',test:'production.test.ts',file:'index.ts',
+    before:"refusals.push('CLIENT_AUTHENTICATION_REQUIRED');",after:'void 0;',
+    expected:'the production profile refuses each missing condition by name'},
+  {name:'production-no-memory-fallback',package:'security-bff',test:'production.test.ts',file:'index.ts',
+    before:'const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();',
+    after:'const vault=createMemorySessionVault();',expected:'readiness and requests fail with 503'},
+  {name:'presentation-shared-tickets',package:'presentation-server',test:'production.test.ts',file:'index.ts',
+    before:"  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');\n",after:'',
+    expected:'refuses each missing condition by name and has no memory default'}
 ];
 try{
   await symlink(join(root,'node_modules'),join(sandbox,'node_modules'),'dir');

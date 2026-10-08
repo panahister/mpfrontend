@@ -27,7 +27,9 @@ consumer has an obtainable dependency path; ignored local tarballs alone are not
 strategy. Keep advisory-service uploads opt-in and report them as not run when unauthorized.
 
 Produce the exact candidate file/package/version list, hashes, commands/counts, known limitations and
-separately named production gates such as HA/TLS/load/accessibility/security review. Do not convert POC
+separately named production gates such as HA/TLS/load/accessibility/security review. For a protected
+deployment, show that the Security BFF and the presentation server start with their production profiles
+in the target environment and record any `PRODUCTION_PROFILE_REFUSED:` reason as an open gate. Do not convert POC
 evidence into a production claim.
 
 Stop before `git init`, commit, tag, push, pull request, registry upload, deployment, release creation,

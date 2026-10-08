@@ -279,7 +279,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, composable React UI, and a shared application frame | No product theme, icons, typography, or screen ownership |
 | Internationalization | A configurable locale registry with English, Arabic, and Persian, direction and digits per locale, and allowlisted Accept-Language negotiation | Product copy and complete locale QA remain consumer responsibilities |
 | Access presentation | Capability, field, and record visibility plus stale-authority fences | Not backend authorization |
-| OIDC session boundary | Authorization Code + PKCE, opaque cookies, Redis-backed encrypted records, refresh coordination, revocation, CSRF and allowlists | Current package refuses production startup pending production security gates |
+| OIDC session boundary | Authorization Code + PKCE, opaque cookies, Redis-backed encrypted records, refresh coordination, revocation, CSRF and allowlists, and an explicit production profile | The production profile names each unmet startup condition; HA, key custody, and security review remain deployment gates |
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
@@ -447,7 +447,8 @@ Implemented validation-profile controls include:
 - Realtime tickets bound to the opaque session and authority revision, bounded connection/subscription
   limits, snapshot recovery, stale-authority rejection, and privacy-minimal diagnostics.
 
-The current packages intentionally refuse production startup. Production TLS, secrets and key custody,
+A production profile starts only when every named condition holds (https origins, a durable vault over
+TLS with authentication and a host key ring, client authentication, Secure cookies). Production TLS, secrets and key custody,
 HA Redis policy, regional failure behavior, global realtime quotas, load evidence, and independent
 security review remain deployment gates. Read [Security BFF](packages/security-bff/README.md),
 [Shared runtime](docs/R2-SHARED-RUNTIME.md), and [Security policy](SECURITY.md).

@@ -1,4 +1,6 @@
 export type ConnectionBudget={
+  /** True for a budget that every replica shares; the production profile refuses any other. */
+  readonly shared?:boolean;
   reserve:(subject:string,id:string)=>Promise<number|undefined>;
   renew:(subject:string,id:string)=>Promise<number|undefined>;
   release:(subject:string,id:string)=>Promise<void>;

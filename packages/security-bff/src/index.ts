@@ -3,13 +3,41 @@ import type {IncomingMessage,ServerResponse} from 'node:http';
 import {setTimeout as delay} from 'node:timers/promises';
 import {createPreferenceCookie,negotiateLocale,type PreferenceCookieContract} from '@mpfrontend/i18n';
 import {createMemorySessionVault,type SessionVault} from './session-store.js';
+export type {VaultSecurity} from './session-store.js';
 
 export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
 /** The locales the BFF may send upstream as Accept-Language; anything else becomes the default. */
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** The previous behaviour: only en and ar were ever forwarded, en by default. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
-export type BffConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;development:true;sessionVault?:SessionVault;loginRateLimit?:(peer:string)=>Promise<boolean>};
+type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;loginRateLimit?:(peer:string)=>Promise<boolean>};
+/**
+ * How the BFF authenticates to the token endpoint. A public client sends only its client id; the
+ * production profile accepts it only when the configuration declares it explicitly.
+ */
+export type ClientAuthentication=Readonly<{method:'none';publicClient:true}>;
+/** Today's single-process development profile, refused when NODE_ENV is production. */
+export type DevelopmentBffConfig=CommonConfig&{development:true;production?:never;sessionVault?:SessionVault;clientAuthentication?:ClientAuthentication};
+/** Every field is required; createBff refuses to start, with a named reason, when a condition does not hold. */
+export type ProductionProfile=Readonly<{sessionVault:SessionVault;clientAuthentication:ClientAuthentication;secureCookies:true}>;
+export type ProductionBffConfig=CommonConfig&{production:ProductionProfile;development?:never};
+export type BffConfig=DevelopmentBffConfig|ProductionBffConfig;
+/** The unmet conditions of a production configuration, in a stable order; empty when it may start. */
+export function productionRefusals(config:ProductionBffConfig):string[]{
+  const refusals:string[]=[],profile=config.production as Partial<ProductionProfile>|undefined;
+  const https=(value:string|undefined)=>{try{return value!==undefined&&new URL(value).protocol==='https:';}catch{return false;}};
+  if(!https(config.publicOrigin))refusals.push('HTTPS_PUBLIC_ORIGIN_REQUIRED');
+  if(!https(config.issuer)||(config.providerOrigin!==undefined&&!https(config.providerOrigin)))refusals.push('HTTPS_IDENTITY_PROVIDER_REQUIRED');
+  const security=profile?.sessionVault?.security;
+  if(!security?.durable)refusals.push('DURABLE_SESSION_VAULT_REQUIRED');
+  if(!security?.tls)refusals.push('SESSION_VAULT_TLS_REQUIRED');
+  if(!security?.authenticated)refusals.push('SESSION_VAULT_AUTHENTICATION_REQUIRED');
+  if(!security?.hostKeyRing)refusals.push('HOST_KEY_RING_REQUIRED');
+  const client=profile?.clientAuthentication;
+  if(!client||!(client.method==='none'&&client.publicClient===true))refusals.push('CLIENT_AUTHENTICATION_REQUIRED');
+  if(profile?.secureCookies!==true)refusals.push('SECURE_COOKIES_REQUIRED');
+  return refusals;
+}
 type Claims={iss:string;aud:string|string[];azp?:string;sub:string;exp:number;iat:number;nbf?:number;nonce?:string;preferred_username?:string;tenant_id?:string;realm_access?:{roles?:string[]};[claim:string]:unknown};
 /** A projected claim value: plain data only, never an object, never a token. */
 export type ClaimValue=string|number|boolean|readonly string[];
@@ -45,7 +73,12 @@ export function projectClaims(claims:Readonly<Record<string,unknown>>,allowed:re
 function write(res:ServerResponse,status:number,body:unknown){res.writeHead(status,jsonHeaders);res.end(JSON.stringify(body));}
 async function body(req:IncomingMessage){const chunks:Buffer[]=[];let size=0;for await(const raw of req){const chunk=Buffer.from(raw);size+=chunk.length;if(size>65536)fail(413,'BODY_TOO_LARGE');chunks.push(chunk);}return Buffer.concat(chunks);}
 export function createBff(config:BffConfig){
-  if(config.development!==true||process.env.NODE_ENV==='production')throw new Error('DURABLE_SESSION_STORE_REQUIRED');
+  if('production' in config&&config.production!==undefined){
+    // No condition falls back: a missing one refuses startup and names what is missing.
+    const refusals=productionRefusals(config);
+    if(refusals.length)throw new Error('PRODUCTION_PROFILE_REFUSED:'+refusals.join(','));
+  }else if(config.development!==true||process.env.NODE_ENV==='production')throw new Error('DURABLE_SESSION_STORE_REQUIRED');
+  const production='production' in config&&config.production!==undefined?config.production:undefined;
   const publicOrigin=origin(config.publicOrigin),issuer=config.issuer.replace(/\/$/,'');
   const providerOrigin=config.providerOrigin?origin(config.providerOrigin):new URL(issuer).origin;
   if(!/^[a-z][a-z0-9_]{1,60}$/.test(config.cookieName))throw new Error('INVALID_COOKIE_NAME');
@@ -59,10 +92,12 @@ export function createBff(config:BffConfig){
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
   for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');}
-  const vault=config.sessionVault??createMemorySessionVault();
+  // Production never uses the memory vault; development keeps it as its default.
+  const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();
   let keys:{kid:string;jwk:JsonWebKey}[]=[],keysUntil=0;
   const transactionCookie=config.cookieName+'_login';
-  const cookie=(name:string,value:string,maxAge:number)=>name+'='+value+'; HttpOnly; SameSite=Lax; Path=/; Max-Age='+maxAge+(publicOrigin.startsWith('https:')?'; Secure':'');
+  const secure=production!==undefined||publicOrigin.startsWith('https:');
+  const cookie=(name:string,value:string,maxAge:number)=>name+'='+value+'; HttpOnly; SameSite=Lax; Path=/; Max-Age='+maxAge+(secure?'; Secure':'');
   const provider=(path:string)=>providerOrigin+new URL(issuer).pathname+'/protocol/openid-connect/'+path;
   async function identityResponse(path:string,options:RequestInit={}){
     let response:Response;
