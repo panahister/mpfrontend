@@ -15,12 +15,12 @@ from the work required for a stable package and production deployment.
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 90/90 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
-| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 18/18 source tests; 12/12 installed consumer assertions |
+| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 40/40 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
 | Complete Nx workspace | fourteen packages | 56/56 lint, typecheck, test, and build targets |
 | Local package cohort | fourteen archives | 14/14 pack and manifest verification |
 
-Fresh independent consumer `mpfrontend-packed-consumer-ulx75v` executed the packed CLI rather than the
+Fresh independent consumer `mpfrontend-packed-consumer-RE2qBH` executed the packed CLI rather than the
 source workspace. It passed code-first and consumer-owned design initialization, explicit refusal of the
 removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
 design lifecycle commands, security and realtime assertions, the feature, route and package generators
@@ -43,6 +43,7 @@ run in that local fixture.
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Confidential client authentication | Implemented | `private_key_jwt` (RFC 7523 assertion: token-endpoint audience, unique `jti`, 60-second lifetime, key id for rotation) and `client_secret_basic`, host-supplied credentials kept out of logs, errors, responses and `/context`; source tests and negative controls; no real identity provider was used |
 | Session cookie and lifetime hardening | Implemented | `__Host-` session cookie (production default), session SameSite apart from the Lax login cookie (Strict by default in production), bounded idle (default 30 minutes) and absolute lifetimes failing closed with 401, session id rotation after sign-in and on authorization-claim changes at refresh; source tests, the Redis integration gate and negative controls |
+| OpenID Connect back-channel logout | Implemented | Signed logout-token validation (issuer keys, `iss`, `aud`, `iat`, `exp`, event, `sid` or `sub`, no `nonce`), `jti` replay refusal, revocation by `sid` then `sub` through a hashed vault index, 400 for invalid tokens and 503 during a store outage; source tests, the Redis integration gate and negative controls; not run against a real identity provider |
 | Production profiles of the Security BFF and the presentation server | Implemented | Typed profiles that refuse startup with named reasons (https origins, durable TLS-authenticated vault with a host key ring, client authentication, Secure cookies; shared tickets and connection budget), 503 readiness without memory fallback, and negative controls for each condition; no production deployment was run |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
 | English, Arabic and Persian; LTR/RTL foundations | Implemented | A configurable locale registry (`en`, `ar` and `fa` ship; direction and digits per locale), an allowlisted upstream Accept-Language in the Security BFF, i18n and BFF tests, and the packed consumer serving `fa` right to left with logical CSS; Persian product text is the consumer's catalog |

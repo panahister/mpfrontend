@@ -10,7 +10,9 @@ export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];orig
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** The previous behaviour: only en and ar were ever forwarded, en by default. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
-type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;loginRateLimit?:(peer:string)=>Promise<boolean>};
+type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;
+  /** Enables POST /backchannel-logout (OpenID Connect Back-Channel Logout 1.0); expose it only on the provider's network path. */
+  backChannelLogout?:boolean;loginRateLimit?:(peer:string)=>Promise<boolean>};
 /**
  * How the BFF authenticates to the token endpoint. A public client sends only its client id; the
  * production profile accepts it only when the configuration declares it explicitly.
@@ -85,7 +87,7 @@ export const SESSION_LIMITS=Object.freeze({defaultIdleTimeoutSeconds:1800,maxIdl
 export const defaultAuthorizationClaims:readonly string[]=Object.freeze(['realm_access','resource_access','groups','scope','tenant_id']);
 /** A projected claim value: plain data only, never an object, never a token. */
 export type ClaimValue=string|number|boolean|readonly string[];
-type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number;lastSeen?:number};
+type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number;lastSeen?:number;sid?:string};
 type Transaction={verifier:string;nonce:string;expires:number};
 const opaque=()=>randomBytes(32).toString('base64url');
 const jsonHeaders={'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'};
@@ -133,6 +135,7 @@ export function createBff(config:BffConfig){
   if(contextClaims.length>32||new Set(contextClaims).size!==contextClaims.length||contextClaims.some(name=>!/^[a-zA-Z][a-zA-Z0-9_:.-]{0,63}$/.test(name)||/token/i.test(name)||['at_hash','c_hash','nonce'].includes(name)))throw new Error('INVALID_CONTEXT_CLAIMS');
   if(claimSource!=='id'&&claimSource!=='access')throw new Error('INVALID_CONTEXT_CLAIMS');
   const preferences=config.preferenceCookie?createPreferenceCookie(config.preferenceCookie):undefined;
+  const backChannel=config.backChannelLogout===true;
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
   for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');}
@@ -166,7 +169,7 @@ export function createBff(config:BffConfig){
     if(response.status===429||response.status>=500)throw new IdentityUnavailable();
     return response;
   }
-  async function validate(token:string,audience:string,nonce?:string):Promise<Claims>{
+  async function validate(token:string,audience:string,nonce?:string,subjectOptional=false):Promise<Claims>{
     const parts=token.split('.');if(parts.length!==3)fail(401,'INVALID_TOKEN');
     const header=JSON.parse(Buffer.from(parts[0]!,'base64url').toString()) as {alg:string;kid:string};
     if(header.alg!=='RS256'||!header.kid)fail(401,'INVALID_TOKEN');
@@ -179,10 +182,15 @@ export function createBff(config:BffConfig){
     const key=keys.find(k=>k.kid===header.kid);
     if(!key||!verify('RSA-SHA256',Buffer.from(parts[0]+'.'+parts[1]),createPublicKey({key:key.jwk,format:'jwk'}),Buffer.from(parts[2]!,'base64url')))fail(401,'INVALID_TOKEN');
     const claims=JSON.parse(Buffer.from(parts[1]!,'base64url').toString()) as Claims,now=Math.floor(Date.now()/1000);
-    if(claims.iss!==issuer||!claims.sub||!Number.isFinite(claims.exp)||claims.exp<=now||!Number.isFinite(claims.iat)||claims.iat>now+30||(claims.nbf!==undefined&&claims.nbf>now+30)||!(Array.isArray(claims.aud)?claims.aud.includes(audience):claims.aud===audience))fail(401,'INVALID_TOKEN');
+    if(claims.iss!==issuer||(!claims.sub&&!subjectOptional)||(claims.sub!==undefined&&typeof claims.sub!=='string')||!Number.isFinite(claims.exp)||claims.exp<=now||!Number.isFinite(claims.iat)||claims.iat>now+30||(claims.nbf!==undefined&&claims.nbf>now+30)||!(Array.isArray(claims.aud)?claims.aud.includes(audience):claims.aud===audience))fail(401,'INVALID_TOKEN');
     if(audience===config.clientId&&((Array.isArray(claims.aud)&&claims.aud.length>1&&!claims.azp)||(claims.azp&&claims.azp!==config.clientId)))fail(401,'INVALID_TOKEN');
     if(nonce!==undefined&&claims.nonce!==nonce)fail(401,'INVALID_NONCE');
     return claims;
+  }
+  if(backChannel&&(!vault.indexSession||!vault.revokeIndexed))throw new Error('BACKCHANNEL_LOGOUT_VAULT_UNSUPPORTED');
+  /** Indexes a session by the provider's session id and by subject, for back-channel logout. */
+  async function index(id:string,value:Session){
+    if(backChannel)await vault.indexSession!(id,{...(value.sid?{sid:value.sid}:{}),sub:value.claims.sub},value.absoluteExpires);
   }
   const clientAuthentication=production?production.clientAuthentication:(config as DevelopmentBffConfig).clientAuthentication;
   if(clientAuthentication?.method==='private_key_jwt')signingKey(clientAuthentication.key);
@@ -255,6 +263,7 @@ export function createBff(config:BffConfig){
           // Changed roles or authorization claims rotate the session id: a new record, the old one removed.
           const rotated=opaque();
           await vault.create('session',rotated,next,current.value.absoluteExpires);
+          await index(rotated,next);
           await vault.remove('session',id);
           return {id:rotated,value:next,rotated:true};
         }
@@ -269,6 +278,39 @@ export function createBff(config:BffConfig){
       }
       finally{await vault.release(id,owner);}
     }
+  }
+  /**
+   * OpenID Connect Back-Channel Logout 1.0: a signed logout token from the issuer ends every session of its
+   * provider session id (sid), or of its subject when it carries no sid. Nothing is listed or returned.
+   */
+  async function backChannelLogout(req:IncomingMessage,res:ServerResponse){
+    if(req.headers['content-type']?.split(';')[0]!=='application/x-www-form-urlencoded')fail(400,'INVALID_LOGOUT_TOKEN');
+    const token=new URLSearchParams((await body(req)).toString('utf8')).get('logout_token');
+    let claims:Claims;
+    try{
+      if(!token)throw new Error();
+      // A logout token names a sid, a subject or both (section 2.4).
+      claims=await validate(token,config.clientId,undefined,true);
+      if(typeof claims.sub!=='string'&&typeof claims.sid!=='string')throw new Error();
+      const events=claims.events as Record<string,unknown>|undefined;
+      const event=events?.['http://schemas.openid.net/event/backchannel-logout'];
+      if(!event||typeof event!=='object'||Array.isArray(event))throw new Error();
+      if('nonce' in claims)throw new Error();
+      if(typeof claims.jti!=='string'||!claims.jti||claims.jti.length>256)throw new Error();
+      if(claims.sid!==undefined&&(typeof claims.sid!=='string'||!claims.sid||claims.sid.length>256))throw new Error();
+      // A logout token is accepted for a bounded time after it was issued.
+      if(claims.iat<Math.floor(Date.now()/1000)-300)throw new Error();
+    }catch(error){
+      if(error instanceof IdentityUnavailable)throw error;
+      fail(400,'INVALID_LOGOUT_TOKEN');
+    }
+    const replayKey='logout-token:'+issuer+'\u0000'+String(claims.jti);
+    // Revocation is idempotent; the token is recorded only after it, so that a store outage can be retried.
+    if(await vault.read('transaction',replayKey))fail(400,'INVALID_LOGOUT_TOKEN');
+    if(typeof claims.sid==='string')await vault.revokeIndexed!('sid',claims.sid);
+    else await vault.revokeIndexed!('sub',claims.sub);
+    await vault.create('transaction',replayKey,true,Date.now()+360000).catch(async error=>{if(await vault.read('transaction',replayKey))return;throw error;});
+    res.writeHead(200,{'cache-control':'no-store'});res.end();
   }
   return async function handle(req:IncomingMessage,res:ServerResponse){
     try{
@@ -304,7 +346,10 @@ export function createBff(config:BffConfig){
         const old=cookieValue(req.headers.cookie,sessionCookie);if(old)await vault.remove('session',old);
         const id=opaque(),absoluteExpires=Date.now()+absoluteSeconds*1000;
         const projected=projectClaims(claimSource==='id'?identity:claims,contextClaims);
-        await vault.create('session',id,{access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires,lastSeen:Date.now()},absoluteExpires);
+        const created:Session={access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires,lastSeen:Date.now(),
+          ...(typeof identity.sid==='string'&&identity.sid.length<=256?{sid:identity.sid}:{})};
+        await vault.create('session',id,created,absoluteExpires);
+        await index(id,created);
         const cookies=[sessionSetCookie(id,absoluteSeconds),cookie(transactionCookie,'',0)];
         if(sameSite==='Strict'){
           // A Strict cookie set at the end of a cross-site redirect chain is not sent on the next hop of that
@@ -314,6 +359,10 @@ export function createBff(config:BffConfig){
           res.end('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/">');return;
         }
         res.writeHead(303,{'location':publicOrigin+'/','set-cookie':cookies,'cache-control':'no-store'});res.end();return;
+      }
+      if(url.pathname==='/backchannel-logout'&&method==='POST'){
+        if(!backChannel)fail(404,'OPERATION_NOT_FOUND');
+        await backChannelLogout(req,res);return;
       }
       const current=await session(req,!(url.pathname==='/logout'&&method==='POST'));
       if(current.rotated)res.setHeader('set-cookie',sessionSetCookie(current.id,Math.max(1,Math.floor((current.value.absoluteExpires-Date.now())/1000))));

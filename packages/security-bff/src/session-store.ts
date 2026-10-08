@@ -20,9 +20,14 @@ export interface SessionVault {
   release(id:string,owner:string):Promise<void>;
   update<T>(id:string,expected:VaultRecord<T>,value:T,owner:string):Promise<boolean>;
   healthy():Promise<boolean>;
+  /** Back-channel logout: index a session under its provider session id (sid) and its subject. */
+  indexSession?(id:string,keys:Readonly<{sid?:string;sub:string}>,expiresAt:number):Promise<void>;
+  /** Removes every session indexed under one sid or subject; returns nothing about which ones. */
+  revokeIndexed?(kind:'sid'|'sub',value:string):Promise<void>;
 }
 export function createMemorySessionVault():SessionVault {
   const records=new Map<string,VaultRecord<unknown>>(),locks=new Map<string,{owner:string;until:number}>();
+  const indexes=new Map<string,{ids:Set<string>;until:number}>();
   const key=(kind:VaultKind,id:string)=>kind+':'+id;
   const read=<T>(kind:VaultKind,id:string)=>{
     const record=records.get(key(kind,id));
@@ -51,7 +56,18 @@ export function createMemorySessionVault():SessionVault {
       if(!lock||lock.owner!==owner||lock.until<=Date.now()||current?.revision!==expected.revision)return false;
       records.set(key('session',id),{value:structuredClone(value),expiresAt:expected.expiresAt,revision:randomUUID()});return true;
     },
-    async healthy(){return true;}
+    async healthy(){return true;},
+    async indexSession(id,keys,expiresAt){
+      for(const name of [keys.sid===undefined?undefined:'sid:'+keys.sid,'sub:'+keys.sub]){
+        if(!name)continue;
+        const index=indexes.get(name)??{ids:new Set<string>(),until:0};
+        index.ids.add(id);index.until=Math.max(index.until,expiresAt);indexes.set(name,index);
+      }
+    },
+    async revokeIndexed(kind,value){
+      const index=indexes.get(kind+':'+value);indexes.delete(kind+':'+value);
+      for(const id of index?.ids??[])records.delete(key('session',id));
+    }
   };
 }
 
@@ -177,6 +193,19 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
         {keys:[address('lock',id),key],arguments:[owner,raw,next,String(ttl)]})===1;
     });},
     async healthy(){return safely(async()=>await client.ping()==='PONG');},
+    // The index holds hashed session addresses only, never a session id that could be replayed as a cookie.
+    async indexSession(id,keys,expiresAt){await safely(async()=>{
+      const member=createHash('sha256').update(id).digest('hex'),ttl=expiresAt-Date.now();if(ttl<=0)return;
+      for(const index of [keys.sid===undefined?undefined:subjectKey('index-sid',keys.sid),subjectKey('index-sub',keys.sub)]){
+        if(!index)continue;
+        await client.eval("redis.call('SADD',KEYS[1],ARGV[1]); if redis.call('PTTL',KEYS[1]) < tonumber(ARGV[2]) then redis.call('PEXPIRE',KEYS[1],ARGV[2]) end; return 1",
+          {keys:[index],arguments:[member,String(ttl)]});
+      }
+    });},
+    async revokeIndexed(kind,value){await safely(async()=>{await client.eval(
+      "local members=redis.call('SMEMBERS',KEYS[1]); for _,member in ipairs(members) do redis.call('DEL',ARGV[1]..member) end; redis.call('DEL',KEYS[1]); return 1",
+      {keys:[subjectKey(kind==='sid'?'index-sid':'index-sub',value)],arguments:[prefix+'session:']});});},
+
     async close(){if(client.isOpen)client.destroy();}
   };
 }

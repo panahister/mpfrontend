@@ -93,6 +93,20 @@ test('isolated Redis shared-session contract and two BFF replicas', {timeout:900
       assert.equal(await b.read('session','short'),undefined);
       assert.equal(await inspector!.exists(address('session','short')),0);
     });
+    await t.test('back-channel index revokes by sid or subject across replicas and stores no session id',async()=>{
+      const until=Date.now()+60000,first='index-first-'+randomUUID(),second='index-second-'+randomUUID();
+      for(const id of [first,second])await a!.create('session',id,{value:id},until);
+      await a!.indexSession!(first,{sid:'provider-sid-1',sub:'subject-1'},until);
+      await b.indexSession!(second,{sid:'provider-sid-2',sub:'subject-1'},until);
+      const keys=await inspector!.keys(`mpfrontend:{${config.namespace}}:index-*`);
+      assert.ok(keys.length>=3);
+      for(const key of keys)for(const member of await inspector!.sMembers(key))assert.ok(!member.includes('index-')&&/^[a-f0-9]{64}$/.test(member));
+      await b.revokeIndexed!('sid','provider-sid-1');
+      assert.equal(await a!.read('session',first),undefined);
+      assert.ok(await a!.read('session',second));
+      await a!.revokeIndexed!('sub','subject-1');
+      assert.equal(await b.read('session',second),undefined);
+    });
     await t.test('CAS rejects stale writers, expired leases and logout resurrection',async()=>{
       await a!.create('session','cas',{count:0},Date.now()+60000);
       const original=(await a!.read<{count:number}>('session','cas'))!;

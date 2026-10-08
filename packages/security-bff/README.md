@@ -75,6 +75,24 @@ policy:
   `tenant_id` by default); the response sets the new cookie and the old id stops working. A change of
   subject or tenant still ends the session.
 
+## Back-channel logout
+
+`backChannelLogout: true` enables `POST /backchannel-logout` (OpenID Connect Back-Channel Logout 1.0). The
+body is the form `logout_token=<JWT>`. The token must be signed with the issuer's keys, carry the issuer as
+`iss`, the client id in `aud`, `iat`, `exp` and a `jti`, contain the back-channel logout event, name a
+`sid`, a `sub` or both, and contain no `nonce`; it is accepted for five minutes after `iat`. A valid token
+removes every session of its `sid`, or of its subject when it has no `sid`, and the next request of that
+browser gets 401. The answer is an empty 200; no session list or count is ever returned. A replayed `jti`
+or any invalid token is answered 400 and changes nothing. While the session vault is unavailable the
+endpoint answers 503 without recording the token, so that the provider's retry succeeds, and no session is
+served meanwhile.
+
+The vault indexes each session by the provider's session id (from the ID token's `sid`) and by subject;
+the Redis index holds hashed session addresses only. A vault without `indexSession` and `revokeIndexed`
+refuses the option at startup. The endpoint carries no browser session or CSRF token: route it only from
+the identity provider's network path, for example a separate internal listener or an ingress rule that
+admits the provider alone, and never expose it to browsers.
+
 ## Production profile
 
 A production configuration replaces `development: true` with a typed profile:

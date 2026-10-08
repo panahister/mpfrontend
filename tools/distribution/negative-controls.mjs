@@ -75,6 +75,11 @@ const mutations=[
     before:'const sessionSetCookie=(id:string,maxAge:number)=>cookie(sessionCookie,id,maxAge,sameSite);',
     after:'const sessionSetCookie=(id:string,maxAge:number)=>cookie(sessionCookie,id,maxAge);',
     expected:'a __Host- session cookie, Strict by default'},
+  {name:'backchannel-logout-replay',package:'security-bff',test:'backchannel-logout.test.ts',file:'index.ts',
+    before:"if(await vault.read('transaction',replayKey))fail(400,'INVALID_LOGOUT_TOKEN');",after:'',
+    expected:'a replayed logout token is refused with 400'},
+  {name:'backchannel-logout-no-nonce',package:'security-bff',test:'backchannel-logout.test.ts',file:'index.ts',
+    before:"if('nonce' in claims)throw new Error();",after:'',expected:'an invalid logout token is answered 400'},
   {name:'presentation-shared-tickets',package:'presentation-server',test:'production.test.ts',file:'index.ts',
     before:"  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');\n",after:'',
     expected:'refuses each missing condition by name and has no memory default'}
