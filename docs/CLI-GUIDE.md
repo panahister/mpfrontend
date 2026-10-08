@@ -70,13 +70,14 @@ and formats what it writes with the workspace's own Prettier configuration when 
 
 - **Does:** creates `src/features/<feature>/` with `ui/`, `model/`, `hooks/`, `api/`, `utils/` and an
   `index.ts` public entry, each with a small working file and tests, and a catalog per app locale in
-  `model/messages/`; every locale other than the default starts with the default text and is listed under
-  `untranslated` in the output. Without `--resource` it is a screen
-  feature: a view that emits intent, a hook that holds the workflow state, a model of its transitions, a
-  cancellable and time-bounded request boundary and a helper; its request is unbound until the app binds
-  it to a generated contract adapter. With `--resource` it is a list feature over a read that the app's
-  `ftg.config.json` selects: a URL-driven list and detail, the shared entity in `src/entities/<resource>/`
-  and the server boundary in `src/api/server/<resource>.ts`.
+  `model/messages/`, with the default locale's catalog as the base; every locale other than the default
+  starts with the default text and is listed under `untranslated` in the output. The application
+  template registers English only; a product adds or replaces locales in its own registry. Without
+  `--resource` it is a screen feature: a view that emits intent, a hook that holds the workflow state, a
+  model of its transitions, a cancellable and time-bounded request boundary and a helper; its request is
+  unbound until the app binds it to a generated contract adapter. With `--resource` it is a list feature
+  over a read that the app's `ftg.config.json` selects: a URL-driven list and detail, the shared entity
+  in `src/entities/<resource>/` and the server boundary in `src/api/server/<resource>.ts`.
 - **When:** for each new user workflow of an app.
 - **Writes:** the feature directory; the entity and the server boundary only when they do not exist yet.
   An existing entity or boundary is kept and listed under `kept`.

@@ -40,7 +40,7 @@ readable contrast remain consumer acceptance work. Missing or unresolved tokens 
 reviewed mapping/fallback, not a claim of automatic design fidelity.
 
 Test mode parsing, allowed/rejected brands and system-dark transitions. In the actual browser check
-switching, reload, long text, focus/errors/disabled/loading states, tables/forms and Arabic RTL in both
+switching, reload, long text, focus/errors/disabled/loading states, tables/forms and right to left in both
 themes. Inspect resolved styles/contrast when visual acceptance is required; save native screenshots
 alongside interaction evidence. Run consumer lint/typecheck/test/build targets uncached.
 

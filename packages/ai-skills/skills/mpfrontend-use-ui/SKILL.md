@@ -23,7 +23,7 @@ Set product-specific loading/error copy explicitly. Inspect actual types before 
 slots, variants, modal behavior, widget registration or controlled-null semantics.
 
 Verify real keyboard interaction, focus visibility, disabled submissions, error announcements,
-long text and mobile overflow. Exercise English/Arabic with logical spacing and light/dark tokens.
+long text and mobile overflow. Exercise left to right and right to left with logical spacing and light/dark tokens.
 For API controls prove the consumer adapters and request/read guards, not only static rendering.
 Run relevant UI and consumer lint/typecheck/test/build targets; save native browser evidence when
 visual acceptance is required. A screenshot alone does not prove interaction or accessibility.

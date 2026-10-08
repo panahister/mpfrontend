@@ -27,9 +27,11 @@ design lifecycle commands, security and realtime assertions, the feature, route 
 (dry-run, creation, refusal of an existing destination and an Nx generator dry-run), the generated
 workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build and
 generated-check) over the generated app, features, routes and package, a built-CSS check of the
-Tailwind structural classes and the theme order, the served first paint in Persian (right to left, theme
-from the preference cookie, an invalid value ignored), five lint negative controls, a catalog-check
-negative control,
+Tailwind structural classes and the theme order, the served first paint of the English-only app (theme
+from the preference cookie; a locale it does not register and an invalid value ignored), a product app
+whose only locale is a right-to-left private-use fixture locale (right to left on the first visit, logical CSS,
+the product's text everywhere and no English fallback), five lint negative controls, three catalog-check
+negative controls,
 generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
 run in that local fixture.
 
@@ -49,10 +51,10 @@ run in that local fixture.
 | OpenID Connect back-channel logout | Implemented | Signed logout-token validation (issuer keys, `iss`, `aud`, `iat`, `exp`, event, `sid` or `sub`, no `nonce`), `jti` replay refusal, revocation by `sid` then `sub` through a hashed vault index, 400 for invalid tokens and 503 during a store outage; source tests, the Redis integration gate and negative controls; not run against a real identity provider |
 | Production profiles of the Security BFF and the presentation server | Implemented | Typed profiles that refuse startup with named reasons (https origins, durable TLS-authenticated vault with a host key ring, client authentication, Secure cookies; shared tickets and connection budget), 503 readiness without memory fallback, and negative controls for each condition; no production deployment was run |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
-| English, Arabic and Persian; LTR/RTL foundations | Implemented | A configurable locale registry (`en`, `ar` and `fa` ship; direction and digits per locale), an allowlisted upstream Accept-Language in the Security BFF, i18n and BFF tests, and the packed consumer serving `fa` right to left with logical CSS; Persian product text is the consumer's catalog |
+| English built in; LTR/RTL foundations | Implemented | English is the only built-in locale. A configurable registry where a product registers its own locales with direction and digits, next to English or as its default and only locale; an allowlisted upstream Accept-Language in the Security BFF (English by default); i18n, BFF and generator tests with a right-to-left private-use fixture locale; the packed consumer serves a product whose only locale is that fixture, right to left with logical CSS and without English fallback. Every other language belongs to the product |
 | Claim projection and preference cookie | Implemented | `contextClaims` from the ID token (refreshed ID token at refresh) or, by choice, the access token, bounded to 4 KiB and token-free; the preference-cookie contract for `ui_locales` and the first paint; BFF and i18n tests; the packed consumer's first paint follows the cookie and ignores an invalid value without echoing it |
 | Typed message catalogs | Implemented | ICU MessageFormat through `intl-messageformat` with parameters typed from the base catalog (compile-time tests of missing and extra parameters), per-locale plural, select, numbers and dates through Intl, `mpfrontend catalog check` and the `no-literal-text` lint rule; the packed consumer's template uses catalog messages only and observes the literal-text and catalog negative controls |
-| Shared application frame and template styling | Implemented | `@mpfrontend/app-layout` markup tests in both directions and for the keyboard path; the packed consumer's build compiles Tailwind v4 over the UI and shell output (`p-6` of Card is a rule of the built CSS) and loads the app theme after the neutral tokens. A browser check of a generated app in English and Arabic was run once by hand; it is not an automated gate |
+| Shared application frame and template styling | Implemented | `@mpfrontend/app-layout` markup tests in both directions and for the keyboard path; the packed consumer's build compiles Tailwind v4 over the UI and shell output (`p-6` of Card is a rule of the built CSS) and loads the app theme after the neutral tokens. A browser check of a generated app, left to right and right to left, was run once by hand, before the template became English only; it is not an automated gate |
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |
 | Repository-scoped AI procedures | Implemented | Fourteen Base and four optional Design procedures |
@@ -69,8 +71,8 @@ or design provenance.
 
 The reference exercises anonymous restaurant/menu browsing, OIDC login and signup, customer ordering,
 kitchen decisions, courier dispatch and position, live tracking, delivery, notifications, role-aware
-operations, English/Arabic, and LTR/RTL. That product evidence belongs to the reference and backend
-repositories; it is not inferred from the reusable packages alone.
+operations, English and a second right-to-left language, and LTR/RTL. That product evidence belongs to
+the reference and backend repositories; it is not inferred from the reusable packages alone.
 
 ## Release gates still open
 

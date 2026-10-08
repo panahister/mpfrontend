@@ -20,7 +20,9 @@ rather than importing source through workspace aliases.
 - Use OpenAPI as the reviewed HTTP contract input and finite FTG profiles for generated presentation
   models and transport adapters.
 - Keep customer and operations applications independently buildable and deployable.
-- Support English/Arabic and LTR/RTL at the foundation level without embedding a product theme.
+- Ship English as the only built-in language and support LTR/RTL at the foundation level without
+  embedding a product theme; every other language belongs to the product that uses it (amended
+  2026-10-08).
 - Keep product-owned design input optional through the `none` and `existing` source modes.
 
 ## Consequences

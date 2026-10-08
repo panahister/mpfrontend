@@ -21,7 +21,7 @@ Review the plan before apply. Generated components.gen.json is metadata, never i
 Implement approved adapter/interaction changes and regression tests outside owned outputs. For removals,
 keep reconciliation bindings until migrations/deprecations are reviewed; do not delete authored code or
 extensions automatically. Inspect disabled/loading, pointer/keyboard, focus restoration, errors,
-reduced motion and long text as applicable, in English/Arabic and light/dark/system.
+reduced motion and long text as applicable, left to right and right to left, and light/dark/system.
 
 Run actual feature/Nx/visual checks and record current adapter/test hashes in genuine reviewed task
 evidence. Unchanged mapped adapters still need matching verification. A CLI evidence digest is not

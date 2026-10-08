@@ -24,7 +24,7 @@ If binding/source/CLI/output hashes changed, re-plan and re-review; there is no 
 or interrupted writer requires inspecting its owner/state before recovery, never age-based deletion.
 
 Wire only the owned generated CSS into consumer composition and keep fonts/icons/structural overrides
-authored. Run actual typecheck/unit and light/dark/system, Arabic RTL, keyboard/focus and contrast
+authored. Run actual typecheck/unit and light/dark/system, right to left, keyboard/focus and contrast
 checks on affected screens. Do not change source palette/Figma to hide a contrast conflict; record
 the source token and reviewed consumer mapping. Preserve identity/preferences/drafts during switching.
 

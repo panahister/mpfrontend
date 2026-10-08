@@ -134,6 +134,12 @@ places the values; never join a translated message to other text or a value. `pn
 differs between locales, and lint fails on literal text in JSX. Free text that users wrote is shown as it
 is, never translated.
 
+MP Frontend ships English only, and no other language belongs in it. A product adds its own locales, left
+to right or right to left, in its own repository: it registers each one with its direction in the app's
+registry (`src/config/app.ts`) and adds a `messages/<code>.ts` catalog to every set; it may also make its
+own locale the default and only locale. The document's `lang` and `dir` follow the registry, and layout
+uses logical properties (start and end), never left and right.
+
 ## State, effects, and data access
 
 - Derive values during render when they follow from props or state; do not synchronize derived values with

@@ -277,7 +277,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Workspace quality profile | Shared formatter, lint and TypeScript configuration; module boundaries, raw-colour and hand-written-CSS rules; a workspace `check` and a CI-neutral gate | Rules cover literals and stylesheets, not colours computed at run time |
 | OpenAPI integration | Selected OpenAPI 3.1 reads and mutations, types, field metadata, standalone validators, and presentation adapters | Finite profiles only; unsupported ambiguity fails |
 | UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, composable React UI, and a shared application frame | No product theme, icons, typography, or screen ownership |
-| Internationalization | A configurable locale registry with English, Arabic, and Persian, direction and digits per locale, and allowlisted Accept-Language negotiation | Product copy and complete locale QA remain consumer responsibilities |
+| Internationalization | English built in; left to right and right to left as a base capability: a locale registry where a product registers its own locales with direction and digits, typed ICU catalogs and their check, and allowlisted Accept-Language negotiation | Every other language, its copy and its locale QA belong to the product's own repository |
 | Access presentation | Capability, field, and record visibility plus stale-authority fences | Not backend authorization |
 | OIDC session boundary | Authorization Code + PKCE, opaque cookies, Redis-backed encrypted records, refresh coordination, revocation, CSRF and allowlists, and an explicit production profile | The production profile names each unmet startup condition; HA, key custody, and security review remain deployment gates |
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
@@ -550,7 +550,8 @@ Together with the [Tiffin backend](https://github.com/panahister/mpcore-tiffin-s
 - Customer ordering, payment outcomes, kitchen decisions, courier dispatch, tracking, delivery, and
   notifications.
 - Role-aware restaurant, courier, city, and platform boundaries.
-- English and Arabic, LTR and RTL, light/dark/system theming, customer and operations surfaces.
+- English and a second, right-to-left language of the product, light/dark/system theming, customer and
+  operations surfaces.
 - Positive journeys, failure behavior, idempotency, stale authority, outage, and generated-contract gates.
 
 The reference proves the selected product scenario. It does not convert every package or topology into a

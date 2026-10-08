@@ -15,8 +15,8 @@ the server; the browser receives only the bounded opaque `HttpOnly`, `Secure` pr
 same-origin and CSRF controls to state-changing BFF routes, validate state/nonce/issuer/audience/time,
 and use explicit route/method/role allowlists. Forward only an allowlisted locale through standard
 `ui_locales`; the identity provider remains responsible for translating its own forms. Configure
-`apiLocales: {supported, defaultLocale}` for the Accept-Language that the BFF sends upstream (for example
-`fa` and `en` for a backend that answers in Persian); the BFF negotiates the browser's header against it
+`apiLocales: {supported, defaultLocale}` for the Accept-Language that the BFF sends upstream (English
+only by default; a product lists the locales its backends answer in); the BFF negotiates the browser's header against it
 and never forwards the header as given. Project only the claims the UI needs into `/context` with
 `contextClaims` (an allowlist; ID token by default, refreshed ID token at refresh); never project a token,
 never write a claim into a cookie and never treat a projected claim as authorization. Configure

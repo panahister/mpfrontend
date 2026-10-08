@@ -31,7 +31,7 @@ no fallback success, read-derived partial PUT, guessed PATCH or field-access inf
 Test the actual adapter with valid and rejected inputs, unknown/read-only fields, disabled and
 empty forms, both boolean values and relevant domain limits. Prove invalid input never reaches
 the transport; remove that guard only in an isolated negative-control fixture and require the
-real assertion to fail. Verify labels and focus/error behavior in English/Arabic and light/dark.
+real assertion to fail. Verify labels and focus/error behavior left to right and right to left, and light/dark.
 Run the consumer's actual generation/check, lint, typecheck, test and build targets uncached.
 
 Report the selected operation, observed tests and remaining widget/access/concurrency gaps.

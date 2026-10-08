@@ -22,12 +22,12 @@ The current table is finite: columns, rows, formatting and an optional detail ce
 error, empty, paging, sorting and filtering in the consumer using the real API semantics; do not
 pretend it is a virtualized grid or invent server-side query parameters. Reconcile page indexes and
 empty pages explicitly after refresh. Keep horizontal overflow inside the table, not the viewport,
-and use logical alignment for Arabic RTL. Refresh must not overwrite an unrelated editing draft.
+and use logical alignment for right to left. Refresh must not overwrite an unrelated editing draft.
 
 Test the actual response adapter with malformed data, status mismatch, nullable/optional values,
 empty results and meaningful row-key/detail behavior. Prove the parser runs before protected data
 is published and that an isolated parser-removal control fails a real assertion. Check labels,
-number/date formatting, loading/retry and keyboard detail access in English/Arabic, light/dark and
+number/date formatting, loading/retry and keyboard detail access left to right and right to left, light/dark and
 mobile widths. Run the actual generated-check and Nx gates uncached.
 
 Report the selected contract, rows actually observed and unresolved grid/paging/access features.
