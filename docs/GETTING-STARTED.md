@@ -90,6 +90,7 @@ make identical product decisions; human review remains required.
 
 ## Next reading
 
+- [Frontend engineering conventions](FRONTEND-CONVENTIONS.md)
 - [Architecture](ARCHITECTURE.md)
 - [Design synchronization](../packages/ftg-cli/DESIGN-SYNC.md)
 - [Shared runtime contract](R2-SHARED-RUNTIME.md)

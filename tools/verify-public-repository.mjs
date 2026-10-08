@@ -24,6 +24,9 @@ const forbiddenMarkers=[
   /Payment Git/,
 ];
 const failures=[];
+for(const relative of ['docs/FRONTEND-CONVENTIONS.md']){
+  if(!existsSync(join(root,relative)))failures.push(`${relative}: required public guide is missing`);
+}
 const showcaseDigests={
   'tiffin-catalog.png':'fd5077e8446244085e2c352414f848092af558a2f69244462a5f07932f42a99c',
   'tiffin-customer.png':'70e27cfd26564172b8edb25ebb20d79f8b7116b1f5ef88dd2a3e0a9797caab8e',

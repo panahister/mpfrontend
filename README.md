@@ -14,6 +14,7 @@ product ownership, or human review to generators or AI agents.
 [![Status](https://img.shields.io/badge/status-public%20POC-7c3aed.svg)](#maturity-and-scope)
 
 [Start here](#choose-your-starting-point) ·
+[Conventions](docs/FRONTEND-CONVENTIONS.md) ·
 [Architecture](#architecture) ·
 [Packages](#package-catalog) ·
 [Design systems](#design-system-workflow) ·
@@ -692,6 +693,7 @@ deployment, visual acceptance, accessibility acceptance, and release approval.
 | Document | Use it for |
 |---|---|
 | [Getting started](docs/GETTING-STARTED.md) | Toolchain setup, source verification, package proof, and evaluation path |
+| [Frontend conventions](docs/FRONTEND-CONVENTIONS.md) | Placement rules, separation of concerns, API-to-feature workflow, generated ownership, and review checklist |
 | [Architecture](docs/ARCHITECTURE.md) | Trust boundaries, dependency direction, runtime flow, failure model, and non-goals |
 | [Implementation status](docs/IMPLEMENTATION-STATUS.md) | Exact versions, evidence, capability state, and open release gates |
 | [Design synchronization](packages/ftg-cli/DESIGN-SYNC.md) | Binding/export schemas, lifecycle commands, ownership, evidence, and refusal behavior |
