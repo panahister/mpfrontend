@@ -26,7 +26,9 @@ Never invent a contract or an endpoint to fill a generated file; a screen featur
 an approved contract adapter exists. Every visible text of the feature is a message in its
 `model/messages/<locale>.ts` catalogs, with named parameters placed by each message; translate the
 locales the generator reports as `untranslated`, and keep `catalog-check` and the `no-literal-text` lint
-rule passing.
+rule passing. A sensitive write sends an `Idempotency-Key`; when the BFF answers `STEP_UP_REQUIRED`, keep
+the person's input, run the step-up and resubmit only a request whose `resubmit` is `idempotent`, with the
+same key. Never replay a write without a key automatically.
 
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
 shapes. Publish protected asynchronous results through `@mpfrontend/access-core` `AuthorityFence` and

@@ -5,14 +5,25 @@ import {createPreferenceCookie,negotiateLocale,type PreferenceCookieContract} fr
 import {createMemorySessionVault,type SessionVault} from './session-store.js';
 export type {VaultSecurity} from './session-store.js';
 
-export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
+/**
+ * A route may require a recent sign-in (`maxAge`, seconds since the person authenticated) and, optionally,
+ * an authentication context class (`acr`, the values that count). A consumer may use maxAge alone.
+ */
+export type AuthenticationRequirement=Readonly<{maxAge?:number;acr?:readonly string[]}>;
+/** The typed answer when the current sign-in is not enough; it never names the provider's origin. */
+export type StepUpChallenge=Readonly<{maxAge?:number;acrValues?:readonly string[];login:string;resubmit:'idempotent'|'manual'}>;
+export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;authentication?:AuthenticationRequirement;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
 /** The locales the BFF may send upstream as Accept-Language; anything else becomes the default. */
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** The previous behaviour: only en and ar were ever forwarded, en by default. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
 type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;
   /** Enables POST /backchannel-logout (OpenID Connect Back-Channel Logout 1.0); expose it only on the provider's network path. */
-  backChannelLogout?:boolean;loginRateLimit?:(peer:string)=>Promise<boolean>};
+  backChannelLogout?:boolean;
+  /** The acr values a step-up may request; without this list a login cannot request an acr. */
+  acrValues?:readonly string[];
+  /** The paths the browser may return to after sign-in; '/' when unset. A string matches exactly. */
+  returnPaths?:readonly (string|RegExp)[];loginRateLimit?:(peer:string)=>Promise<boolean>};
 /**
  * How the BFF authenticates to the token endpoint. A public client sends only its client id; the
  * production profile accepts it only when the configuration declares it explicitly.
@@ -87,8 +98,8 @@ export const SESSION_LIMITS=Object.freeze({defaultIdleTimeoutSeconds:1800,maxIdl
 export const defaultAuthorizationClaims:readonly string[]=Object.freeze(['realm_access','resource_access','groups','scope','tenant_id']);
 /** A projected claim value: plain data only, never an object, never a token. */
 export type ClaimValue=string|number|boolean|readonly string[];
-type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number;lastSeen?:number;sid?:string};
-type Transaction={verifier:string;nonce:string;expires:number};
+type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number;lastSeen?:number;sid?:string;authTime?:number;acr?:string};
+type Transaction={verifier:string;nonce:string;expires:number;maxAge?:number;acr?:string[];returnTo?:string};
 const opaque=()=>randomBytes(32).toString('base64url');
 const jsonHeaders={'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'};
 function equal(left:string,right:string){const a=Buffer.from(left),b=Buffer.from(right);return a.length===b.length&&timingSafeEqual(a,b);}
@@ -136,6 +147,49 @@ export function createBff(config:BffConfig){
   if(claimSource!=='id'&&claimSource!=='access')throw new Error('INVALID_CONTEXT_CLAIMS');
   const preferences=config.preferenceCookie?createPreferenceCookie(config.preferenceCookie):undefined;
   const backChannel=config.backChannelLogout===true;
+  const acrToken=/^[\x21-\x7e]{1,128}$/;
+  const acrAllowlist=new Set(config.acrValues??[]);
+  if([...acrAllowlist].some(value=>!acrToken.test(value)))throw new Error('INVALID_ACR_VALUES');
+  const returnPaths=config.returnPaths??['/'];
+  for(const route of config.routes){
+    const requirement=route.authentication;
+    if(!requirement)continue;
+    if(requirement.maxAge!==undefined&&(!Number.isSafeInteger(requirement.maxAge)||requirement.maxAge<0||requirement.maxAge>86400))throw new Error('INVALID_ROUTE_AUTHENTICATION');
+    if(requirement.acr!==undefined&&(!requirement.acr.length||requirement.acr.some(value=>!acrAllowlist.has(value))))throw new Error('INVALID_ROUTE_AUTHENTICATION');
+  }
+  /** A same-origin path from the allowlist, or undefined: never another origin, never a protocol-relative path. */
+  const returnPath=(value:string|null)=>{
+    if(value===null)return undefined;
+    if(value.length>512||!/^\/(?![/\\])[^\s\\]*$/.test(value))return null;
+    let parsed:URL;try{parsed=new URL(value,publicOrigin);}catch{return null;}
+    if(parsed.origin!==publicOrigin)return null;
+    return returnPaths.some(path=>typeof path==='string'?path===parsed.pathname:path.test(parsed.pathname))?parsed.pathname+parsed.search:null;
+  };
+  /** The step-up the current session needs for a requirement, or undefined when it is enough. */
+  const needsStepUp=(value:Session,requirement:AuthenticationRequirement|undefined)=>{
+    if(!requirement)return false;
+    const stale=requirement.maxAge!==undefined&&(value.authTime===undefined||(value.authTime+requirement.maxAge)*1000<Date.now());
+    const weak=requirement.acr!==undefined&&(value.acr===undefined||!requirement.acr.includes(value.acr));
+    return stale||weak;
+  };
+  const stepUp=(res:ServerResponse,requirement:AuthenticationRequirement,resubmit:'idempotent'|'manual')=>{
+    const query=new URLSearchParams();
+    if(requirement.maxAge!==undefined)query.set('max_age',String(requirement.maxAge));
+    if(requirement.acr)query.set('acr_values',requirement.acr.join(' '));
+    const challenge:StepUpChallenge={...(requirement.maxAge!==undefined?{maxAge:requirement.maxAge}:{}),...(requirement.acr?{acrValues:[...requirement.acr]}:{}),
+      login:'/api/session/login'+(query.size?'?'+query:''),resubmit};
+    write(res,401,{type:'about:blank',status:401,title:'STEP_UP_REQUIRED',stepUp:challenge});
+  };
+  /** An RFC 9470 challenge of an upstream API, reduced to the values the step-up needs. */
+  const upstreamStepUp=(header:string|null):AuthenticationRequirement|undefined=>{
+    if(!header||!/^Bearer\s/i.test(header))return undefined;
+    const parameters=Object.fromEntries([...header.matchAll(/([a-z_]+)="([^"]*)"/gi)].map(match=>[match[1]!.toLowerCase(),match[2]!]));
+    if(parameters.error!=='insufficient_user_authentication')return undefined;
+    const maxAge=parameters.max_age!==undefined&&/^\d{1,5}$/.test(parameters.max_age)?Number(parameters.max_age):undefined;
+    const acr=parameters.acr_values?.split(' ').filter(value=>acrAllowlist.has(value));
+    if(maxAge===undefined&&!acr?.length)return undefined;
+    return {...(maxAge!==undefined?{maxAge}:{}),...(acr?.length?{acr}:{})};
+  };
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
   for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');}
@@ -322,10 +376,19 @@ export function createBff(config:BffConfig){
       if(url.pathname==='/login'&&method==='GET'){
         // No unverified forwarded IP/header is trusted. The peer is the trusted presentation host.
         if(config.loginRateLimit&&!await config.loginRateLimit(req.socket.remoteAddress??'unknown'))fail(429,'LOGIN_LIMIT');
+        // A step-up names a recent sign-in, acceptable acr values and the allowlisted path to return to.
+        const maxAgeParameter=url.searchParams.get('max_age'),acrParameter=url.searchParams.get('acr_values');
+        const maxAge=maxAgeParameter===null?undefined:/^\d{1,5}$/.test(maxAgeParameter)&&Number(maxAgeParameter)<=86400?Number(maxAgeParameter):fail(400,'INVALID_STEP_UP');
+        const acr=acrParameter===null?undefined:acrParameter.split(' ');
+        if(acr&&(!acr.length||acr.length>8||acr.some(value=>!acrAllowlist.has(value))))fail(400,'INVALID_STEP_UP');
+        const returnTo=returnPath(url.searchParams.get('return_to'));
+        if(returnTo===null)fail(400,'INVALID_RETURN_PATH');
         const state=opaque(),verifier=opaque(),nonce=opaque(),expires=Date.now()+300000;
-        await vault.create('transaction',state,{verifier,nonce,expires},expires);
+        await vault.create('transaction',state,{verifier,nonce,expires,...(maxAge!==undefined?{maxAge}:{}),...(acr?{acr}:{}),...(returnTo?{returnTo}:{})},expires);
         const redirect=new URL(issuer+'/protocol/openid-connect/auth');
         const parameters=new URLSearchParams({client_id:config.clientId,response_type:'code',prompt:'login',scope:'openid profile',redirect_uri:publicOrigin+'/api/session/callback',state,nonce,code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'});
+        if(maxAge!==undefined)parameters.set('max_age',String(maxAge));
+        if(acr)parameters.set('acr_values',acr.join(' '));
         // The query wins, then the preference cookie's language, then the older whole-value locale cookie.
         const uiLocale=url.searchParams.get('ui_locales')??preferences?.read(req.headers.cookie).lang??(config.uiLocaleCookie?cookieValue(req.headers.cookie,config.uiLocaleCookie):undefined);
         if(uiLocale&&supportedUiLocales.has(uiLocale))parameters.set('ui_locales',uiLocale);
@@ -342,11 +405,17 @@ export function createBff(config:BffConfig){
         if(!tokens.id_token)fail(401,'ID_TOKEN_REQUIRED');
         const identity=await validate(tokens.id_token,config.clientId,transaction.nonce),claims=await validate(tokens.access_token,config.audience);
         if(identity.sub!==claims.sub||(config.requireTenant&&!claims.tenant_id&&!config.tenantExemptRoles?.some(role=>claims.realm_access?.roles?.includes(role))))fail(401,'INVALID_IDENTITY');
+        // A requested step-up is accepted only when the new ID token proves it; nothing is lowered.
+        const authTime=typeof identity.auth_time==='number'&&Number.isFinite(identity.auth_time)?identity.auth_time:undefined;
+        const acrClaim=typeof identity.acr==='string'?identity.acr:undefined;
+        if(transaction.maxAge!==undefined&&(authTime===undefined||(authTime+transaction.maxAge)*1000+30000<Date.now()))fail(401,'STEP_UP_FAILED');
+        if(transaction.acr&&(acrClaim===undefined||!transaction.acr.includes(acrClaim)))fail(401,'STEP_UP_FAILED');
         // Sign-in always issues a new session id; a session id from before sign-in is removed.
         const old=cookieValue(req.headers.cookie,sessionCookie);if(old)await vault.remove('session',old);
         const id=opaque(),absoluteExpires=Date.now()+absoluteSeconds*1000;
         const projected=projectClaims(claimSource==='id'?identity:claims,contextClaims);
         const created:Session={access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires,lastSeen:Date.now(),
+          ...(authTime!==undefined?{authTime}:{}),...(acrClaim!==undefined?{acr:acrClaim}:{}),
           ...(typeof identity.sid==='string'&&identity.sid.length<=256?{sid:identity.sid}:{})};
         await vault.create('session',id,created,absoluteExpires);
         await index(id,created);
@@ -356,9 +425,10 @@ export function createBff(config:BffConfig){
           // chain; a same-origin page that moves on lets the browser send it.
           res.writeHead(200,{'content-type':'text/html; charset=utf-8','set-cookie':cookies,'cache-control':'no-store','referrer-policy':'no-referrer',
             'content-security-policy':"default-src 'none'; frame-ancestors 'none'"});
-          res.end('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/">');return;
+          const target=(transaction.returnTo??'/').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+          res.end('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url='+target+'">');return;
         }
-        res.writeHead(303,{'location':publicOrigin+'/','set-cookie':cookies,'cache-control':'no-store'});res.end();return;
+        res.writeHead(303,{'location':publicOrigin+(transaction.returnTo??'/'),'set-cookie':cookies,'cache-control':'no-store'});res.end();return;
       }
       if(url.pathname==='/backchannel-logout'&&method==='POST'){
         if(!backChannel)fail(404,'OPERATION_NOT_FOUND');
@@ -390,12 +460,18 @@ export function createBff(config:BffConfig){
       if(method!=='GET')headers['content-type']='application/json';
       const idempotency=req.headers['idempotency-key'];
       if(idempotency){if(typeof idempotency!=='string'||!/^[-a-zA-Z0-9_]{8,128}$/.test(idempotency))fail(400,'INVALID_IDEMPOTENCY_KEY');headers['Idempotency-Key']=idempotency;}
+      // The BFF never holds or replays a write: the presentation server resubmits it after step-up, and only
+      // a request that is safe or carries an idempotency key may be resubmitted without the person.
+      const resubmit=method==='GET'||idempotency?'idempotent':'manual';
+      if(needsStepUp(current.value,route.authentication)){stepUp(res,route.authentication!,resubmit);return;}
       const target=new URL((route.prefix??'')+url.pathname+url.search,route.origin);
       if(target.origin!==route.origin)fail(400,'INVALID_PATH');
       const bytes=method==='GET'?undefined:await body(req);
       if(route.invoke){const reply=await route.invoke({path:url.pathname,headers,body:bytes});write(res,reply.status,reply.body);return;}
       const upstream=await fetch(target,{method,headers,...(bytes?{body:new Uint8Array(bytes)}:{}),redirect:'error',signal:AbortSignal.timeout(15000)});
       const raw=await upstream.text();
+      const challenge=upstream.status===401?upstreamStepUp(upstream.headers.get('www-authenticate')):undefined;
+      if(challenge){stepUp(res,challenge,resubmit);return;}
       res.writeHead(upstream.status,{...jsonHeaders,'x-correlation-id':requestId,...(upstream.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})});res.end(raw);
     }catch(error){
       const status=(error as {status?:number}).status??503;

@@ -36,7 +36,10 @@ minutes) and an absolute lifetime within their bounds; never shorten a lifetime 
 expect 401 on an idle or expired session and a rotated session cookie after a role change. When the provider
 must end sessions at once (an account disabled, a provider logout), enable `backChannelLogout` and route
 `POST /backchannel-logout` only from the provider's network path; register that URL as the client's
-back-channel logout URL in the provider without changing provider configuration yourself. Never log tokens,
+back-channel logout URL in the provider without changing provider configuration yourself. For
+sensitive operations give the route `authentication: {maxAge}` (and `acr` only when the product defines
+levels in `acrValues`); handle the typed `STEP_UP_REQUIRED` answer by sending the person to its `login`
+path with an allowlisted `return_to`, and list every return path in `returnPaths`. Never log tokens,
 authorization codes, cookies, client secrets or personal data.
 
 Add focused tests for login/callback, state replay, nonce/issuer/audience/expiry rejection, logout,

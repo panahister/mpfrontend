@@ -75,6 +75,28 @@ policy:
   `tenant_id` by default); the response sets the new cookie and the old id stops working. A change of
   subject or tenant still ends the session.
 
+## Re-authentication and step-up
+
+A route may require a recent sign-in and, optionally, an authentication context class:
+`authentication: {maxAge, acr}` on the route, where `acr` lists the values that count and must come from
+the BFF's `acrValues` allowlist; `maxAge` alone needs no acr levels. When the session's `auth_time` is
+older than `maxAge` or its `acr` is not listed, the BFF answers 401 with a typed body,
+`{title: 'STEP_UP_REQUIRED', stepUp: {maxAge, acrValues, login, resubmit}}`, without calling the API.
+An upstream 401 with an RFC 9470 challenge (`error="insufficient_user_authentication"`, `max_age`,
+`acr_values`) becomes the same typed answer; its body and other headers stay behind, and the answer never
+names the provider's origin. `login` is the BFF's own relative login path.
+
+`/login` accepts `max_age`, `acr_values` (allowlisted values only) and `return_to`. The callback accepts the
+new session only when the new ID token's `auth_time` is within `max_age` and its `acr` is one of the
+requested values; otherwise it answers 401 `STEP_UP_FAILED`, creates nothing and leaves the earlier session
+as it was. A successful step-up replaces the weaker session: its id and tokens are removed. `return_to` must
+be a same-origin path that matches `returnPaths` (default `/`); another origin, a protocol-relative or
+backslash path, or an unlisted path is refused with 400 before the provider is asked.
+
+The BFF never holds or replays a write. `resubmit` is `idempotent` for a safe request or a write that
+carries an `Idempotency-Key`, and `manual` otherwise: the presentation server resubmits an idempotent
+request with the same key after the step-up, and asks the person again for any other write.
+
 ## Back-channel logout
 
 `backChannelLogout: true` enables `POST /backchannel-logout` (OpenID Connect Back-Channel Logout 1.0). The
