@@ -33,7 +33,7 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is currently a verified **public source proof of concept**. Its thirteen packages are not
+> MP Frontend is currently a verified **public source proof of concept**. Its fourteen packages are not
 > published to a package registry, and no stable public API guarantee is declared yet. The supported
 > evaluation path is this source repository plus the immutable, hash-checked cohort in the
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
@@ -276,14 +276,14 @@ reviewable contract surface so product engineers can implement the behavior that
 | Workspace scaffolding | New pnpm/Nx workspace, application, feature, route, and shared-package generators with explicit design-source mode; see the [CLI guide](docs/CLI-GUIDE.md) | Refuses existing or symlink destinations; does not install dependencies, initialize Git, or deploy |
 | Workspace quality profile | Shared formatter, lint and TypeScript configuration; module boundaries, raw-colour and hand-written-CSS rules; a workspace `check` and a CI-neutral gate | Rules cover literals and stylesheets, not colours computed at run time |
 | OpenAPI integration | Selected OpenAPI 3.1 reads and mutations, types, field metadata, standalone validators, and presentation adapters | Finite profiles only; unsupported ambiguity fails |
-| UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, and composable React UI | No product theme, icons, typography, or screen ownership |
+| UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, composable React UI, and a shared application frame | No product theme, icons, typography, or screen ownership |
 | Internationalization | Locale negotiation and direction-aware English/Arabic foundations | Product copy and complete locale QA remain consumer responsibilities |
 | Access presentation | Capability, field, and record visibility plus stale-authority fences | Not backend authorization |
 | OIDC session boundary | Authorization Code + PKCE, opaque cookies, Redis-backed encrypted records, refresh coordination, revocation, CSRF and allowlists | Current package refuses production startup pending production security gates |
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Thirteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
+| Distribution verification | Fourteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
 
 ## OpenAPI contract generation
 
@@ -454,7 +454,7 @@ security review remain deployment gates. Read [Security BFF](packages/security-b
 
 ## Package catalog
 
-The workspace contains thirteen domain-neutral packages:
+The workspace contains fourteen domain-neutral packages:
 
 | Package | Runtime | Responsibility |
 |---|---|---|
@@ -468,6 +468,7 @@ The workspace contains thirteen domain-neutral packages:
 | [`@mpfrontend/i18n`](packages/i18n) | Universal | Locale negotiation and direction-aware foundations |
 | [`@mpfrontend/access-core`](packages/access-core) | Universal | Presentation capabilities, field/record visibility, and authority fences |
 | [`@mpfrontend/ui`](packages/ui) | Client | Token-driven React composition plus Tailwind v4 integration |
+| [`@mpfrontend/app-layout`](packages/app-layout) | Universal | Server-safe, direction-aware application frame: skip link, header, navigation slot, and page frame |
 | [`@mpfrontend/presentation-server`](packages/presentation-server) | Server | Authenticated API mediation and bounded realtime presentation transport |
 | [`@mpfrontend/security-bff`](packages/security-bff) | Server | OIDC lifecycle, opaque sessions, encrypted Redis records, refresh coordination, and revocation |
 | [`@mpfrontend/realtime-core`](packages/realtime-core) | Universal | Ticket admission, reconnect, replay/snapshot recovery, revocation, and diagnostics |
@@ -520,8 +521,8 @@ The published source checkpoint currently records:
 
 | Evidence | Observed result |
 |---|---:|
-| Complete Nx workspace | 52/52 uncached lint, typecheck, test, and build targets |
-| Package cohort | 13/13 archives, manifests, digests, and export checks |
+| Complete Nx workspace | 56/56 uncached lint, typecheck, test, and build targets |
+| Package cohort | 14/14 archives, manifests, digests, and export checks |
 | Distribution negative controls | 10/10 expected failures observed |
 | AI procedure format validation | 18/18 procedures |
 | Installed independent-consumer security assertions | 12/12 |
@@ -569,6 +570,7 @@ production-certified platform.
 │   ├── i18n/                  locale and direction foundations
 │   ├── access-core/           presentation access and authority fences
 │   ├── ui/                    React/Tailwind composition
+│   ├── app-layout/            application frame, header, navigation, and page frame
 │   ├── presentation-server/   server mediation and realtime transport
 │   ├── security-bff/          OIDC and encrypted session authority
 │   └── realtime-core/         client admission and recovery
@@ -671,7 +673,7 @@ grant credentials, approve a design, publish a release, or guarantee identical d
 <summary><strong>Can I use only one package?</strong></summary>
 
 The packages are intentionally modular and have explicit runtime roles. However, the current public
-distribution evidence validates one locked thirteen-package cohort, and no registry API stability contract
+distribution evidence validates one locked fourteen-package cohort, and no registry API stability contract
 exists yet. Evaluate isolated adoption against the package's documented boundary and your own tests.
 </details>
 

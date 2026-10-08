@@ -1,4 +1,5 @@
 'use client';
+import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Card, Field, ResourceTable, type DisplayField } from '@mpfrontend/ui';
 import { formatValue, translator, type Locale } from '@mpfrontend/i18n';
 import { itemPosition, type __Resource__Page } from '../../../entities/__resource__';
@@ -20,8 +21,7 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
   const t = translator(language);
   const search = use__Feature__Search(basePath, query.search);
   return (
-    <section className="grid gap-4">
-      <h1>{title}</h1>
+    <PageFrame title={title}>
       <form
         role="search"
         action={basePath}
@@ -79,6 +79,6 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
           </nav>
         </Card>
       )}
-    </section>
+    </PageFrame>
   );
 }

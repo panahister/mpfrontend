@@ -34,7 +34,7 @@ pnpm pack:local
 pnpm exec nx run distribution:consumer-check
 ```
 
-The first command produces and verifies the thirteen package archives. The second creates an independent
+The first command produces and verifies the fourteen package archives. The second creates an independent
 consumer, installs the packed cohort, exercises both supported design-source modes, installs all eighteen
 AI procedures, runs the consumer-level security, realtime, generation, drift, and preservation checks, and
 then runs the generated workspace's own `pnpm check` and its lint negative controls.

@@ -1,11 +1,9 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { direction, translator } from '@mpfrontend/i18n';
+import { AppFrame, AppHeader, Navigation } from '@mpfrontend/app-layout';
 import { PreferenceControls, readPreferences } from '../features/preferences';
 import { appId, preferenceCookie } from '../config/app';
-import '@mpfrontend/tokens/styles.css';
-import '@mpfrontend/ui/styles.css';
 import './globals.css';
 
 export const metadata = {
@@ -17,6 +15,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const saved = await cookies();
   const preferences = readPreferences((key) => saved.get(preferenceCookie(key))?.value);
   const t = translator(preferences.locale);
+  // The app passes the items it may show; the shell decides nothing about access.
+  const items = [
+    { href: '/catalog', label: t('catalog') },
+    { href: '/components', label: 'Components' },
+    { href: '/api/docs', label: t('docs') },
+  ];
   return (
     <html
       lang={preferences.locale}
@@ -25,15 +29,18 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       data-mode={preferences.mode}
     >
       <body>
-        <header className="mx-auto flex max-w-[75rem] flex-wrap items-end justify-between gap-4 p-8 max-sm:p-4">
-          <nav className="flex gap-4">
-            <Link href="/catalog">{t('catalog')}</Link>
-            <Link href="/components">Components</Link>
-            <a href="/api/docs">{t('docs')}</a>
-          </nav>
-          <PreferenceControls initial={preferences} />
-        </header>
-        <main className="mx-auto max-w-[75rem] px-8 pb-8 max-sm:px-4">{children}</main>
+        <AppFrame
+          skipLinkLabel={t('skipToContent')}
+          header={
+            <AppHeader
+              brand={<a href="/catalog">{appId}</a>}
+              navigation={<Navigation label={t('navigation')} items={items} />}
+              actions={<PreferenceControls initial={preferences} />}
+            />
+          }
+        >
+          {children}
+        </AppFrame>
       </body>
     </html>
   );

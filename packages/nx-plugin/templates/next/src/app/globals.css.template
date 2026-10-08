@@ -1,7 +1,12 @@
 /* The global entry: imports and base element rules only. Layout comes from framework components and
-   utility classes; token values come from the theme layer. */
+   utility classes; token values come from the theme layer, which loads after the neutral fallback. */
 @import 'tailwindcss';
 @import '@mpfrontend/ui/tailwind.css';
+@import '@mpfrontend/app-layout/tailwind.css';
+@import '@mpfrontend/tokens/styles.css';
+@import '@mpfrontend/ui/styles.css';
+@import '@mpfrontend/app-layout/styles.css';
+@import '../theme/theme.css';
 
 * {
   box-sizing: border-box;

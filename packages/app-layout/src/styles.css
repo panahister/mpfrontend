@@ -1,0 +1,7 @@
+/* Neutral layout tokens and semantic colours of the shell. An app theme overrides the variables. */
+:root { --mp-shell-content-max:75rem; --mp-shell-gutter:2rem; }
+.mp-app-header { background:var(--mp-surface-panel); border-block-end:1px solid var(--mp-border-subtle); }
+.mp-skip-link { background:var(--mp-surface-panel); color:var(--mp-foreground-primary); border:2px solid var(--mp-focus-ring); }
+.mp-nav-link { color:var(--mp-foreground-secondary); text-underline-offset:3px; }
+.mp-nav-link:hover,.mp-nav-link[aria-current="page"] { color:var(--mp-foreground-primary); text-decoration:underline; }
+.mp-main:focus { outline:none; }

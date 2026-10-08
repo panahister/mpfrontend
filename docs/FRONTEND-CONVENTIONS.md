@@ -207,7 +207,11 @@ project. `tools/ci/check.sh` runs a frozen install and the uncached check in any
 | No hand-written CSS | A stylesheet outside the theme layer and the one global entry; class or id rules in the global entry; inline style objects other than CSS custom properties |
 
 Colours come from design tokens (`var(--mp-*)`) and the theme file; layout comes from framework
-components and utility classes. The allowed paths and tag constraints are options of the shared
+components and utility classes. Every app is framed by `@mpfrontend/app-layout` (skip link, header,
+navigation slot, page frame), and its only stylesheets are the global entry `src/app/globals.css`
+(imports and base element rules) and the theme file `src/theme/theme.css`, which loads after the neutral
+token fallback and holds the app's token values or imports the generated tokens of an attached design
+source. The allowed paths and tag constraints are options of the shared
 configuration, not edits to it. Fix the code rather than weakening a rule to make the check pass.
 
 ## Generated and handwritten ownership

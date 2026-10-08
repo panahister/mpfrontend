@@ -46,3 +46,12 @@ use `formatFiles`). Generated contracts default to `src/api/generated/<contract>
 feature-local output stays valid. Init also writes `CODEOWNERS` with placeholder owners and
 `.agents/skills/README.md`; create app writes `.env.example` (names only) and `docs/`. See
 [the CLI guide](../../docs/CLI-GUIDE.md).
+
+The application template is framed by `@mpfrontend/app-layout` and compiles Tailwind CSS v4 with the UI
+and shell outputs as sources. `src/app/globals.css` imports Tailwind, the neutral tokens, the component
+styles and, last, the app theme `src/theme/theme.css`; it holds no class rule. Upgrade note: apps created
+before this template keep their own `globals.css` with the `.mp-shell`, `.mp-controls`, `.mp-status` and
+`.mp-alert` classes, which were template classes, not a contract of `@mpfrontend/ui`. Such an app adopts
+the shell by adding `@mpfrontend/app-layout`, importing its CSS from the global stylesheet, wrapping the
+layout in `AppFrame` and each screen in `PageFrame`, and replacing those classes with utility classes.
+The `.mp-*` classes of the UI components are unchanged.

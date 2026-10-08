@@ -40,6 +40,9 @@ export async function planFeature(reader:WorkspaceReader,request:FeatureRequest)
   if(!NAME_PATTERN.test(request.name))throw new Error('INVALID_FEATURE_NAME');
   if(!await reader.exists(app+'/project.json'))throw new Error('APP_NOT_FOUND');
   if(await reader.exists(app+'/src/features/'+request.name))throw new Error('DESTINATION_EXISTS');
+  // Feature screens render inside the shared page frame.
+  const manifest=JSON.parse(await reader.read(app+'/package.json')??'{}') as {dependencies?:Record<string,string>};
+  if(!manifest.dependencies?.['@mpfrontend/app-layout'])throw new Error('APP_PREREQUISITE_MISSING:@mpfrontend/app-layout');
   let generatedOutput:string|undefined;
   if(request.resource!==undefined){
     for(const required of ['src/config/app.ts','src/config/server.ts'])if(!await reader.exists(app+'/'+required))throw new Error('APP_PREREQUISITE_MISSING:'+required);

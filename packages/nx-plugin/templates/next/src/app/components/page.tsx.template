@@ -1,16 +1,16 @@
+import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Field, Select, Card } from '@mpfrontend/ui';
 
 export default function Components() {
   return (
-    <section className="grid gap-4">
-      <h1>MP Frontend component foundation</h1>
+    <PageFrame title="MP Frontend component foundation">
       <Card>
-        <div className="mt-4 mb-8 flex flex-wrap items-end gap-4">
+        <div className="flex flex-wrap items-end gap-4">
           <Button>Continue</Button>
           <Button tone="secondary">Continue</Button>
           <Button disabled>Continue</Button>
         </div>
-        <div className="mt-4 mb-8 flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
+        <div className="mt-8 flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
           <Field label="Field label" placeholder="Enter value" helper="Helper text" />
           <Select label="Account" defaultValue="">
             <option value="" disabled>
@@ -20,6 +20,6 @@ export default function Components() {
           </Select>
         </div>
       </Card>
-    </section>
+    </PageFrame>
   );
 }

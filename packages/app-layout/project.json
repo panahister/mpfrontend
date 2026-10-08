@@ -1,0 +1,38 @@
+{
+  "name": "app-layout",
+  "root": "packages/app-layout",
+  "sourceRoot": "packages/app-layout/src",
+  "projectType": "library",
+  "tags": [
+    "scope:platform",
+    "runtime:universal",
+    "type:ui"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/app-layout/tsconfig.json"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p packages/app-layout/tsconfig.json --noEmit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint packages/app-layout/src packages/app-layout/tests"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --import tsx --test packages/app-layout/tests/*.test.ts",
+        "env": { "TSX_TSCONFIG_PATH": "tsconfig.base.json" }
+      }
+    }
+  }
+}

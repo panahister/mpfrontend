@@ -42,6 +42,12 @@ user; never fill in real owners or environment values yourself. Add features, ro
 with `mpfrontend create feature`, `create route` and `create package`; see the CLI guide for what each
 writes and refuses.
 
+The app frame comes from `@mpfrontend/app-layout` (skip link, header, navigation slot, page frame); the
+template passes its own navigation items. `src/app/globals.css` holds only imports and base element
+rules: Tailwind v4, the UI and shell sources, the neutral tokens, the component styles and, last, the app
+theme file `src/theme/theme.css`. Apps created before the shell keep their own stylesheet; moving them
+to the shell replaces their hand-written layout classes with the shell components and utility classes.
+
 Init writes the quality profile: root `eslint.config.mjs` and `prettier.config.mjs` that re-export
 `@mpfrontend/workspace-config`, a `check` script, `tools/ci/check.sh` and a GitHub Actions workflow that
 runs it. Create app gives the app `format`, `format:check`, `lint` and `test` targets and an app

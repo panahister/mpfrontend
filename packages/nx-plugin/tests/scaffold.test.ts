@@ -90,6 +90,11 @@ test('a screen feature has the five folders and an entry; dry-run writes nothing
     await assert.rejects(createFeature({app: 'apps/web', name: 'Order', root}), /INVALID_FEATURE_NAME/);
     await assert.rejects(createFeature({app: '../web', name: 'other', root}), /INVALID_APP_DIRECTORY/);
     await assert.rejects(createFeature({app: 'apps/none', name: 'other', root}), /APP_NOT_FOUND/);
+    const manifestPath = join(root, 'apps/web/package.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    delete manifest.dependencies['@mpfrontend/app-layout'];
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await assert.rejects(createFeature({app: 'apps/web', name: 'other', root}), /APP_PREREQUISITE_MISSING:@mpfrontend\/app-layout/);
   } finally {
     await rm(root, {recursive: true, force: true});
   }

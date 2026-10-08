@@ -27,6 +27,15 @@ For API controls prove the consumer adapters and request/read guards, not only s
 Run relevant UI and consumer lint/typecheck/test/build targets; save native browser evidence when
 visual acceptance is required. A screenshot alone does not prove interaction or accessibility.
 
+Frame every app with `@mpfrontend/app-layout`: `AppFrame` (skip link and focusable `main`), `AppHeader`
+(brand, navigation slot, actions slot), `Navigation` and `PageFrame` (a section labelled by its title,
+with an actions slot). Pass only the navigation items that the server allows; the shell decides nothing
+about access, and every text is a prop. Import `@mpfrontend/ui/tailwind.css` and
+`@mpfrontend/app-layout/tailwind.css` from the app's global stylesheet so that Tailwind v4 compiles the
+structural classes, and verify a built rule such as `p-6` of Card. Take spacing and layout from the
+components and utility classes; never add a layout stylesheet, a class rule to the global entry or a raw
+colour, which the shared lint rules refuse.
+
 If a missing reusable component is requested, record its neutral behavioral contract and test it
 before extending core; do not label an invented component as a verified Figma implementation.
 Never alter Figma, publish a package or perform a live business mutation without that authority.

@@ -73,6 +73,18 @@ importers:
 
   packages/ai-skills: {}
 
+  packages/app-layout:
+    dependencies:
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.0(react@19.3.0)
+      tailwindcss:
+        specifier: '>=4 <5'
+        version: 4.3.3
+
   packages/ftg-cli:
     dependencies:
       '@apidevtools/swagger-parser':

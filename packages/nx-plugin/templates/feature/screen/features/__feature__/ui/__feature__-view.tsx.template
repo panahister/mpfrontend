@@ -1,3 +1,4 @@
+import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Card } from '@mpfrontend/ui';
 import type { __Feature__Status } from '../model/__feature__';
 import { labels } from '../model/overrides';
@@ -14,17 +15,18 @@ export function __Feature__View({ status, available, onStart }: Props) {
         ? labels.failed
         : '';
   return (
-    <Card>
-      <h1>{labels.title}</h1>
-      <Button
-        onClick={onStart}
-        restricted={!available}
-        loading={status === 'running'}
-        loadingLabel={labels.running}
-      >
-        {labels.run}
-      </Button>
-      <p role={status === 'failed' ? 'alert' : 'status'}>{message}</p>
-    </Card>
+    <PageFrame title={labels.title}>
+      <Card>
+        <Button
+          onClick={onStart}
+          restricted={!available}
+          loading={status === 'running'}
+          loadingLabel={labels.running}
+        >
+          {labels.run}
+        </Button>
+        <p role={status === 'failed' ? 'alert' : 'status'}>{message}</p>
+      </Card>
+    </PageFrame>
   );
 }

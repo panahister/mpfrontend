@@ -1,0 +1,8 @@
+/* The app theme: the one file of this app that sets design-token values. globals.css loads it after the
+   neutral fallback of @mpfrontend/tokens, so a value here wins. Scope values to a brand of the registry in
+   config.ts. With an attached design source, import its generated tokens instead of writing values:
+   @import '../../../../themes/<id>/generated/tokens.gen.css'; */
+:root[data-brand='neutral'] {
+  --mp-shell-content-max: 75rem;
+  --mp-shell-gutter: 2rem;
+}

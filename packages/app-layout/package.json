@@ -1,0 +1,27 @@
+{
+  "name": "@mpfrontend/app-layout",
+  "version": "0.1.0-dev.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./src/styles.css",
+    "./tailwind.css": "./src/tailwind.css"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "src/styles.css",
+    "src/tailwind.css"
+  ],
+  "dependencies": {},
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwindcss": ">=4 <5"
+  }
+}

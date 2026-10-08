@@ -13,19 +13,21 @@ from the work required for a stable package and production deployment.
 | `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 19/19 |
 | `@mpfrontend/ftg-core` | `0.1.0-dev.5` | included in source and consumer gates |
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 64/64 |
+| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 75/75 |
+| `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
 | `@mpfrontend/security-bff` | `0.1.0-dev.6` | 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
-| Complete Nx workspace | thirteen packages | 52/52 lint, typecheck, test, and build targets |
-| Local package cohort | thirteen archives | 13/13 pack and manifest verification |
+| Complete Nx workspace | fourteen packages | 56/56 lint, typecheck, test, and build targets |
+| Local package cohort | fourteen archives | 14/14 pack and manifest verification |
 
-Fresh independent consumer `mpfrontend-packed-consumer-5f3mP1` executed the packed CLI rather than the
+Fresh independent consumer `mpfrontend-packed-consumer-tCKvgh` executed the packed CLI rather than the
 source workspace. It passed code-first and consumer-owned design initialization, explicit refusal of the
 removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
 design lifecycle commands, security and realtime assertions, the feature, route and package generators
 (dry-run, creation, refusal of an existing destination and an Nx generator dry-run), the generated
 workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build and
-generated-check) over the generated app, features, routes and package, four lint negative controls,
+generated-check) over the generated app, features, routes and package, a built-CSS check of the
+Tailwind structural classes and the theme order, four lint negative controls,
 generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
 run in that local fixture.
 
@@ -39,6 +41,7 @@ run in that local fixture.
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
 | English/Arabic and LTR/RTL foundations | Implemented | Runtime primitives and Tiffin consumer tests |
+| Shared application frame and template styling | Implemented | `@mpfrontend/app-layout` markup tests in both directions and for the keyboard path; the packed consumer's build compiles Tailwind v4 over the UI and shell output (`p-6` of Card is a rule of the built CSS) and loads the app theme after the neutral tokens. A browser check of a generated app in English and Arabic was run once by hand; it is not an automated gate |
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |
 | Repository-scoped AI procedures | Implemented | Fourteen Base and four optional Design procedures |

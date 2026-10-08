@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { PageFrame } from '@mpfrontend/app-layout';
 import { Card, type DisplayField } from '@mpfrontend/ui';
 import { formatValue, translator, type Locale } from '@mpfrontend/i18n';
 import type { __Resource__Item } from '../../../entities/__resource__';
@@ -16,9 +17,7 @@ export function __Feature__Detail({ item, fields, language, basePath }: Props) {
   const t = translator(language);
   const values = item as Readonly<Record<string, unknown>> | null;
   return (
-    <section className="grid gap-4">
-      <h1>{title}</h1>
-      <a href={basePath}>{t('back')}</a>
+    <PageFrame title={title} actions={<a href={basePath}>{t('back')}</a>}>
       {values === null ? (
         <p role="alert">{t('unavailable')}</p>
       ) : (
@@ -33,6 +32,6 @@ export function __Feature__Detail({ item, fields, language, basePath }: Props) {
           </dl>
         </Card>
       )}
-    </section>
+    </PageFrame>
   );
 }

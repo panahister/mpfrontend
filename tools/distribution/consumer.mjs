@@ -1,5 +1,5 @@
 // Install real packed packages into a fresh, independent Nx workspace. Never import platform source.
-import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm} from 'node:fs/promises';
+import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm, readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join,delimiter,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -209,6 +209,22 @@ await run('pnpm',['run','format']);
 // Generated output is produced and checked in before the gate, as after any ftg.config.json change.
 await run('pnpm',['exec','nx','run','sample:ftg-generate','--skip-nx-cache']);
 await run('pnpm',['check','--skip-nx-cache']);
+// The app build compiles Tailwind v4 over the published UI and shell output: the structural class p-6 of
+// Card and the shell's content width are rules of the built CSS, and the app theme follows the neutral tokens.
+async function cssFiles(directory){
+  const result=[];
+  for(const entry of await readdir(directory,{withFileTypes:true})){
+    const path=join(directory,entry.name);
+    if(entry.isDirectory())result.push(...await cssFiles(path));else if(entry.name.endsWith('.css'))result.push(path);
+  }
+  return result;
+}
+const builtCss=(await Promise.all((await cssFiles(join(workspace,'apps/sample/.next/static'))).map(path=>readFile(path,'utf8')))).join('\n');
+assert.match(builtCss,/\.p-6\{padding:/,'TAILWIND_STRUCTURAL_CLASS_NOT_COMPILED');
+assert.match(builtCss,/max-width:var\(--mp-shell-content-max\)/,'SHELL_STRUCTURAL_CLASS_NOT_COMPILED');
+const fallback=builtCss.indexOf('--mp-surface-canvas:'),theme=builtCss.search(/:root\[data-brand=["']?neutral["']?\]\{--mp-shell-content-max:75rem/);
+assert.ok(fallback>=0&&theme>fallback,'THEME_FILE_NOT_AFTER_TOKEN_FALLBACK');
+console.log(JSON.stringify({stage:'built-css',ok:true,structuralClass:'p-6',shellClass:'max-w-[var(--mp-shell-content-max)]',themeAfterFallback:true}));
 // A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
 await run('pnpm',['run','format:check']);
 // Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
@@ -266,5 +282,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

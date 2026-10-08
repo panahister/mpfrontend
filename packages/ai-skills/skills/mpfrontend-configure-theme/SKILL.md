@@ -21,6 +21,12 @@ SSR initialization paths; clean up media-query listeners and avoid hydration dis
 light/dark must not change with OS preference; system mode must. Theme switching must preserve
 locale, identity and active drafts.
 
+Each app has one theme file, `src/theme/theme.css`, that the global stylesheet imports after the neutral
+fallback of `@mpfrontend/tokens` and the component styles. Set token values there, scoped to a brand of
+`src/theme/config.ts` (for example `:root[data-brand='product'] { --mp-surface-canvas: ... }`), or import
+the generated `tokens.gen.css` of an attached design source from it. Raw colours are allowed only in the
+theme layer; lint refuses them elsewhere. `config.ts` keeps the brand registry.
+
 Map surface, text, border, focus, disabled and feedback colors from reviewed consumer tokens;
 include the mp-* CSS-variable interface used by the actual UI exports. Do not substitute a product
 palette into neutral core or hard-code a separate color in every component. Asset/font rights and
