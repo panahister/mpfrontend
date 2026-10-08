@@ -29,8 +29,9 @@ the cookie never decides anything about authority.
 `apiLocales: {supported, defaultLocale}` is the allowlist for the `Accept-Language` header the BFF sends
 upstream. The browser's header is negotiated against it by quality, exact range and primary language;
 only an allowlisted token is ever sent, and the default replaces anything else, including malformed or
-crafted input. Without configuration only `en` or `ar` is sent, as before; a consumer whose backends
-answer in Persian lists `fa`.
+crafted input. Without configuration only `en` is sent: English is the one language MP Frontend ships. A
+product lists the locales its backends answer in, which may exclude English, for example
+`{supported: ['<code>'], defaultLocale: '<code>'}`.
 
 The default memory vault remains a single-process development profile; restart signs users out.
 The `./session-store` export provides `SessionVault`, `createMemorySessionVault`, `createRedisSessionVault`,

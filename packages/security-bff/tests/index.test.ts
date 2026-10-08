@@ -2,7 +2,10 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {generateKeyPairSync,sign} from 'node:crypto';
-import {createBff} from '../src/index.js';
+import {createBff,defaultApiLocales} from '../src/index.js';
+
+// A test fixture, never a built-in locale: a private-use pseudo-locale tag.
+const RTL='qps-plocm';
 
 test('OIDC state/PKCE, signed identity, opaque sessions, CSRF, permissions and logout',async()=>{
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
@@ -27,20 +30,20 @@ test('OIDC state/PKCE, signed identity, opaque sessions, CSRF, permissions and l
   });
   await new Promise<void>(resolve=>provider.listen(0,'127.0.0.1',resolve));
   const providerOrigin='http://127.0.0.1:'+(provider.address() as {port:number}).port;issuer=providerOrigin+'/realms/test';
-  const bff=createServer(createBff({publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',supportedUiLocales:['en','ar'],uiLocaleCookie:'preferred_locale',development:true,routes:[{method:'GET',pattern:/^\/v1\/orders$/,roles:['customer'],origin:providerOrigin},{method:'POST',pattern:/^\/v1\/orders$/,roles:['customer'],origin:providerOrigin},{method:'GET',pattern:/^\/v1\/admin$/,roles:['admin'],origin:providerOrigin},{method:'POST',pattern:/^\/v1\/adapter$/,roles:['customer'],origin:providerOrigin,invoke:async input=>{adapterCalls++;assert.ok(input.headers.authorization?.startsWith('Bearer '));return {status:200,body:{received:input.body?.byteLength}};}}]}));
+  const bff=createServer(createBff({publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',supportedUiLocales:['en',RTL],uiLocaleCookie:'preferred_locale',development:true,routes:[{method:'GET',pattern:/^\/v1\/orders$/,roles:['customer'],origin:providerOrigin},{method:'POST',pattern:/^\/v1\/orders$/,roles:['customer'],origin:providerOrigin},{method:'GET',pattern:/^\/v1\/admin$/,roles:['admin'],origin:providerOrigin},{method:'POST',pattern:/^\/v1\/adapter$/,roles:['customer'],origin:providerOrigin,invoke:async input=>{adapterCalls++;assert.ok(input.headers.authorization?.startsWith('Bearer '));return {status:200,body:{received:input.body?.byteLength}};}}]}));
   await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+(bff.address() as {port:number}).port;
   try{
     assert.equal((await fetch(base+'/context')).status,401);
-    const unsupported=new URL((await fetch(base+'/login?ui_locales=fa',{redirect:'manual'})).headers.get('location')!);
+    const unsupported=new URL((await fetch(base+'/login?ui_locales=qaa',{redirect:'manual'})).headers.get('location')!);
     assert.equal(unsupported.searchParams.has('ui_locales'),false);
-    const cookieLocale=new URL((await fetch(base+'/login',{headers:{cookie:'preferred_locale=ar'},redirect:'manual'})).headers.get('location')!);
-    assert.equal(cookieLocale.searchParams.get('ui_locales'),'ar');
-    const login=await fetch(base+'/login?ui_locales=ar',{redirect:'manual'}),location=new URL(login.headers.get('location')!);
+    const cookieLocale=new URL((await fetch(base+'/login',{headers:{cookie:'preferred_locale='+RTL},redirect:'manual'})).headers.get('location')!);
+    assert.equal(cookieLocale.searchParams.get('ui_locales'),RTL);
+    const login=await fetch(base+'/login?ui_locales='+RTL,{redirect:'manual'}),location=new URL(login.headers.get('location')!);
     nonce=location.searchParams.get('nonce')!;const state=location.searchParams.get('state')!;
     assert.equal(location.searchParams.get('code_challenge_method'),'S256');assert.ok(location.searchParams.get('code_challenge'));
     assert.equal(location.searchParams.get('prompt'),'login');
-    assert.equal(location.searchParams.get('ui_locales'),'ar');
+    assert.equal(location.searchParams.get('ui_locales'),RTL);
     assert.equal(location.searchParams.get('redirect_uri'),'http://localhost:4401/api/session/callback');
     const transactionCookie=login.headers.getSetCookie()[0]!.split(';')[0]!;
     assert.equal((await fetch(base+'/callback?code=ok&state='+state,{redirect:'manual'})).status,401);
@@ -97,11 +100,11 @@ test('the upstream Accept-Language is negotiated from the configured allowlist a
   await new Promise<void>(resolve=>provider.listen(0,'127.0.0.1',resolve));
   const providerOrigin='http://127.0.0.1:'+(provider.address() as {port:number}).port;issuer=providerOrigin+'/realms/test';
   const settings={publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',development:true as const,routes:[{method:'GET',pattern:/^\/v1\/items$/,origin:providerOrigin}]};
-  const servers=[createServer(createBff({...settings,apiLocales:{supported:['fa','en'],defaultLocale:'fa'}})),createServer(createBff(settings))];
+  const servers=[createServer(createBff({...settings,apiLocales:{supported:[RTL,'en'],defaultLocale:RTL}})),createServer(createBff(settings))];
   for(const server of servers)await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
   try{
-    assert.throws(()=>createBff({...settings,apiLocales:{supported:['fa','en'],defaultLocale:'de'}}),/INVALID_API_LOCALES/);
-    assert.throws(()=>createBff({...settings,apiLocales:{supported:['fa\r\n'],defaultLocale:'fa\r\n'}}),/INVALID_API_LOCALES/);
+    assert.throws(()=>createBff({...settings,apiLocales:{supported:[RTL,'en'],defaultLocale:'qaa'}}),/INVALID_API_LOCALES/);
+    assert.throws(()=>createBff({...settings,apiLocales:{supported:[RTL+'\r\n'],defaultLocale:RTL+'\r\n'}}),/INVALID_API_LOCALES/);
     const sessions:string[]=[];
     for(const server of servers){
       const base='http://127.0.0.1:'+(server.address() as {port:number}).port;
@@ -115,19 +118,20 @@ test('the upstream Accept-Language is negotiated from the configured allowlist a
       const response=await fetch(base+'/v1/items',{headers:{cookie,...(language===undefined?{}:{'accept-language':language})}});
       assert.equal(response.status,200);return received.at(-1);
     };
-    // A consumer that serves Persian configures it; the browser's own header never reaches the backend.
-    assert.equal(await ask(0,'fa-IR,fa;q=0.9,en;q=0.8'),'fa');
+    // A product lists the locales its backends answer in; the browser's own header never reaches the backend.
+    assert.equal(await ask(0,RTL+',en;q=0.8'),RTL);
     assert.equal(await ask(0,'en-US,en;q=0.9'),'en');
-    assert.equal(await ask(0,'de'),'fa');
-    assert.equal(await ask(0),'fa');
-    for(const crafted of ['fa;q=1, <script>alert(1)</script>','en;q=0.1,fa-XX-x-crafted;q=0.2','x'.repeat(400),'fa,'.repeat(40)]){
-      assert.ok(['fa','en'].includes((await ask(0,crafted))!),crafted);
+    assert.equal(await ask(0,'qaa'),RTL);
+    assert.equal(await ask(0),RTL);
+    for(const crafted of [RTL+';q=1, <script>alert(1)</script>','en;q=0.1,qps-XX-x-crafted;q=0.2','x'.repeat(400),(RTL+',').repeat(40)]){
+      assert.ok([RTL,'en'].includes((await ask(0,crafted))!),crafted);
     }
-    // Without configuration only en and ar are ever forwarded, as before.
-    assert.equal(await ask(1,'fa'),'en');
-    assert.equal(await ask(1,'ar'),'ar');
-    assert.equal(await ask(1,'ar-SA,ar;q=0.9'),'ar');
-    assert.ok(received.every(value=>['fa','en','ar'].includes(value)));
+    // Without configuration only English, MP Frontend's one built-in language, is ever forwarded.
+    assert.deepEqual(defaultApiLocales,{supported:['en'],defaultLocale:'en'});
+    assert.equal(await ask(1,RTL),'en');
+    assert.equal(await ask(1,'qaa;q=1, '+RTL+';q=0.9'),'en');
+    assert.equal(await ask(1,'en-GB,en;q=0.9'),'en');
+    assert.ok(received.every(value=>[RTL,'en'].includes(value)));
   }finally{
     for(const server of [...servers,provider])server.closeAllConnections();
     await Promise.all([...servers,provider].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));

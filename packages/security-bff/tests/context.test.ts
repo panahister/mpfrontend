@@ -4,6 +4,9 @@ import {createServer} from 'node:http';
 import {generateKeyPairSync,sign} from 'node:crypto';
 import {createBff,projectClaims} from '../src/index.js';
 
+// A test fixture, never a built-in locale: a private-use pseudo-locale tag.
+const RTL='qps-plocm';
+
 test('allowlisted claims of the ID token reach /context bounded and token-free; the preference cookie only chooses ui_locales',async()=>{
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
   let nonce='',issuer='',identityClaims:Record<string,unknown>={},refreshIdToken:'same'|'none'|'other'='same';
@@ -29,9 +32,9 @@ test('allowlisted claims of the ID token reach /context bounded and token-free; 
   });
   await new Promise<void>(resolve=>provider.listen(0,'127.0.0.1',resolve));
   const providerOrigin='http://127.0.0.1:'+(provider.address() as {port:number}).port;issuer=providerOrigin+'/realms/test';
-  const settings={publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',development:true as const,routes:[],supportedUiLocales:['en','fa']};
+  const settings={publicOrigin:'http://localhost:4401',issuer,clientId:'web',audience:'api',cookieName:'test_session',development:true as const,routes:[],supportedUiLocales:['en',RTL]};
   const bff=createServer(createBff({...settings,contextClaims:['locale','theme','email','groups','bio','raw','nested','access_only','missing'],
-    preferenceCookie:{name:'mp_preferences',locales:['en','fa'],themes:['light','dark','system']}}));
+    preferenceCookie:{name:'mp_preferences',locales:['en',RTL],themes:['light','dark','system']}}));
   await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+(bff.address() as {port:number}).port;
   try{
@@ -39,22 +42,22 @@ test('allowlisted claims of the ID token reach /context bounded and token-free; 
       assert.throws(()=>createBff({...settings,contextClaims:names}),/INVALID_CONTEXT_CLAIMS/,names.join());
     }
     const location=async(cookie:string)=>new URL((await fetch(base+'/login',{headers:{cookie},redirect:'manual'})).headers.get('location')!);
-    assert.equal((await location('mp_preferences=lang=fa&theme=dark')).searchParams.get('ui_locales'),'fa');
+    assert.equal((await location('mp_preferences=lang='+RTL+'&theme=dark')).searchParams.get('ui_locales'),RTL);
     assert.equal((await location('mp_preferences=lang=de&theme=dark')).searchParams.has('ui_locales'),false);
     const crafted=await fetch(base+'/login',{headers:{cookie:'mp_preferences=lang=<script>&theme=x'},redirect:'manual'});
     assert.ok(!crafted.headers.get('location')!.includes('script')&&!JSON.stringify([...crafted.headers]).includes('<script>'),'an invalid value is never echoed');
 
     const raw=jwt('elsewhere',{});
-    identityClaims={locale:'fa',theme:'dark',email:'person@example.test',groups:['team-a','team-b'],bio:'x'.repeat(600),raw,nested:{role:'admin'}};
+    identityClaims={locale:RTL,theme:'dark',email:'person@example.test',groups:['team-a','team-b'],bio:'x'.repeat(600),raw,nested:{role:'admin'}};
     const login=await fetch(base+'/login',{redirect:'manual'}),target=new URL(login.headers.get('location')!);
     nonce=target.searchParams.get('nonce')!;
     const callback=await fetch(base+'/callback?code=ok&state='+target.searchParams.get('state'),{headers:{cookie:login.headers.getSetCookie()[0]!.split(';')[0]!},redirect:'manual'});
     assert.equal(callback.status,303);
-    assert.ok(callback.headers.getSetCookie().every(header=>!header.includes('fa')&&!header.includes('dark')),'no claim is written into a cookie');
+    assert.ok(callback.headers.getSetCookie().every(header=>!header.includes(RTL)&&!header.includes('dark')),'no claim is written into a cookie');
     const cookie=callback.headers.getSetCookie()[0]!.split(';')[0]!;
     const context=async()=>{const response=await fetch(base+'/context',{headers:{cookie}});const text=await response.text();return {status:response.status,text,body:response.status===200?JSON.parse(text) as {claims:Record<string,unknown>}:undefined};};
     let current=await context();
-    assert.deepEqual(current.body!.claims,{locale:'fa',theme:'dark',email:'person@example.test',groups:['team-a','team-b']});
+    assert.deepEqual(current.body!.claims,{locale:RTL,theme:'dark',email:'person@example.test',groups:['team-a','team-b']});
     for(const token of issued)assert.ok(!current.text.includes(token),'no token in /context');
     assert.ok(!current.text.includes('server-only-refresh'));
     assert.ok(Buffer.byteLength(JSON.stringify(current.body!.claims))<=4096);

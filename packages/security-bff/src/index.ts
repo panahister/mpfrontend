@@ -15,8 +15,8 @@ export type StepUpChallenge=Readonly<{maxAge?:number;acrValues?:readonly string[
 export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;authentication?:AuthenticationRequirement;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
 /** The locales the BFF may send upstream as Accept-Language; anything else becomes the default. */
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
-/** The previous behaviour: only en and ar were ever forwarded, en by default. */
-export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
+/** English only, MP Frontend's one built-in language; a product lists the locales its backends answer in. */
+export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en']),defaultLocale:'en'});
 type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;
   /** Enables POST /backchannel-logout (OpenID Connect Back-Channel Logout 1.0); expose it only on the provider's network path. */
   backChannelLogout?:boolean;
