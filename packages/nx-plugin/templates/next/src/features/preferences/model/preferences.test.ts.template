@@ -1,0 +1,20 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readPreferences } from './preferences';
+
+test('stored preferences are validated and unknown values fall back to the defaults', () => {
+  assert.deepEqual(
+    readPreferences(() => undefined),
+    { locale: 'en', brand: 'neutral', mode: 'system' },
+  );
+  const stored: Record<string, string> = { locale: 'ar', brand: 'neutral', mode: 'dark' };
+  assert.deepEqual(
+    readPreferences((key) => stored[key]),
+    { locale: 'ar', brand: 'neutral', mode: 'dark' },
+  );
+  const crafted: Record<string, string> = { locale: '<x>', brand: 'other', mode: 'bright' };
+  assert.deepEqual(
+    readPreferences((key) => crafted[key]),
+    { locale: 'en', brand: 'neutral', mode: 'system' },
+  );
+});

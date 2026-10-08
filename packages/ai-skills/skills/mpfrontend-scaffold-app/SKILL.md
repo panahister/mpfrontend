@@ -34,6 +34,14 @@ Place the approved contract at the path named by the
 generated `ftg.config.json`; never fabricate business fields. Install dependencies and validate a frozen
 install, then run the app's actual Nx `build`, `typecheck` and `generated-check` targets uncached.
 
+Create app writes one list route and one detail route over the catalog example, a `preferences`
+feature, `.env.example` with variable names only and `docs/overview.md` and `docs/api-contracts.md`;
+init writes `CODEOWNERS` with placeholder owners and `.agents/skills/README.md`, the guide for the
+workspace's own `project-*` and `domain-*` skills. Report the placeholder owners as a follow-up for the
+user; never fill in real owners or environment values yourself. Add features, routes and shared packages
+with `mpfrontend create feature`, `create route` and `create package`; see the CLI guide for what each
+writes and refuses.
+
 Init writes the quality profile: root `eslint.config.mjs` and `prettier.config.mjs` that re-export
 `@mpfrontend/workspace-config`, a `check` script, `tools/ci/check.sh` and a GitHub Actions workflow that
 runs it. Create app gives the app `format`, `format:check`, `lint` and `test` targets and an app

@@ -1,0 +1,6 @@
+import type { __Feature__Status } from '../model/__feature__';
+
+/** Whether the view should block a second start. */
+export function is__Feature__Busy(status: __Feature__Status): boolean {
+  return status === 'running';
+}

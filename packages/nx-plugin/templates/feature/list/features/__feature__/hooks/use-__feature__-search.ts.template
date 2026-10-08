@@ -1,0 +1,13 @@
+'use client';
+import { useState, type FormEvent } from 'react';
+import { listHref } from '../utils/__feature__-href';
+
+/** The search draft of the list. Submitting navigates, so the URL stays the owner of the list state. */
+export function use__Feature__Search(basePath: string, initial: string) {
+  const [draft, setDraft] = useState(initial);
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    window.location.assign(listHref(basePath, { page: 1, search: draft.trim() }));
+  }
+  return { draft, setDraft, submit };
+}

@@ -12,12 +12,18 @@ mpfrontend init --name my-product --directory ./my-product --design-source exist
 mpfrontend design attach --directory ./my-product --source existing --binding design.binding.json --json
 mpfrontend design status --directory ./my-product --json
 mpfrontend create app --name customer --directory ./my-product/apps/customer --dry-run
+mpfrontend create feature --app apps/customer --name order-review --dry-run --json
+mpfrontend create route --app apps/customer --path order-review --feature order-review --json
+mpfrontend create package --name formatting --runtime universal --json
 mpfrontend skills list --json
 mpfrontend skills install --directory ./my-product --for both --profile base --dry-run --json
 mpfrontend skills check --directory ./my-product --json
 ftg generate --config ./my-product/apps/customer/ftg.config.json --dry-run --json
 ftg check --config ./my-product/apps/customer/ftg.config.json --json
 ```
+
+The [CLI guide](../../docs/CLI-GUIDE.md) describes every command: what it does, when to run it, what it
+writes and what it refuses.
 
 `init` creates a neutral pinned Nx/pnpm shell in a **new** directory; an existing directory or symlink
 is refused. It does not install dependencies, run Git, access/modify Figma, deploy, publish or configure

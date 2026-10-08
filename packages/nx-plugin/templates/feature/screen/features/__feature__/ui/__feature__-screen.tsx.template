@@ -1,0 +1,23 @@
+'use client';
+import type { __Feature__Request } from '../api/__feature__';
+import { use__Feature__ } from '../hooks/use-__feature__';
+import { __Feature__View } from './__feature__-view';
+
+export type __Feature__ScreenProps = Readonly<{
+  params?: Promise<Readonly<Record<string, string>>>;
+  searchParams?: Promise<Readonly<Record<string, string | string[] | undefined>>>;
+  basePath: string;
+}>;
+
+/**
+ * The screen binds the feature to its request. Until a request is bound to a generated contract adapter,
+ * the feature renders as not available rather than inventing an endpoint.
+ */
+const request: __Feature__Request | undefined = undefined;
+
+export function __Feature__Screen(_props: __Feature__ScreenProps) {
+  const state = use__Feature__(request);
+  return (
+    <__Feature__View status={state.status} available={state.available} onStart={state.start} />
+  );
+}

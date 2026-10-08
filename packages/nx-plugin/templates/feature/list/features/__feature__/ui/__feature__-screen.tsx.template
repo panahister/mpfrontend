@@ -1,0 +1,29 @@
+import { cookies } from 'next/headers';
+import { locale } from '@mpfrontend/i18n';
+import { preferenceCookie } from '../../../config/app';
+import { load__Feature__Page } from '../api/__feature__';
+import { fields } from '../model/__feature__-fields';
+import { listQuery, type SearchParams } from '../model/__feature__-query';
+import { __Feature__List } from './__feature__-list';
+
+export type __Feature__ScreenProps = Readonly<{
+  params?: Promise<Readonly<Record<string, string>>>;
+  searchParams?: Promise<SearchParams>;
+  basePath: string;
+}>;
+
+/** The list screen. The query comes from the URL and the data from the server boundary. */
+export async function __Feature__Screen({ searchParams, basePath }: __Feature__ScreenProps) {
+  const query = listQuery((await searchParams) ?? {});
+  const language = locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  const page = await load__Feature__Page(query, language).catch(() => undefined);
+  return (
+    <__Feature__List
+      page={page}
+      fields={fields}
+      query={query}
+      language={language}
+      basePath={basePath}
+    />
+  );
+}

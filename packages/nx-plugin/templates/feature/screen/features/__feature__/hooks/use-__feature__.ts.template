@@ -1,0 +1,27 @@
+'use client';
+import { useEffect, useRef, useState } from 'react';
+import { run__Feature__, type __Feature__Request } from '../api/__feature__';
+import { next__Feature__Status, type __Feature__Status } from '../model/__feature__';
+import { is__Feature__Busy } from '../utils/__feature__';
+
+/** The feature state and its orchestration: start, cancel on unmount, and map the outcome. */
+export function use__Feature__(request: __Feature__Request | undefined) {
+  const [status, setStatus] = useState<__Feature__Status>('idle');
+  const active = useRef<AbortController | null>(null);
+  useEffect(() => () => active.current?.abort(), []);
+  async function start() {
+    if (!request || is__Feature__Busy(status)) return;
+    const controller = new AbortController();
+    active.current = controller;
+    setStatus((current) => next__Feature__Status(current, 'start'));
+    try {
+      await run__Feature__(request, controller.signal);
+      if (!controller.signal.aborted)
+        setStatus((current) => next__Feature__Status(current, 'succeed'));
+    } catch {
+      if (!controller.signal.aborted)
+        setStatus((current) => next__Feature__Status(current, 'fail'));
+    }
+  }
+  return { status, start, available: request !== undefined };
+}

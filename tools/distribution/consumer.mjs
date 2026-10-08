@@ -1,7 +1,7 @@
 // Install real packed packages into a fresh, independent Nx workspace. Never import platform source.
 import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,delimiter} from 'node:path';
+import {join,delimiter,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
@@ -110,6 +110,28 @@ assert.equal(JSON.parse(await run('pnpm',['exec','mpfrontend','skills','check','
 assert.ok((await readFile(join(workspace,'.claude/skills/mpfrontend-review-design-drift/SKILL.md'),'utf8')).includes('read-only'));
 await verifyDesignConsumer({workspace,run});
 await run('pnpm',['exec','mpfrontend','create','app','--name','sample','--directory','apps/sample']);
+// The feature, route and package generators on the fresh workspace: a screen feature and its route, a
+// second list feature over the template's read with a list and a detail route, and a shared package.
+const created=[];
+for(const args of [['feature','--app','apps/sample','--name','order-review'],['route','--app','apps/sample','--path','order-review','--feature','order-review'],
+  ['feature','--app','apps/sample','--name','archive','--resource','catalog'],['route','--app','apps/sample','--path','archive','--feature','archive'],
+  ['route','--app','apps/sample','--path','archive/[position]','--feature','archive','--screen','ArchiveDetailScreen'],
+  ['package','--name','shared-format','--runtime','universal']]){
+  const preview=JSON.parse(await run('pnpm',['exec','mpfrontend','create',...args,'--dry-run','--json'],{capture:true}));
+  for(const path of preview.files)await assert.rejects(lstat(join(workspace,path)),{code:'ENOENT'});
+  const result=JSON.parse(await run('pnpm',['exec','mpfrontend','create',...args,'--json'],{capture:true}));
+  assert.deepEqual(result.files,preview.files);assert.equal(result.formatted,true);created.push(...result.files);
+  await run('pnpm',['exec','mpfrontend','create',...args,'--json'],{expectedCode:2});
+}
+assert.deepEqual(JSON.parse(await run('pnpm',['exec','mpfrontend','create','feature','--app','apps/sample','--name','archive-two','--resource','catalog','--json'],{capture:true})).kept.length,4);
+await rm(join(workspace,'apps/sample/src/features/archive-two'),{recursive:true});
+// The Nx generators are the same generators; a dry run writes nothing.
+await run('pnpm',['exec','nx','g','@mpfrontend/nx-plugin:package','--name','nx-probe','--dry-run','--no-interactive']);
+await assert.rejects(lstat(join(workspace,'packages/nx-probe')),{code:'ENOENT'});
+// Generated output is already in the workspace formatter's layout, before any consumer edit.
+await run('pnpm',['exec','prettier','--check','apps/sample','packages/shared-format','CODEOWNERS','.agents/skills/README.md','--ignore-unknown']);
+assert.ok((await readFile(join(workspace,'apps/sample/.env.example'),'utf8')).split('\n').every(line=>line===''||line.startsWith('#')||line.endsWith('=')));
+console.log(JSON.stringify({stage:'scaffolding-generators',ok:true,createdFiles:created.length}));
 // Real consumer extension: no pre-existing dist; only the generated ^build edge may create it in time.
 const projectPath=join(workspace,'apps/sample/project.json');
 const generatedProject=JSON.parse(await readFile(projectPath,'utf8'));
@@ -141,8 +163,8 @@ await writeFile(join(preview,'page.tsx'),`'use client';
 import {useState} from 'react';
 import {ResourceForm} from '@mpfrontend/ui';
 import {fixtureFoundation} from '@independent/foundation';
-import {requests} from '../../features/catalog/model/generated/requests.gen';
-import {parseRequest} from '../../features/catalog/model/generated/request-models.gen';
+import {requests} from '../../api/generated/catalog/requests.gen';
+import {parseRequest} from '../../api/generated/catalog/request-models.gen';
 export default function RequestCheck(){const [values,setValues]=useState<Record<string,unknown>>({name:'Example',quantity:1,approved:false}),[result,setResult]=useState('');
 return <main><h1>Synthetic request preview</h1><p>{fixtureFoundation}</p><p>No API mutation is sent.</p><ResourceForm fields={requests[0]!.fields} values={values} saveLabel="Validate payload" onChange={(key,value)=>setValues(old=>({...old,[key]:value}))} onSubmit={()=>{try{setResult(JSON.stringify(parseRequest('submission',values)));}catch{setResult('Invalid fixture request');}}}/><p role="status">{result}</p></main>;}
 `);
@@ -192,16 +214,18 @@ await run('pnpm',['run','format:check']);
 // Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
 await run('pnpm',['exec','mpfrontend','create','app','--name','other','--directory','apps/other']);
 const probes={'apps/sample/src/boundary-probe.ts':"import { appId } from '../../other/src/config/app';\nexport const probe = appId;\n",
+  'apps/sample/src/app/entry-probe/page.tsx':"export { CatalogList as default } from '../../features/catalog/ui/catalog-list';\n",
   'apps/sample/src/colour-probe.tsx':'export const Probe = () => <p className="bg-[#123456]" />;\n',
   'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n'};
-for(const [path,content]of Object.entries(probes))await writeFile(join(workspace,path),content);
+for(const [path,content]of Object.entries(probes)){await mkdir(dirname(join(workspace,path)),{recursive:true});await writeFile(join(workspace,path),content);}
 const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
-const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css'];
+const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry'];
 for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
 console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
 for(const path of Object.keys(probes))await rm(join(workspace,path));
+await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
 await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
-const {parseRead}=await import(join(workspace,'apps/sample/src/features/catalog/model/generated/read-models.gen.ts'));
+const {parseRead}=await import(join(workspace,'apps/sample/src/api/generated/catalog/read-models.gen.ts'));
 const valid={items:[{name:'Consumer fixture'}],number:1,size:12,total:1,pageCount:1,hasMore:false};
 assert.equal(parseRead('catalog',valid),valid);
 for(const invalid of [{...valid,items:[{}]},{...valid,number:'1'},{...valid,hasMore:null}])assert.throws(()=>parseRead('catalog',invalid),/INVALID_API_RESPONSE/);
@@ -209,7 +233,7 @@ assert.throws(()=>parseRead('constructor',{}),/INVALID_API_RESPONSE/);
 assert.equal(parseRead('submission',{id:'b50c40a4-fb7b-4ea1-926f-fc9e3df50d25'}).id,'b50c40a4-fb7b-4ea1-926f-fc9e3df50d25');
 assert.equal(parseRead('reporting',undefined),undefined);
 for(const invalid of [{},null,'',[],false,0])assert.throws(()=>parseRead('reporting',invalid),/INVALID_API_RESPONSE/);
-const {parseRequest}=await import(join(workspace,'apps/sample/src/features/catalog/model/generated/request-models.gen.ts'));
+const {parseRequest}=await import(join(workspace,'apps/sample/src/api/generated/catalog/request-models.gen.ts'));
 const request={name:'Example',quantity:1,approved:false};assert.equal(parseRequest('submission',request),request);
 assert.equal(parseRequest('submission',{...request,approved:true}).approved,true);
 for(const invalid of [{...request,quantity:'1'},{...request,quantity:0},{...request,name:'x'},{...request,serverId:'not-owned'},{...request,extra:true}])assert.throws(()=>parseRequest('submission',invalid),/INVALID_API_REQUEST/);
@@ -222,13 +246,13 @@ for(const invalid of [{},{note:3},{note:null,extra:true},'',[],false])assert.thr
 const {ResourceForm}=await import(join(workspace,'apps/sample/node_modules/@mpfrontend/ui/dist/index.js'));
 const {createElement}=await import(join(workspace,'apps/sample/node_modules/react/index.js'));
 const {renderToStaticMarkup}=await import(join(workspace,'apps/sample/node_modules/react-dom/server.node.js'));
-const {requests}=await import(join(workspace,'apps/sample/src/features/catalog/model/generated/requests.gen.ts'));
+const {requests}=await import(join(workspace,'apps/sample/src/api/generated/catalog/requests.gen.ts'));
 const markup=renderToStaticMarkup(createElement(ResourceForm,{fields:requests.find(r=>r.name==='submission').fields,values:request,saveLabel:'Validate',onChange:()=>{},onSubmit:()=>{}}));
 const booleanInput=markup.match(/<input[^>]*name="approved"[^>]*>/)?.[0];
 assert.ok(booleanInput);assert.ok(!/\srequired(?:=|\s|>)/.test(booleanInput));assert.ok(!/\schecked(?:=|\s|>)/.test(booleanInput));
-const generated=await readFile(join(workspace,'apps/sample/src/features/catalog/model/generated/resources.gen.ts'),'utf8');
+const generated=await readFile(join(workspace,'apps/sample/src/api/generated/catalog/resources.gen.ts'),'utf8');
 assert.ok(generated.includes('catalog'));
-await writeFile(join(workspace,'apps/sample/src/features/catalog/model/generated/resources.gen.ts'),generated+'\n');
+await writeFile(join(workspace,'apps/sample/src/api/generated/catalog/resources.gen.ts'),generated+'\n');
 await run('pnpm',['exec','ftg','check','--config','apps/sample/ftg.config.json'],{expectedCode:3});
 await run('pnpm',['exec','ftg','generate','--config','apps/sample/ftg.config.json']);
 await run('pnpm',['exec','ftg','check','--config','apps/sample/ftg.config.json']);
@@ -242,5 +266,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

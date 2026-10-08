@@ -4,6 +4,21 @@
       "factory": "./dist/generator.js",
       "schema": "./schema.json",
       "description": "Create a neutral Next.js consumer using MP Frontend public packages"
+    },
+    "feature": {
+      "factory": "./dist/feature-generator.js",
+      "schema": "./schemas/feature-schema.json",
+      "description": "Create a feature with ui, model, hooks, api, utils and an index.ts public entry; with a resource, a URL-driven list and detail over that generated read"
+    },
+    "route": {
+      "factory": "./dist/route-generator.js",
+      "schema": "./schemas/route-schema.json",
+      "description": "Create one Next.js route that renders a feature screen"
+    },
+    "package": {
+      "factory": "./dist/package-generator.js",
+      "schema": "./schemas/package-schema.json",
+      "description": "Create a shared package with boundary tags, a public entry and the quality targets"
     }
   }
 }

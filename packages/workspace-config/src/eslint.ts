@@ -4,6 +4,7 @@ import nx from '@nx/eslint-plugin';
 import tseslint from 'typescript-eslint';
 import noHandwrittenCss from './rules/no-handwritten-css.js';
 import noRawColor from './rules/no-raw-color.js';
+import publicEntry from './rules/public-entry.js';
 
 export {globalEntryAtRules} from './rules/no-handwritten-css.js';
 
@@ -55,7 +56,7 @@ export type WorkspaceConfigOptions = Readonly<{
 /** The MP Frontend rules, for consumers that compose their own configuration. */
 export const plugin: ESLint.Plugin = {
   meta: {name: '@mpfrontend/workspace-config'},
-  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss},
+  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss, 'public-entry': publicEntry},
 };
 
 /**
@@ -81,8 +82,11 @@ export function workspaceConfig(options: WorkspaceConfigOptions = {}): Linter.Co
           depConstraints: (options.depConstraints ?? defaultDepConstraints).map(constraint => ({...constraint})),
         }],
         '@typescript-eslint/no-explicit-any': 'error',
+        // A leading underscore marks a parameter that a framework passes but the code does not read.
+        '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}],
         'mpfrontend/no-raw-color': 'error',
         'mpfrontend/no-handwritten-css': ['error', {inlineStyle: 'custom-properties'}],
+        'mpfrontend/public-entry': 'error',
       },
     },
     {

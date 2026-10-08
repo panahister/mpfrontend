@@ -273,7 +273,7 @@ reviewable contract surface so product engineers can implement the behavior that
 
 | Capability | What exists today | Boundary |
 |---|---|---|
-| Workspace scaffolding | New pnpm/Nx workspace and application shell with explicit design-source mode | Refuses existing or symlink destinations; does not install dependencies, initialize Git, or deploy |
+| Workspace scaffolding | New pnpm/Nx workspace, application, feature, route, and shared-package generators with explicit design-source mode; see the [CLI guide](docs/CLI-GUIDE.md) | Refuses existing or symlink destinations; does not install dependencies, initialize Git, or deploy |
 | Workspace quality profile | Shared formatter, lint and TypeScript configuration; module boundaries, raw-colour and hand-written-CSS rules; a workspace `check` and a CI-neutral gate | Rules cover literals and stylesheets, not colours computed at run time |
 | OpenAPI integration | Selected OpenAPI 3.1 reads and mutations, types, field metadata, standalone validators, and presentation adapters | Finite profiles only; unsupported ambiguity fails |
 | UI foundation | Product-neutral interaction primitives, semantic tokens, Tailwind v4 integration, and composable React UI | No product theme, icons, typography, or screen ownership |

@@ -1,0 +1,10 @@
+# @__SCOPE__/__name__
+
+A shared package of this workspace for code that two or more apps need. Runtime: `__runtime__`. Its public
+API is `src/index.ts`, compiled to `dist/`; apps and other packages import only `@__SCOPE__/__name__`.
+
+- Tags: `type:package`, `scope:shared` and `runtime:__runtime__`. Lint refuses an import of an app from
+  this package and a dependency that crosses a runtime tag.
+- An app uses it by adding `"@__SCOPE__/__name__": "workspace:*"` to the dependencies of its
+  `package.json` and running `pnpm install`; the app build then builds this package first.
+- Targets: `build`, `typecheck`, `format`, `format:check`, `lint` and `test`.

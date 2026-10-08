@@ -84,6 +84,20 @@ writes has `format`, `format:check`, `lint` and `test` targets. Lint enforces mo
 raw colours outside the theme files and refuses hand-written CSS outside the theme layer; see
 [Frontend engineering conventions](FRONTEND-CONVENTIONS.md#quality-profile).
 
+Then create the app and its structure with the generators:
+
+```bash
+pnpm exec mpfrontend create app --name customer --directory apps/customer
+pnpm exec mpfrontend create feature --app apps/customer --name order-review --dry-run --json
+pnpm exec mpfrontend create route --app apps/customer --path order-review --feature order-review
+pnpm exec mpfrontend create package --name formatting
+```
+
+A feature has `ui/`, `model/`, `hooks/`, `api/`, `utils/` and an `index.ts` public entry; every screen is
+its own route; code that two apps need is a shared package. Each command is also an Nx generator of
+`@mpfrontend/nx-plugin`. The [CLI guide](CLI-GUIDE.md) describes every command: what it does, when to run
+it, what it writes and what it refuses.
+
 Until registry publication exists, the supported public evaluation path is the vendored, hash-checked
 cohort in [MP Frontend Tiffin Reference](https://github.com/panahister/mpfrontend-tiffin-reference).
 Do not install an unpublished package name from an arbitrary registry.
@@ -101,6 +115,7 @@ make identical product decisions; human review remains required.
 ## Next reading
 
 - [Frontend engineering conventions](FRONTEND-CONVENTIONS.md)
+- [CLI guide](CLI-GUIDE.md)
 - [Architecture](ARCHITECTURE.md)
 - [Design synchronization](../packages/ftg-cli/DESIGN-SYNC.md)
 - [Shared runtime contract](R2-SHARED-RUNTIME.md)

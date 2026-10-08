@@ -1,0 +1,13 @@
+import { preferenceCookie } from '../../../config/app';
+import type { PreferenceKey } from '../model/preferences';
+
+/** Persists one validated preference for the next server render; the cookie holds no identity. */
+export function persistPreference(key: PreferenceKey, value: string): void {
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie =
+    preferenceCookie(key) +
+    '=' +
+    encodeURIComponent(value) +
+    '; Path=/; SameSite=Lax; Max-Age=31536000' +
+    secure;
+}

@@ -1,0 +1,7 @@
+// The public entry of the entity. Features and server adapters import only from here.
+export {
+  itemPosition,
+  locateItem,
+  type __Resource__Item,
+  type __Resource__Page,
+} from './model/__resource__';

@@ -100,3 +100,22 @@ test('a concurrent or interrupted skill installation is refused without changing
     await assert.rejects(()=>checkSkills(directory),/SKILLS_INSTALL_BUSY/);
   }finally{await rm(directory,{recursive:true,force:true});}
 });
+test('a consumer skill folder and guide are never touched, and the reserved prefix cannot be taken',async()=>{
+  const directory=await mkdtemp(join(tmpdir(),'mpfrontend-skills-consumer-'));
+  try{
+    await mkdir(join(directory,'.agents/skills/project-add-app'),{recursive:true});
+    await writeFile(join(directory,'.agents/skills/README.md'),'consumer guide');
+    await writeFile(join(directory,'.agents/skills/project-add-app/SKILL.md'),'consumer skill');
+    await installSkills({directory});await installSkills({directory,update:true});
+    assert.equal(await readFile(join(directory,'.agents/skills/README.md'),'utf8'),'consumer guide');
+    assert.equal(await readFile(join(directory,'.agents/skills/project-add-app/SKILL.md'),'utf8'),'consumer skill');
+    assert.equal((await checkSkills(directory)).checked,28);
+    const lock=await readFile(join(directory,'.mpfrontend/skills-lock.json'),'utf8');
+    assert.ok(!lock.includes('project-add-app'));
+    await mkdir(join(directory,'.claude/skills/mpfrontend-domain-billing'),{recursive:true});
+    await writeFile(join(directory,'.claude/skills/mpfrontend-domain-billing/SKILL.md'),'consumer skill under the reserved prefix');
+    await assert.rejects(()=>checkSkills(directory),/RESERVED_SKILL_NAME:\.claude\/skills\/mpfrontend-domain-billing/);
+    await assert.rejects(()=>installSkills({directory,update:true}),/RESERVED_SKILL_NAME/);
+    assert.equal(await readFile(join(directory,'.mpfrontend/skills-lock.json'),'utf8'),lock);
+  }finally{await rm(directory,{recursive:true,force:true});}
+});

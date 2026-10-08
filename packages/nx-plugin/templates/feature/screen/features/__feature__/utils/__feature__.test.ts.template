@@ -1,0 +1,9 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { is__Feature__Busy } from './__feature__';
+
+test('only a running workflow is busy', () => {
+  assert.equal(is__Feature__Busy('running'), true);
+  for (const status of ['idle', 'done', 'failed'] as const)
+    assert.equal(is__Feature__Busy(status), false);
+});

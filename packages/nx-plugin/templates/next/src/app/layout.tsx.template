@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { locale, direction } from '@mpfrontend/i18n';
-import { validMode } from '@mpfrontend/tokens';
-import { validBrand } from '../theme/config';
+import { direction, translator } from '@mpfrontend/i18n';
+import { PreferenceControls, readPreferences } from '../features/preferences';
 import { appId, preferenceCookie } from '../config/app';
 import '@mpfrontend/tokens/styles.css';
 import '@mpfrontend/ui/styles.css';
@@ -15,15 +15,26 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const saved = await cookies();
-  const language = locale(saved.get(preferenceCookie('locale'))?.value);
+  const preferences = readPreferences((key) => saved.get(preferenceCookie(key))?.value);
+  const t = translator(preferences.locale);
   return (
     <html
-      lang={language}
-      dir={direction(language)}
-      data-brand={validBrand(saved.get(preferenceCookie('brand'))?.value)}
-      data-mode={validMode(saved.get(preferenceCookie('mode'))?.value)}
+      lang={preferences.locale}
+      dir={direction(preferences.locale)}
+      data-brand={preferences.brand}
+      data-mode={preferences.mode}
     >
-      <body>{children}</body>
+      <body>
+        <header className="mx-auto flex max-w-[75rem] flex-wrap items-end justify-between gap-4 p-8 max-sm:p-4">
+          <nav className="flex gap-4">
+            <Link href="/catalog">{t('catalog')}</Link>
+            <Link href="/components">Components</Link>
+            <a href="/api/docs">{t('docs')}</a>
+          </nav>
+          <PreferenceControls initial={preferences} />
+        </header>
+        <main className="mx-auto max-w-[75rem] px-8 pb-8 max-sm:px-4">{children}</main>
+      </body>
     </html>
   );
 }

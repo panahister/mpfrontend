@@ -4,7 +4,7 @@ export type DesignSource='none'|'existing';
 export type WorkspaceOptions={name:string;directory:string;designSource?:DesignSource;dryRun?:boolean};
 const json=(value:unknown)=>JSON.stringify(value,null,2)+'\n';
 /** The cohort a new workspace pins; the quality profile is upgraded with it, never copied into the workspace. */
-export const COHORT={cli:'0.1.0-dev.18',workspaceConfig:'0.1.0-dev.0'} as const;
+export const COHORT={cli:'0.1.0-dev.18',nxPlugin:'0.1.0-dev.17',workspaceConfig:'0.1.0-dev.0'} as const;
 /** Tool versions the quality profile is verified with. */
 export const QUALITY_TOOLS={eslint:'10.12.0',prettier:'3.9.9',tsx:'4.23.15'} as const;
 /** Workspace scripts. `check` is the gate that CI and the CI-neutral script run. */
@@ -107,6 +107,29 @@ export NEXT_TELEMETRY_DISABLED=1
 pnpm install --frozen-lockfile
 pnpm check --skip-nx-cache
 `;
+const codeowners=`# Code owners. Replace each placeholder with the owning team before you require code-owner reviews.
+*                @owner-placeholder/workspace
+/apps/           @owner-placeholder/apps
+/packages/       @owner-placeholder/shared-packages
+/.agents/skills/ @owner-placeholder/workspace
+/.claude/skills/ @owner-placeholder/workspace
+`;
+const skillsGuide=`# Project and domain skills
+
+Coding agents discover repository skills in this folder. \`mpfrontend skills install\` writes only the
+\`mpfrontend-*\` folders here and in \`.claude/skills/\`, records them in \`.mpfrontend/skills-lock.json\`, and
+never reads, changes or removes another folder.
+
+Add the workspace's own skills beside them:
+
+- \`project-<topic>/SKILL.md\` for a repository workflow, for example adding an app or reviewing a change.
+- \`domain-<topic>/SKILL.md\` for a business procedure that this product owns.
+
+Each \`SKILL.md\` starts with \`name\` and \`description\` metadata, and \`name\` equals the folder name. Copy
+each skill to \`.claude/skills/<name>/SKILL.md\` as well, so that both agents find it. The \`mpfrontend-\`
+prefix is reserved: \`mpfrontend skills check\` refuses a folder with that prefix that the installer does not
+own. A skill calls the workspace generators and \`pnpm check\` instead of repeating their steps.
+`;
 const agents=`# Consumer workspace
 
 Use pnpm and Nx. Product behavior, DLS bindings and assets stay in this repository; MP Frontend core
@@ -119,6 +142,12 @@ Run \`pnpm check\` before a change is reviewed. It runs the format check, then l
 and generated-check of every project. Lint fails on an import across app boundaries, on a raw colour
 outside the theme files and on hand-written CSS outside the theme layer and the global style entry.
 Fix the code; do not weaken a rule to pass the check.
+
+Create code with the generators, not by copying: \`mpfrontend create app\`, \`create feature\`,
+\`create route\` and \`create package\` (or the matching \`nx g @mpfrontend/nx-plugin:<generator>\`).
+A feature lives in \`src/features/<feature>/\` with \`ui/\`, \`model/\`, \`hooks/\`, \`api/\` and \`utils/\`, and
+code outside it imports only its \`index.ts\`. Every screen is its own route. Code that two apps need is a
+package under \`packages/\`, never a copy. The workspace's own skills follow \`.agents/skills/README.md\`.
 `;
 /** A neutral Nx/pnpm shell only. Backend contracts, secrets and deployment decisions are not invented. */
 export function workspaceFiles(name:string,designSource:DesignSource='none'):Record<string,string>{
@@ -128,7 +157,7 @@ export function workspaceFiles(name:string,designSource:DesignSource='none'):Rec
   return {
     'package.json':json({name,private:true,type:'module',packageManager:'pnpm@11.25.0',engines:{node:'>=24 <25'},
       scripts:WORKSPACE_SCRIPTS,
-      devDependencies:{'@mpfrontend/ftg-cli':COHORT.cli,'@mpfrontend/workspace-config':COHORT.workspaceConfig,eslint:QUALITY_TOOLS.eslint,nx:'23.2.1',prettier:QUALITY_TOOLS.prettier,tsx:QUALITY_TOOLS.tsx,typescript:'5.9.3','@types/node':'24.10.1','@types/react':'19.3.0','@types/react-dom':'19.2.3'}}),
+      devDependencies:{'@mpfrontend/ftg-cli':COHORT.cli,'@mpfrontend/nx-plugin':COHORT.nxPlugin,'@mpfrontend/workspace-config':COHORT.workspaceConfig,eslint:QUALITY_TOOLS.eslint,nx:'23.2.1',prettier:QUALITY_TOOLS.prettier,tsx:QUALITY_TOOLS.tsx,typescript:'5.9.3','@types/node':'24.10.1','@types/react':'19.3.0','@types/react-dom':'19.2.3'}}),
     'pnpm-workspace.yaml':'packages:\n  - apps/*\n  - packages/*\n  - themes/*\noverrides:\n  axios@1.18.1: 1.20.0\n  brace-expansion@5.0.9: 5.0.12\n  smol-toml@1.6.1: 1.9.0\nallowBuilds:\n  "@scarf/scarf": false\n  esbuild: true\n  nx: true\n  sharp: true\n  unrs-resolver: true\n',
     'nx.json':nxJson,
     '.gitignore':'node_modules/\n.next/\n.nx/\ndist/\nruntime-assets/\n*.tsbuildinfo\n.env\n.env.*\n!.env.example\n.mpfrontend/skills-install.lock\n.ftg-write.lock\n',
@@ -137,13 +166,15 @@ export function workspaceFiles(name:string,designSource:DesignSource='none'):Rec
     'prettier.config.mjs':prettierConfig,
     '.github/workflows/check.yml':ciWorkflow,
     'tools/ci/check.sh':ciScript,
+    'CODEOWNERS':codeowners,
+    '.agents/skills/README.md':skillsGuide,
     '.mpfrontend/workspace.json':json({schemaVersion:1,name,orchestrator:'nx',packageManager:'pnpm',runtimeProfile:'unconfigured',designSource,cliVersion:COHORT.cli}),
     '.mpfrontend/design-source.json':json({schemaVersion:1,generator:'MPFrontendDesignSource',cliVersion:COHORT.cli,source:designSource,status:designStatus,binding:null,bindingHash:null,sourceIdentity:null,release:null}),
     'apps/.gitkeep':'','packages/.gitkeep':'','themes/.gitkeep':'',
     'contracts/README.md':'# API ownership\n\nSupply an approved, immutable OpenAPI bundle under openapi/presentation/<app>/openapi.json.\nThe generated catalog example expects listCatalog; configure FTG explicitly for your actual contract.\nNo backend API, permissions or production runtime is generated by workspace initialization.\n',
     'AGENTS.md':agents,
     'CLAUDE.md':'@AGENTS.md\n',
-    'README.md':`# ${name}\n\nNeutral MP Frontend Nx/pnpm workspace, initialized with design source \`${designSource}\` without installing dependencies or creating Git history.\n\n1. Install the pinned dependencies with pnpm install. Unpublished development packages require the tested local artifact overrides; no npm availability is claimed.\n2. ${designSource==='none'?'Continue code-first, or attach an approved consumer-owned design source later with mpfrontend design attach.':'Create an approved root design.binding.json for the consumer-owned DLS, then complete the pending source with mpfrontend design attach.'}\n3. Run pnpm exec mpfrontend create app --name customer --directory apps/customer.\n4. Supply your approved catalog OpenAPI contract as explained in contracts/README.md.\n5. Install application dependencies, then run pnpm check. Review pnpm-lock.yaml and use frozen installs in CI.\n6. Run pnpm exec mpfrontend skills install --for both --profile base only if repository-scoped agent workflows are wanted. The catalog provides eighteen finite workflows; the base profile installs fourteen.\n\n## Quality profile\n\nThe formatter, lint and TypeScript configuration come from \`@mpfrontend/workspace-config\` and are\nupgraded with the MP Frontend cohort. \`eslint.config.mjs\` and \`prettier.config.mjs\` re-export the shared\nprofile; an app adds only its own additions in its own \`eslint.config.mjs\`.\n\n- \`pnpm format\` formats the workspace; \`pnpm format:check\` only checks it.\n- \`pnpm check\` runs the format check, then lint, typecheck, test, build and generated-check of every\n  project, with Nx caching. Pass \`--skip-nx-cache\` to prove the current source.\n- Every project has \`format\`, \`format:check\`, \`lint\` and \`test\` targets for focused feedback.\n- \`tools/ci/check.sh\` is the CI-neutral gate (a frozen install, then the uncached check);\n  \`.github/workflows/check.yml\` runs it on GitHub Actions.\n\nDesign source modes are explicit: \`existing\` attaches a consumer-owned DLS binding and \`none\` remains code-first. MP Frontend does not ship or require a public Community DLS in this release. Initialization never reads, captures or changes Figma.\n\nThe catalog template is not a protected production application. Configure the security BFF, identity, gateway and realtime boundaries with acceptance tests before protected product adoption.\nProduct DLS, fonts, themes, locale policy, exports, mappings and asset rights are consumer-owned. No Figma access/write, watcher, Git operation, deployment, package publication or global installation is performed.\n\nExisting destinations are refused, including an empty directory or symlink. A filesystem failure may leave a partial new destination for inspection; it is never automatically deleted or retried over.\n`,
+    'README.md':`# ${name}\n\nNeutral MP Frontend Nx/pnpm workspace, initialized with design source \`${designSource}\` without installing dependencies or creating Git history.\n\n1. Install the pinned dependencies with pnpm install. Unpublished development packages require the tested local artifact overrides; no npm availability is claimed.\n2. ${designSource==='none'?'Continue code-first, or attach an approved consumer-owned design source later with mpfrontend design attach.':'Create an approved root design.binding.json for the consumer-owned DLS, then complete the pending source with mpfrontend design attach.'}\n3. Run pnpm exec mpfrontend create app --name customer --directory apps/customer. Add features, routes and shared packages with mpfrontend create feature, create route and create package; replace the placeholder owners in CODEOWNERS.\n4. Supply your approved catalog OpenAPI contract as explained in contracts/README.md.\n5. Install application dependencies, then run pnpm check. Review pnpm-lock.yaml and use frozen installs in CI.\n6. Run pnpm exec mpfrontend skills install --for both --profile base only if repository-scoped agent workflows are wanted. The catalog provides eighteen finite workflows; the base profile installs fourteen.\n\n## Quality profile\n\nThe formatter, lint and TypeScript configuration come from \`@mpfrontend/workspace-config\` and are\nupgraded with the MP Frontend cohort. \`eslint.config.mjs\` and \`prettier.config.mjs\` re-export the shared\nprofile; an app adds only its own additions in its own \`eslint.config.mjs\`.\n\n- \`pnpm format\` formats the workspace; \`pnpm format:check\` only checks it.\n- \`pnpm check\` runs the format check, then lint, typecheck, test, build and generated-check of every\n  project, with Nx caching. Pass \`--skip-nx-cache\` to prove the current source.\n- Every project has \`format\`, \`format:check\`, \`lint\` and \`test\` targets for focused feedback.\n- \`tools/ci/check.sh\` is the CI-neutral gate (a frozen install, then the uncached check);\n  \`.github/workflows/check.yml\` runs it on GitHub Actions.\n\nDesign source modes are explicit: \`existing\` attaches a consumer-owned DLS binding and \`none\` remains code-first. MP Frontend does not ship or require a public Community DLS in this release. Initialization never reads, captures or changes Figma.\n\nThe catalog template is not a protected production application. Configure the security BFF, identity, gateway and realtime boundaries with acceptance tests before protected product adoption.\nProduct DLS, fonts, themes, locale policy, exports, mappings and asset rights are consumer-owned. No Figma access/write, watcher, Git operation, deployment, package publication or global installation is performed.\n\nExisting destinations are refused, including an empty directory or symlink. A filesystem failure may leave a partial new destination for inspection; it is never automatically deleted or retried over.\n`,
   };
 }
 export async function createWorkspace(options:WorkspaceOptions){

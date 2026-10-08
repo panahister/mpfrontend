@@ -1,4 +1,4 @@
-import {readFile,lstat,realpath,mkdir,writeFile,rename,unlink} from 'node:fs/promises';
+import {readFile,lstat,realpath,mkdir,writeFile,rename,unlink,readdir} from 'node:fs/promises';
 import {resolve,join,dirname} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 
@@ -38,6 +38,18 @@ function parseLock(bytes:string|undefined):Lock|undefined{
     return value;
   }catch{throw new SkillsError('INVALID_SKILLS_LOCK');}
 }
+/**
+ * The `mpfrontend-` prefix is reserved for the catalog. A consumer's own project and domain skills live
+ * beside the installed ones under another prefix; the installer never reads, changes or removes them.
+ */
+async function refuseReservedNames(root:string){
+  const catalog=new Set(names.map(name=>'mpfrontend-'+name));
+  for(const base of ['.agents/skills','.claude/skills']){
+    const parent=join(root,base);
+    try{if(!(await lstat(parent)).isDirectory())continue;}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')continue;throw error;}
+    for(const entry of await readdir(parent))if(entry.startsWith('mpfrontend-')&&!catalog.has(entry))throw new SkillsError('RESERVED_SKILL_NAME:'+base+'/'+entry,3);
+  }
+}
 export async function installSkills(options:Options){
   const profile=options.profile??'base',agent=options.agent??'both';
   if(!['base','design'].includes(profile)||!['codex','claude','both'].includes(agent))throw new SkillsError('INVALID_SKILL_PROFILE_OR_AGENT',2);
@@ -59,6 +71,7 @@ export async function installSkills(options:Options){
       before.set(path,old);files[path]=hash(source);if(old!==source)desired.set(path,source);
     }
   }
+  await refuseReservedNames(root);
   const next:Lock={generator:'MPFrontendSkills',schemaVersion:1,version:SKILLS_VERSION,cliVersion:SKILLS_CLI_VERSION,profile:selectedProfile,agents,files};
   const encoded=JSON.stringify(next,null,2)+'\n';before.set(lockPath,previousLock);if(previousLock!==encoded)desired.set(lockPath,encoded);
   const changes=[...desired].map(([path,text])=>({path,beforeHash:before.get(path)===undefined?null:hash(before.get(path)!),afterHash:hash(text)}));
@@ -102,6 +115,7 @@ export async function checkSkills(directory:string){
   const lock=parseLock(await content(root,lockPath));
   if(!lock)throw new SkillsError('SKILLS_NOT_INSTALLED',2);
   if(lock.version!==SKILLS_VERSION||lock.cliVersion!==SKILLS_CLI_VERSION)throw new SkillsError('SKILLS_VERSION_MISMATCH',3);
+  await refuseReservedNames(root);
   const catalog=skillCatalog();let checked=0;
   for(const skill of catalog.skills.filter(s=>s.available&&(lock.profile==='design'||s.profile==='base')))for(const agent of lock.agents){
     const path=(agent==='codex'?'.agents':'.claude')+'/skills/'+skill.name+'/SKILL.md';

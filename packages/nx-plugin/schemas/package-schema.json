@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}$",
+      "description": "The package name, kebab case; the workspace scope is added"
+    },
+    "directory": {
+      "type": "string",
+      "pattern": "^packages/[a-z][a-z0-9-]{1,48}$",
+      "description": "Defaults to packages/<name>"
+    },
+    "runtime": {
+      "enum": [
+        "universal",
+        "client",
+        "server"
+      ],
+      "description": "The runtime tag; defaults to universal"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "additionalProperties": false
+}

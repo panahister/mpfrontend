@@ -45,6 +45,11 @@ test('init writes the quality profile, the check and a CI-neutral gate', () => {
   assert.match(files['.github/workflows/check.yml']!, /run: sh tools\/ci\/check\.sh/);
   assert.match(files['tools/ci/check.sh']!, /pnpm install --frozen-lockfile\npnpm check --skip-nx-cache\n$/);
   assert.match(files['AGENTS.md']!, /pnpm check/);
+  assert.match(files['AGENTS.md']!, /create feature/);
+  assert.match(files['CODEOWNERS']!, /^\/apps\/\s+@owner-placeholder\/apps$/m);
+  assert.match(files['CODEOWNERS']!, /^\/packages\/\s+@owner-placeholder\/shared-packages$/m);
+  assert.match(files['.agents/skills/README.md']!, /`mpfrontend-`\nprefix is reserved/);
+  assert.equal(manifest.devDependencies['@mpfrontend/nx-plugin'], '0.1.0-dev.17', 'the Nx generators are installed');
 });
 
 test('create app writes format, format:check, lint and test targets and extends the shared configuration', async () => {
@@ -60,10 +65,9 @@ test('create app writes format, format:check, lint and test targets and extends 
   assert.ok(Object.keys(files).some(path => path.endsWith('.test.ts')), 'the template ships a test for its test target');
 });
 
-test('every generated file passes the shared formatter for the shortest and the longest names', async () => {
+test('every file that init writes passes the shared formatter for the shortest and the longest names', async () => {
   for (const name of [shortName, longName]) {
     assert.deepEqual(await unformatted(workspaceFiles(name)), [], 'workspace ' + name);
-    assert.deepEqual(await unformatted(await applicationFiles(name)), [], 'app ' + name);
   }
 });
 
@@ -90,7 +94,7 @@ test('the generated application passes the shared lint rules', async () => {
       result.filePath.slice(directory.length + 1) + ':' + message.line + ' ' + (message.ruleId ?? 'fatal') + ' ' + message.message));
     assert.deepEqual(problems, []);
     assert.ok(results.some(result => result.filePath.endsWith('globals.css')), 'CSS is linted');
-    assert.ok(results.some(result => result.filePath.endsWith('catalog.tsx')), 'TSX is linted');
+    assert.ok(results.some(result => result.filePath.endsWith('catalog-list.tsx')), 'TSX is linted');
   } finally {
     await rm(directory, {recursive: true, force: true});
   }

@@ -15,6 +15,16 @@ projects. Keep route files thin. Product rules and presentation stay consumer-ow
 FTG outputs and accepted design artifacts as read-only; change their declared source/configuration and
 regenerate instead of hand-editing them.
 
+Create the structure with the generators, not by hand: `pnpm exec mpfrontend create feature --app
+<app-directory> --name <feature> [--resource <ftg-resource>] --dry-run --json`, then without `--dry-run`,
+and `mpfrontend create route` for each screen (a detail view is a child route, for example
+`<feature>/[position]`). A feature keeps the view in `ui/`, workflow state in `model/` and `hooks/`,
+requests and persistence in `api/` and small pure helpers in `utils/`; code outside it imports only its
+`index.ts`, which lint enforces. Types and rules that several features of one entity share go in
+`src/entities/<entity>/`; code that two apps need goes in a package from `mpfrontend create package`.
+Never invent a contract or an endpoint to fill a generated file; a screen feature stays unbound until
+an approved contract adapter exists.
+
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
 shapes. Publish protected asynchronous results through `@mpfrontend/access-core` `AuthorityFence` and
 keep backend/BFF authorization authoritative. Compose `@mpfrontend/ui` primitives through the

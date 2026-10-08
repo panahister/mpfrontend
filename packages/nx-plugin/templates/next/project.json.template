@@ -10,7 +10,7 @@
         "{workspaceRoot}/contracts/openapi/presentation/__APP_NAME__/openapi.json",
         "{projectRoot}/ftg.config.json"
       ],
-      "outputs": ["{projectRoot}/src/features/catalog/model/generated"],
+      "outputs": ["{projectRoot}/src/api/generated/catalog"],
       "options": {
         "command": "pnpm exec ftg generate --config apps/__APP_NAME__/ftg.config.json --json"
       }

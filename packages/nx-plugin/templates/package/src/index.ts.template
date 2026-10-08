@@ -1,0 +1,2 @@
+// The public entry of the package. Apps and other packages import only from here.
+export { packageName } from './package-name.js';

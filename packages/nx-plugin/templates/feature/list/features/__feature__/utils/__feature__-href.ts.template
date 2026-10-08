@@ -1,0 +1,15 @@
+import type { ListQuery } from '../model/__feature__-query';
+
+/** The list URL of a query; the first page and an empty search are left out. */
+export function listHref(basePath: string, query: ListQuery): string {
+  const params = new URLSearchParams();
+  if (query.page > 1) params.set('page', String(query.page));
+  if (query.search) params.set('search', query.search);
+  const search = params.toString();
+  return search ? basePath + '?' + search : basePath;
+}
+
+/** The detail URL of the item at a list position. */
+export function detailHref(basePath: string, position: number): string {
+  return basePath + '/' + position;
+}

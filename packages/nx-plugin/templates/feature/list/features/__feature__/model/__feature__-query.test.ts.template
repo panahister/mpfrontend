@@ -1,0 +1,11 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { listQuery } from './__feature__-query';
+
+test('the URL query is validated before it reaches a request', () => {
+  assert.deepEqual(listQuery({}), { page: 1, search: '' });
+  assert.deepEqual(listQuery({ page: '3', search: '  term ' }), { page: 3, search: 'term' });
+  assert.deepEqual(listQuery({ page: ['2', '9'] }), { page: 2, search: '' });
+  for (const page of ['0', '-1', '1.5', 'x', '1000001']) assert.equal(listQuery({ page }).page, 1);
+  assert.equal(listQuery({ search: 'x'.repeat(101) }).search, '');
+});

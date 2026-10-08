@@ -1,0 +1,19 @@
+import type { ReadModels } from '__ENTITY_TO_OUTPUT__/read-models.gen';
+
+/** One page of the resource, as the generated contract validates it. */
+export type __Resource__Page = ReadModels['__resource__'];
+export type __Resource__Item = __Resource__Page['items'][number];
+
+/** An item's position in the list, counted from 1; the identity that a detail route links to. */
+export function itemPosition(page: number, size: number, index: number): number {
+  return (page - 1) * size + index + 1;
+}
+
+/** The page and index of a list position, or undefined for a position that cannot exist. */
+export function locateItem(
+  position: number,
+  size: number,
+): { page: number; index: number } | undefined {
+  if (!Number.isSafeInteger(position) || position < 1) return undefined;
+  return { page: Math.floor((position - 1) / size) + 1, index: (position - 1) % size };
+}

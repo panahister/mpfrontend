@@ -2,9 +2,8 @@ import { Button, Field, Select, Card } from '@mpfrontend/ui';
 
 export default function Components() {
   return (
-    <main className="mx-auto max-w-[75rem] p-8 max-sm:p-4">
+    <section className="grid gap-4">
       <h1>MP Frontend component foundation</h1>
-      <a href="/">Back to catalog</a>
       <Card>
         <div className="mt-4 mb-8 flex flex-wrap items-end gap-4">
           <Button>Continue</Button>
@@ -21,6 +20,6 @@ export default function Components() {
           </Select>
         </div>
       </Card>
-    </main>
+    </section>
   );
 }

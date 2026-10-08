@@ -1,7 +1,9 @@
 import 'server-only';
 import { bffOrigin, appId } from '../../config/server';
-import { parseRead, type ReadModels } from '../../features/catalog/model/generated/read-models.gen';
-export type CatalogPage = ReadModels['catalog'];
+import type { __Resource__Page } from '../../entities/__resource__';
+import { parseRead } from '__SERVER_TO_OUTPUT__/read-models.gen';
+
+/** The trusted server boundary of the resource: validated query in, validated response out. */
 export function queryParameters(input: URLSearchParams): URLSearchParams {
   const output = new URLSearchParams();
   for (const key of ['page', 'size']) {
@@ -18,15 +20,17 @@ export function queryParameters(input: URLSearchParams): URLSearchParams {
   }
   return output;
 }
-export async function readCatalog(
+
+export async function read__Resource__(
   query = new URLSearchParams(),
   language = 'en',
-): Promise<CatalogPage> {
-  const response = await fetch(bffOrigin + '/' + appId + '/catalog?' + queryParameters(query), {
+): Promise<__Resource__Page> {
+  const path = '/' + appId + '/__resource__?' + queryParameters(query);
+  const response = await fetch(bffOrigin + path, {
     cache: 'no-store',
     headers: { 'Accept-Language': language },
     signal: AbortSignal.timeout(10000),
   });
-  if (!response.ok) throw new Error('CATALOG_UNAVAILABLE');
-  return parseRead('catalog', await response.json());
+  if (!response.ok) throw new Error('__RESOURCE_CONSTANT___UNAVAILABLE');
+  return parseRead('__resource__', await response.json());
 }

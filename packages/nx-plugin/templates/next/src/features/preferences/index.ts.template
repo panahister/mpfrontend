@@ -1,0 +1,3 @@
+// The public entry of the feature. Code outside the feature imports only from here.
+export { PreferenceControls } from './ui/preference-controls';
+export { readPreferences, type Preferences } from './model/preferences';

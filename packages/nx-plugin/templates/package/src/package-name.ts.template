@@ -1,0 +1,2 @@
+/** The name under which apps of this workspace import the package. */
+export const packageName = '@__SCOPE__/__name__';

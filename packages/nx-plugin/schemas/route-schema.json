@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "string",
+      "description": "The app directory, relative to the workspace root"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^[a-z0-9\\[][a-zA-Z0-9\\-\\[\\]/]*$",
+      "description": "The route path under src/app, for example orders or orders/[position]"
+    },
+    "feature": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}$",
+      "description": "The feature whose screen the route renders"
+    },
+    "screen": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]{0,79}$",
+      "description": "The screen export of the feature; defaults to <Feature>Screen"
+    }
+  },
+  "required": [
+    "app",
+    "path",
+    "feature"
+  ],
+  "additionalProperties": false
+}

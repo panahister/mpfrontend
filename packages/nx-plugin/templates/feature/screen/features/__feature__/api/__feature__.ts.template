@@ -1,0 +1,13 @@
+/**
+ * The request boundary of the feature. Bind a request to a generated contract adapter of the app; every
+ * call is cancellable and bounded in time, and nothing here decides authorization.
+ */
+export type __Feature__Request = (signal: AbortSignal) => Promise<void>;
+export const REQUEST_TIMEOUT_MS = 10000;
+
+export async function run__Feature__(
+  request: __Feature__Request,
+  signal: AbortSignal,
+): Promise<void> {
+  await request(AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]));
+}

@@ -1,0 +1,3 @@
+// The public entry of the feature. Code outside the feature imports only from here.
+export { __Feature__Screen, type __Feature__ScreenProps } from './ui/__feature__-screen';
+export { __Feature__DetailScreen } from './ui/__feature__-detail-screen';

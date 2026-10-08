@@ -1,0 +1,13 @@
+# API contracts
+
+- Captured contract: `contracts/openapi/presentation/__APP_NAME__/openapi.json`, an approved and
+  immutable OpenAPI input of this workspace.
+- Selection: `ftg.config.json` selects the operations this app uses. The `ftg-generate` target writes
+  `src/api/generated/catalog/`, and the `generated-check` target refuses drift.
+- Server boundary: `src/api/server/catalog.ts` validates the query, calls the BFF and validates the
+  response with the generated reader before a feature sees it.
+- Example read: the template reads `listCatalog`, a paged response with `items`, `number`, `pageCount`
+  and `hasMore`. Replace it with an approved contract of this product.
+
+Record each further operation here when `ftg.config.json` selects it: its operation id, the screens that
+use it and what the app assumes about it.

@@ -1,0 +1,38 @@
+import { Fragment } from 'react';
+import { Card, type DisplayField } from '@mpfrontend/ui';
+import { formatValue, translator, type Locale } from '@mpfrontend/i18n';
+import type { __Resource__Item } from '../../../entities/__resource__';
+import { labels, title } from '../model/overrides';
+
+type Props = Readonly<{
+  item: __Resource__Item | null;
+  fields: readonly DisplayField[];
+  language: Locale;
+  basePath: string;
+}>;
+
+/** The detail view. `null` means the server boundary could not read the item. */
+export function __Feature__Detail({ item, fields, language, basePath }: Props) {
+  const t = translator(language);
+  const values = item as Readonly<Record<string, unknown>> | null;
+  return (
+    <section className="grid gap-4">
+      <h1>{title}</h1>
+      <a href={basePath}>{t('back')}</a>
+      {values === null ? (
+        <p role="alert">{t('unavailable')}</p>
+      ) : (
+        <Card>
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
+            {fields.map((field) => (
+              <Fragment key={field.key}>
+                <dt className="font-medium">{labels[field.key] ?? field.key}</dt>
+                <dd className="m-0">{formatValue(values[field.key], language)}</dd>
+              </Fragment>
+            ))}
+          </dl>
+        </Card>
+      )}
+    </section>
+  );
+}

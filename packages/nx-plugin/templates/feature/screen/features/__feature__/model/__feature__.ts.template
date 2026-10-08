@@ -1,0 +1,12 @@
+/** The workflow states of the feature and the only transitions between them. */
+export type __Feature__Status = 'idle' | 'running' | 'done' | 'failed';
+export type __Feature__Event = 'start' | 'succeed' | 'fail';
+
+export function next__Feature__Status(
+  status: __Feature__Status,
+  event: __Feature__Event,
+): __Feature__Status {
+  if (event === 'start') return status === 'running' ? status : 'running';
+  if (status !== 'running') return status;
+  return event === 'succeed' ? 'done' : 'failed';
+}

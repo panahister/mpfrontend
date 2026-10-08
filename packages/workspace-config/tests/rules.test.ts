@@ -4,6 +4,7 @@ import css from '@eslint/css';
 import tseslint from 'typescript-eslint';
 import noRawColor from '../src/rules/no-raw-color.js';
 import noHandwrittenCss from '../src/rules/no-handwritten-css.js';
+import publicEntry from '../src/rules/public-entry.js';
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -104,5 +105,24 @@ code.run('no-handwritten-css in TSX', noHandwrittenCss, {
     {name: 'an inline style object', code: "const view = <div style={{display: 'flex'}} />;", errors: [{messageId: 'inlineStyle'}]},
     {name: 'a custom property when inline styles are forbidden', code: "const view = <div style={{'--mp-progress': value}} />;", options: [{inlineStyle: 'forbid'}], errors: [{messageId: 'inlineStyle'}]},
     {name: 'a style element', code: "const view = <style>{'.x { color: var(--a) }'}</style>;", errors: [{messageId: 'styleElement'}]},
+  ],
+});
+
+const app = '/workspace/apps/web/src';
+code.run('public-entry', publicEntry, {
+  valid: [
+    {name: 'a route imports the feature entry', filename: app + '/app/orders/page.tsx', code: "export { OrdersScreen as default } from '../../features/orders';"},
+    {name: 'the explicit index module', filename: app + '/app/orders/page.tsx', code: "import { OrdersScreen } from '../../features/orders/index';"},
+    {name: 'a feature imports its own internals', filename: app + '/features/orders/ui/orders-view.tsx', code: "import { useOrders } from '../hooks/use-orders';"},
+    {name: 'a feature imports an entity entry', filename: app + '/features/orders/api/orders.ts', code: "import type { Order } from '../../../entities/order';"},
+    {name: 'a package import is not a unit path', filename: app + '/features/orders/ui/orders-view.tsx', code: "import { Button } from '@mpfrontend/ui';"},
+    {name: 'generated contracts are not a feature', filename: app + '/features/orders/api/orders.ts', code: "import { parseRead } from '../../../api/generated/orders/read-models.gen';"},
+  ],
+  invalid: [
+    {name: 'a route reaches into a feature', filename: app + '/app/orders/page.tsx', code: "import { OrdersView } from '../../features/orders/ui/orders-view';", errors: [{messageId: 'privateImport'}]},
+    {name: 'one feature reaches into another', filename: app + '/features/billing/ui/billing.tsx', code: "import { useOrders } from '../../orders/hooks/use-orders';", errors: [{messageId: 'privateImport'}]},
+    {name: 'a re-export from inside a feature', filename: app + '/app/layout.tsx', code: "export * from '../features/orders/model/orders';", errors: [{messageId: 'privateImport'}]},
+    {name: 'a feature reaches into an entity', filename: app + '/features/orders/api/orders.ts', code: "import { rule } from '../../../entities/order/model/order';", errors: [{messageId: 'privateImport'}]},
+    {name: 'a dynamic import inside a feature', filename: app + '/app/page.tsx', code: "const view = import('../features/orders/ui/orders-view');", errors: [{messageId: 'privateImport'}]},
   ],
 });

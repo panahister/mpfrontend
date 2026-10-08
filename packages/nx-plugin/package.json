@@ -8,14 +8,17 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json",
+    "./generators.json": "./generators.json"
   },
   "files": [
     "dist",
     "README.md",
     "templates",
     "generators.json",
-    "schema.json"
+    "schema.json",
+    "schemas"
   ],
   "dependencies": {
     "@nx/devkit": "23.2.1"

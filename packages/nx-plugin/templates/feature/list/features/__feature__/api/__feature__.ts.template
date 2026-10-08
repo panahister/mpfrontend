@@ -1,0 +1,26 @@
+import 'server-only';
+import { read__Resource__ } from '../../../api/server/__resource__';
+import {
+  locateItem,
+  type __Resource__Item,
+  type __Resource__Page,
+} from '../../../entities/__resource__';
+import { PAGE_SIZE, type ListQuery } from '../model/__feature__-query';
+
+/** One page of the list for a validated URL query. */
+export function load__Feature__Page(query: ListQuery, language: string): Promise<__Resource__Page> {
+  const params = new URLSearchParams({ page: String(query.page), size: String(PAGE_SIZE) });
+  if (query.search) params.set('search', query.search);
+  return read__Resource__(params, language);
+}
+
+/** The item at a list position, or undefined when the position is outside the list. */
+export async function load__Feature__Item(
+  position: number,
+  language: string,
+): Promise<__Resource__Item | undefined> {
+  const location = locateItem(position, PAGE_SIZE);
+  if (!location) return undefined;
+  const params = new URLSearchParams({ page: String(location.page), size: String(PAGE_SIZE) });
+  return (await read__Resource__(params, language)).items[location.index];
+}

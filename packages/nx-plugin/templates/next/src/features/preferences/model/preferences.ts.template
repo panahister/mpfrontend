@@ -1,0 +1,17 @@
+import { locale, type Locale } from '@mpfrontend/i18n';
+import { validMode, type Mode } from '@mpfrontend/tokens';
+import { validBrand, type Brand } from '../../../theme/config';
+
+/** The presentation preferences of a visitor. They change presentation only, never authority. */
+export type Preferences = Readonly<{ locale: Locale; brand: Brand; mode: Mode }>;
+export type PreferenceKey = keyof Preferences;
+export const modes = ['light', 'dark', 'system'] as const;
+
+/** Every value is validated; an unknown or missing value is the registry default. */
+export function readPreferences(read: (key: PreferenceKey) => string | undefined): Preferences {
+  return {
+    locale: locale(read('locale')),
+    brand: validBrand(read('brand')),
+    mode: validMode(read('mode')),
+  };
+}

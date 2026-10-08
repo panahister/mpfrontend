@@ -1,0 +1,30 @@
+import { Button, Card } from '@mpfrontend/ui';
+import type { __Feature__Status } from '../model/__feature__';
+import { labels } from '../model/overrides';
+
+type Props = Readonly<{ status: __Feature__Status; available: boolean; onStart: () => void }>;
+
+/** The view renders the state it is given and emits the start intent; it holds no workflow state. */
+export function __Feature__View({ status, available, onStart }: Props) {
+  const message = !available
+    ? labels.unbound
+    : status === 'done'
+      ? labels.done
+      : status === 'failed'
+        ? labels.failed
+        : '';
+  return (
+    <Card>
+      <h1>{labels.title}</h1>
+      <Button
+        onClick={onStart}
+        restricted={!available}
+        loading={status === 'running'}
+        loadingLabel={labels.running}
+      >
+        {labels.run}
+      </Button>
+      <p role={status === 'failed' ? 'alert' : 'status'}>{message}</p>
+    </Card>
+  );
+}

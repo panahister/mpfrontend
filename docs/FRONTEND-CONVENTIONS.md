@@ -86,6 +86,43 @@ Avoid a component that reads provider tokens, constructs an internal service URL
 any successful JSON shape, decides whether the actor is authorized, and renders the result. That combines
 five owners and makes both security and testing ambiguous.
 
+## Workspace and feature layout
+
+The generators write this layout; the [CLI guide](CLI-GUIDE.md) lists what each one writes and refuses.
+
+```text
+apps/<app>/
+├── docs/                      overview.md, api-contracts.md; business-rules.md and adr/ when needed
+├── .env.example               variable names only, never values
+└── src/
+    ├── app/                   thin routes, layouts and route handlers; one route per screen
+    ├── features/<feature>/    one user workflow
+    │   ├── index.ts           the public entry; code outside the feature imports only this
+    │   ├── ui/                views: render state, emit intent
+    │   ├── model/             types, validation, constants and workflow rules
+    │   ├── hooks/             feature-specific React state and orchestration
+    │   ├── api/               feature requests and persistence
+    │   └── utils/             small pure helpers used only by this feature
+    ├── entities/<entity>/     types and rules shared by the features of one entity, with an index.ts
+    ├── api/generated/         generated contracts; never edited by hand
+    ├── api/server/            the hand-written server boundary beside them
+    ├── config/                typed, validated configuration
+    └── theme/                 the theme registry
+packages/<name>/               code that two apps need: tags, a public entry and the quality targets
+```
+
+- `mpfrontend create feature` writes a feature; with `--resource` it writes a list and detail over one
+  generated read, its entity and its server boundary. `mpfrontend create route` writes one thin page per
+  screen. `mpfrontend create package` writes a shared package. Each is also an Nx generator of
+  `@mpfrontend/nx-plugin`.
+- Every screen is a route that can be linked and refreshed. Tabs and detail views are child routes or URL
+  state; a page number or a search lives in the URL, not in component state.
+- The lint rule `mpfrontend/public-entry` refuses an import into another feature's or entity's folders.
+- Code that two apps need is a shared package with `type:package` and `scope:shared` tags; copying it
+  between apps is never the answer. Lint refuses an import from one app into another.
+- Tests sit beside the code they test (`*.test.ts`, `*.test.tsx`); app-level integration tests go in
+  `src/tests/`.
+
 ## State, effects, and data access
 
 - Derive values during render when they follow from props or state; do not synchronize derived values with
@@ -209,6 +246,7 @@ ambiguous. It must not choose a business rule merely because one implementation 
 | React, [Thinking in React](https://react.dev/learn/thinking-in-react) and [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) | Component decomposition, one-way data flow, derived state, and effect discipline |
 | Next.js, [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components) | Explicit server/client and trust boundaries |
 | Nx, [Enforce Module Boundaries](https://nx.dev/features/enforce-module-boundaries) | Dependency direction and tag-enforced repository boundaries |
+| Feature-Sliced Design, [Public API](https://feature-sliced.design/docs/reference/public-api) | One public entry per feature or entity, with deeper imports refused |
 | ESLint, [Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files), and [Prettier](https://prettier.io/docs/) | One shared flat configuration and formatter profile that each project extends |
 | Testing Library, [Guiding Principles](https://testing-library.com/docs/guiding-principles) | Tests emphasize observable behavior over implementation detail |
 | OpenAPI Initiative, [Specification](https://spec.openapis.org/oas/latest.html) | The captured API description is a reviewed contract input |

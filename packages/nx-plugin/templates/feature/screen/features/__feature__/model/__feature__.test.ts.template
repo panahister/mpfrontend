@@ -1,0 +1,12 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { next__Feature__Status } from './__feature__';
+
+test('a result is accepted only while the workflow is running', () => {
+  assert.equal(next__Feature__Status('idle', 'start'), 'running');
+  assert.equal(next__Feature__Status('running', 'succeed'), 'done');
+  assert.equal(next__Feature__Status('running', 'fail'), 'failed');
+  assert.equal(next__Feature__Status('failed', 'start'), 'running');
+  assert.equal(next__Feature__Status('idle', 'succeed'), 'idle');
+  assert.equal(next__Feature__Status('done', 'fail'), 'done');
+});

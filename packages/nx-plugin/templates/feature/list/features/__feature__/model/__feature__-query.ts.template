@@ -1,0 +1,19 @@
+/** The list state that the URL owns: the page and the search text, so a screen can be linked and refreshed. */
+export const PAGE_SIZE = 12;
+const MAX_PAGE = 100000;
+const MAX_SEARCH = 100;
+
+export type ListQuery = Readonly<{ page: number; search: string }>;
+export type SearchParams = Readonly<Record<string, string | string[] | undefined>>;
+
+function first(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** Nothing from the URL is trusted: an invalid page is the first page and an oversized search is none. */
+export function listQuery(params: SearchParams): ListQuery {
+  const page = first(params.page) ?? '1';
+  const search = (first(params.search) ?? '').trim();
+  const valid = /^\d{1,6}$/.test(page) && Number(page) >= 1 && Number(page) <= MAX_PAGE;
+  return { page: valid ? Number(page) : 1, search: search.length <= MAX_SEARCH ? search : '' };
+}

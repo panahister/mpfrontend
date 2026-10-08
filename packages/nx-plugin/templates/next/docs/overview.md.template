@@ -1,0 +1,30 @@
+# __APP_NAME__
+
+The purpose of this app, its users and its terms belong at the top of this document. The sections below
+describe the structure that `mpfrontend create app` wrote.
+
+## Routes
+
+- `/` opens the catalog list (`src/app/page.tsx`).
+- `/catalog` is the catalog list screen; its page and its search are URL state, so the screen can be
+  linked and refreshed (`src/app/catalog/page.tsx`).
+- `/catalog/[position]` is the detail screen of one item, a child route of the list
+  (`src/app/catalog/[position]/page.tsx`).
+- `/components` shows the framework components (`src/app/components/page.tsx`).
+
+## Layout
+
+- `src/app/` holds thin routes, the root layout and route handlers only.
+- `src/features/<feature>/` holds one user workflow: `ui/`, `model/`, `hooks/`, `api/`, `utils/` and its
+  `index.ts` public entry. Code outside a feature imports only that `index.ts`; lint refuses a deeper
+  import.
+- `src/entities/<entity>/` holds the types and rules that the features of one entity share.
+- `src/api/generated/` holds generated contracts; `src/api/server/` holds the hand-written server
+  boundary beside them.
+- `src/config/` holds validated configuration; `src/theme/` holds the theme registry.
+
+Add a feature with `mpfrontend create feature`, a screen with `mpfrontend create route` and a package
+that two apps need with `mpfrontend create package`; see the CLI guide of MP Frontend.
+
+Business rules go in `docs/business-rules.md` and decisions in `docs/adr/` when the first one exists.
+The contracts this app reads are listed in [api-contracts.md](api-contracts.md).

@@ -1,0 +1,4 @@
+import { resources } from '__FEATURE_TO_OUTPUT__/resources.gen';
+
+/** The display fields of the generated resource contract. */
+export const fields = resources.find((resource) => resource.name === '__resource__')!.fields;

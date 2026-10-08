@@ -1,0 +1,17 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { itemPosition, locateItem } from './__resource__';
+
+test('a list position and its page and index convert both ways', () => {
+  for (const [page, index] of [
+    [1, 0],
+    [1, 11],
+    [2, 0],
+    [9, 5],
+  ] as const) {
+    assert.deepEqual(locateItem(itemPosition(page, 12, index), 12), { page, index });
+  }
+  for (const position of [0, -1, 1.5, Number.NaN, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(locateItem(position, 12), undefined);
+  }
+});

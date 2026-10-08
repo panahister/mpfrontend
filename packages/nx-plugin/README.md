@@ -5,7 +5,11 @@ into dist. Nx owns build, typecheck, lint and test targets. Consumer application
 See ../../docs/IMPLEMENTATION-STATUS.md for observed evidence and remaining work.
 
 `createWorkspace`/`workspaceFiles` implement the CLI `init` shell. `createApplication`/`applicationFiles`
-implement the catalog application template. These functions refuse existing destinations rather than
+implement the application template. `createFeature`/`featureFiles`, `createRoute`/`routeFiles` and
+`createPackage`/`packageFiles` implement `mpfrontend create feature|route|package`, and the Nx generators
+`application`, `feature`, `route` and `package` in `generators.json` write the same files through the
+Nx tree. The template's catalog example is the output of the feature generator (a list feature over the
+generated `catalog` read) and of the route generator (`/catalog` and `/catalog/[position]`). These functions refuse existing destinations rather than
 merging into user files. Creation is not a filesystem transaction: a write failure can leave an owned
 partial **new** directory to inspect, never automatically delete or overwrite. Dry-run writes nothing.
 Workspace initialization does not invent an API/DLS, authorization, runtime profile, Git history or
@@ -30,3 +34,15 @@ An existing workspace adopts the profile through the `mpfrontend-upgrade-project
 scratch workspace and app with the upgraded CLI outside the repository, copy the profile files and pinned
 dependencies from it, add the four targets to each project, run `pnpm format` once in a separate
 formatting-only change, and then make `pnpm check` pass without weakening a rule.
+
+A feature is `src/features/<feature>/` with `ui/`, `model/`, `hooks/`, `api/`, `utils/` and an `index.ts`
+public entry; a list feature also writes its entity in `src/entities/<resource>/` and its server boundary
+in `src/api/server/<resource>.ts` when they do not exist, and keeps them when they do. A route is one
+thin `page.tsx` that renders a feature screen with the route's base path. A package has the tags
+`type:package`, `scope:shared` and `runtime:<runtime>`, a public entry and the quality targets. Every
+generator validates names and paths, refuses an existing destination and formats its output with the
+workspace's Prettier configuration (the CLI resolves Prettier from the workspace root; the Nx generators
+use `formatFiles`). Generated contracts default to `src/api/generated/<contract>`; an existing app's
+feature-local output stays valid. Init also writes `CODEOWNERS` with placeholder owners and
+`.agents/skills/README.md`; create app writes `.env.example` (names only) and `docs/`. See
+[the CLI guide](../../docs/CLI-GUIDE.md).

@@ -36,7 +36,7 @@ test('workspace design-source selection is explicit and pending modes do not inv
   assert.throws(()=>generator.workspaceFiles('consumer','mpfrontend' as never),/INVALID_DESIGN_SOURCE/);
   assert.throws(()=>generator.workspaceFiles('consumer','invalid' as never),/INVALID_DESIGN_SOURCE/);
 });
-test('neutral generator emits independent application structure',async()=>{const files=await applicationFiles('sample');assert.ok(files['src/app/page.tsx']);assert.ok(files['src/features/catalog/ui/catalog.tsx']);assert.ok(!JSON.stringify(files).includes('__APP_NAME__'));});
+test('neutral generator emits independent application structure',async()=>{const files=await applicationFiles('sample');assert.ok(files['src/app/page.tsx']);assert.ok(files['src/features/catalog/ui/catalog-list.tsx']);assert.ok(files['src/features/catalog/index.ts']);assert.ok(!JSON.stringify(files).includes('__APP_NAME__'));});
 test('unsafe app names fail before emission',async()=>{await assert.rejects(applicationFiles('../evil'),/INVALID/);});
 test('generated application does not depend on a project in the original workspace',async()=>{
   const files=await applicationFiles('sample');

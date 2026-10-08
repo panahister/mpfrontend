@@ -1,3 +1,0 @@
-// Authored product labels, formatting and behavior belong here; FTG never overwrites this file.
-export const title = '__APP_NAME__';
-export const labels: Readonly<Record<string, string>> = {};

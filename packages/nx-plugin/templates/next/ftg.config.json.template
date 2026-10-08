@@ -1,6 +1,6 @@
 {
   "openapi": "../../contracts/openapi/presentation/__APP_NAME__/openapi.json",
-  "output": "src/features/catalog/model/generated",
+  "output": "src/api/generated/catalog",
   "resources": [
     {
       "name": "catalog",

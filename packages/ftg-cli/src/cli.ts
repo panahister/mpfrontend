@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { generate, InputError } from './index.js';
-import { createApplication,createWorkspace } from '@mpfrontend/nx-plugin';
+import { createApplication,createWorkspace,createFeature,createRoute,createPackage,type PackageRuntime } from '@mpfrontend/nx-plugin';
 import {skillCatalog,installSkills,checkSkills,SkillsError} from '@mpfrontend/ai-skills';
 import {readFileSync} from 'node:fs';
 import {designCommand,DesignError} from './design.js';
@@ -59,7 +59,27 @@ try {
     const name=option('--name'),directory=option('--directory');
     if(!name||!directory)throw new InputError('NAME_AND_DIRECTORY_REQUIRED');
     console.log(JSON.stringify(await createApplication({name,directory,dryRun:args.includes('--dry-run')})));
-  } else { console.log('ftg generate|check --config <file> [--dry-run] [--json]\nmpfrontend init --name <name> --directory <new-directory> [--design-source none|existing] [--dry-run] [--json]\nmpfrontend design attach --directory <workspace> --source existing --binding <file> [--dry-run] [--json]\nmpfrontend design status --directory <workspace> [--json]\nmpfrontend create app --name <name> --directory <new-directory> [--dry-run]\nmpfrontend skills list|install|update|check [--directory <repository>] [--for codex|claude|both] [--profile base|design] [--dry-run] [--json]\nftg --version');process.exitCode=args.length?2:0; }
+  } else if(args[0]==='create' && (args[1]==='feature'||args[1]==='route'||args[1]==='package')) {
+    const profiles:Record<string,readonly string[]>={feature:['--app','--name','--resource'],route:['--app','--path','--feature','--screen'],package:['--name','--directory','--runtime']};
+    const allowed=new Set([...profiles[args[1]]!,'--dry-run','--json']),seen=new Set<string>();
+    for(let index=2;index<args.length;index++){const flag=args[index]!;if(!allowed.has(flag))throw new InputError('UNKNOWN_CREATE_OPTION');if(seen.has(flag))throw new InputError('DUPLICATE_CREATE_OPTION');seen.add(flag);if(flag!=='--dry-run'&&flag!=='--json'){const value=args[++index];if(!value||value.startsWith('--'))throw new InputError('MISSING_OPTION_VALUE');}}
+    const dryRun=args.includes('--dry-run');
+    try{
+      if(args[1]==='feature'){
+        const app=option('--app'),name=option('--name'),resource=option('--resource');
+        if(!app||!name)throw new InputError('APP_AND_NAME_REQUIRED');
+        console.log(JSON.stringify(await createFeature({app,name,...(resource?{resource}:{}),dryRun})));
+      }else if(args[1]==='route'){
+        const app=option('--app'),path=option('--path'),feature=option('--feature'),screen=option('--screen');
+        if(!app||!path||!feature)throw new InputError('APP_PATH_AND_FEATURE_REQUIRED');
+        console.log(JSON.stringify(await createRoute({app,path,feature,...(screen?{screen}:{}),dryRun})));
+      }else{
+        const name=option('--name'),directory=option('--directory'),runtime=option('--runtime') as PackageRuntime|undefined;
+        if(!name)throw new InputError('NAME_REQUIRED');
+        console.log(JSON.stringify(await createPackage({name,...(directory?{directory}:{}),...(runtime?{runtime}:{}),dryRun})));
+      }
+    }catch(error){if(error instanceof InputError)throw error;throw new InputError(error instanceof Error?error.message:'CREATE_FAILED');}
+  } else { console.log('ftg generate|check --config <file> [--dry-run] [--json]\nmpfrontend init --name <name> --directory <new-directory> [--design-source none|existing] [--dry-run] [--json]\nmpfrontend design attach --directory <workspace> --source existing --binding <file> [--dry-run] [--json]\nmpfrontend design status --directory <workspace> [--json]\nmpfrontend create app --name <name> --directory <new-directory> [--dry-run]\nmpfrontend create feature --app <app-directory> --name <feature> [--resource <ftg-resource>] [--dry-run] [--json]\nmpfrontend create route --app <app-directory> --path <route> --feature <feature> [--screen <Export>] [--dry-run] [--json]\nmpfrontend create package --name <name> [--directory packages/<name>] [--runtime universal|client|server] [--dry-run] [--json]\nmpfrontend skills list|install|update|check [--directory <repository>] [--for codex|claude|both] [--profile base|design] [--dry-run] [--json]\nftg --version');process.exitCode=args.length?2:0; }
 } catch(error) {
   const code=error instanceof InputError||error instanceof SkillsError||error instanceof DesignError?error.exitCode:2;
   console.error(JSON.stringify({ok:false,code,error:error instanceof Error?error.message:'COMMAND_FAILED'}));process.exitCode=code;

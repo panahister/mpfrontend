@@ -1,0 +1,46 @@
+'use client';
+import { Select } from '@mpfrontend/ui';
+import { translator } from '@mpfrontend/i18n';
+import { brands } from '../../../theme/config';
+import { usePreferences } from '../hooks/use-preferences';
+import { modes, type Preferences } from '../model/preferences';
+
+/** The language, brand and appearance controls. The view renders choices and emits changes. */
+export function PreferenceControls({ initial }: { initial: Preferences }) {
+  const { preferences, change } = usePreferences(initial);
+  const t = translator(preferences.locale);
+  return (
+    <div className="flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
+      <Select
+        label={t('language')}
+        value={preferences.locale}
+        onChange={(event) => change('locale', event.target.value)}
+      >
+        <option value="en">English</option>
+        <option value="ar">العربية</option>
+      </Select>
+      <Select
+        label={t('brand')}
+        value={preferences.brand}
+        onChange={(event) => change('brand', event.target.value)}
+      >
+        {brands.map((value) => (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        ))}
+      </Select>
+      <Select
+        label={t('mode')}
+        value={preferences.mode}
+        onChange={(event) => change('mode', event.target.value)}
+      >
+        {modes.map((value) => (
+          <option key={value} value={value}>
+            {t(value)}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}

@@ -1,0 +1,84 @@
+'use client';
+import { Button, Card, Field, ResourceTable, type DisplayField } from '@mpfrontend/ui';
+import { formatValue, translator, type Locale } from '@mpfrontend/i18n';
+import { itemPosition, type __Resource__Page } from '../../../entities/__resource__';
+import { use__Feature__Search } from '../hooks/use-__feature__-search';
+import { PAGE_SIZE, type ListQuery } from '../model/__feature__-query';
+import { labels, title } from '../model/overrides';
+import { detailHref, listHref } from '../utils/__feature__-href';
+
+type Props = Readonly<{
+  page: __Resource__Page | undefined;
+  fields: readonly DisplayField[];
+  query: ListQuery;
+  language: Locale;
+  basePath: string;
+}>;
+
+/** The list view: it renders the page it is given and emits navigation and search intent. */
+export function __Feature__List({ page, fields, query, language, basePath }: Props) {
+  const t = translator(language);
+  const search = use__Feature__Search(basePath, query.search);
+  return (
+    <section className="grid gap-4">
+      <h1>{title}</h1>
+      <form
+        role="search"
+        action={basePath}
+        method="get"
+        onSubmit={search.submit}
+        className="flex flex-wrap items-end gap-4"
+      >
+        <Field
+          label={t('search')}
+          name="search"
+          value={search.draft}
+          onChange={(event) => search.setDraft(event.target.value)}
+        />
+        <Button type="submit" tone="secondary">
+          {t('apply')}
+        </Button>
+      </form>
+      {page === undefined ? (
+        <p
+          role="alert"
+          className="border-s-4 border-[color:var(--mp-status-warning)] bg-[color:var(--mp-status-warningsurface)] p-4"
+        >
+          {t('unavailable')}
+        </p>
+      ) : (
+        <Card>
+          <ResourceTable
+            fields={fields}
+            rows={page.items}
+            caption={title}
+            format={(value) => formatValue(value, language)}
+            labels={labels}
+            detail={(row) => (
+              <a
+                href={detailHref(
+                  basePath,
+                  itemPosition(page.number, PAGE_SIZE, page.items.indexOf(row as never)),
+                )}
+              >
+                {t('detail')}
+              </a>
+            )}
+          />
+          {page.items.length === 0 && <p>{t('empty')}</p>}
+          <nav aria-label={t('page')} className="mt-4 flex flex-wrap items-center gap-4">
+            {page.number > 1 && (
+              <a href={listHref(basePath, { ...query, page: page.number - 1 })}>{t('previous')}</a>
+            )}
+            <span>
+              {t('page')} {page.number} / {page.pageCount}
+            </span>
+            {page.hasMore && (
+              <a href={listHref(basePath, { ...query, page: page.number + 1 })}>{t('next')}</a>
+            )}
+          </nav>
+        </Card>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,28 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { __Feature__Detail } from './__feature__-detail';
+
+const fields = [{ key: 'name', type: 'string', required: true, editable: false, nullable: false }];
+
+test('the detail view renders the generated fields of one item and a way back to the list', () => {
+  const html = renderToStaticMarkup(
+    createElement(__Feature__Detail, {
+      item: { name: 'Example' } as never,
+      fields,
+      language: 'en',
+      basePath: '/list',
+    }),
+  );
+  assert.match(html, /<dt[^>]*>name<\/dt><dd[^>]*>Example<\/dd>/);
+  assert.match(html, /href="\/list"/);
+});
+
+test('an unreadable item is announced instead of rendering an empty record', () => {
+  const html = renderToStaticMarkup(
+    createElement(__Feature__Detail, { item: null, fields, language: 'en', basePath: '/list' }),
+  );
+  assert.match(html, /role="alert"/);
+  assert.doesNotMatch(html, /<dl/);
+});

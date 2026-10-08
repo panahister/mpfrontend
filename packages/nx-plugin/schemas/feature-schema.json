@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "string",
+      "description": "The app directory, relative to the workspace root, for example apps/customer"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}$",
+      "description": "The feature name, kebab case"
+    },
+    "resource": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,48}$",
+      "description": "A read resource selected in the app's ftg.config.json; makes a list feature"
+    }
+  },
+  "required": [
+    "app",
+    "name"
+  ],
+  "additionalProperties": false
+}

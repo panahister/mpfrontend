@@ -10,28 +10,30 @@ from the work required for a stable package and production deployment.
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
 | `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 28/28 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 11/11 |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 19/19 |
 | `@mpfrontend/ftg-core` | `0.1.0-dev.5` | included in source and consumer gates |
-| `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 7/7 plus 18/18 procedure format validation |
+| `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 64/64 |
 | `@mpfrontend/security-bff` | `0.1.0-dev.6` | 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
 | Complete Nx workspace | thirteen packages | 52/52 lint, typecheck, test, and build targets |
 | Local package cohort | thirteen archives | 13/13 pack and manifest verification |
 
-Fresh independent consumer `mpfrontend-packed-consumer-SoUd1G` executed the packed CLI rather than the
+Fresh independent consumer `mpfrontend-packed-consumer-5f3mP1` executed the packed CLI rather than the
 source workspace. It passed code-first and consumer-owned design initialization, explicit refusal of the
 removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
-design lifecycle commands, security and realtime assertions, the generated workspace's own uncached
-`pnpm check` (format check, then lint, typecheck, test, build and generated-check), three lint negative
-controls, generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
+design lifecycle commands, security and realtime assertions, the feature, route and package generators
+(dry-run, creation, refusal of an existing destination and an Nx generator dry-run), the generated
+workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build and
+generated-check) over the generated app, features, routes and package, four lint negative controls,
+generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
 run in that local fixture.
 
 ## Capability status
 
 | Capability | Current state | Evidence boundary |
 |---|---|---|
-| Deterministic workspace and feature scaffolding | Implemented | Source and packed-consumer gates |
+| Deterministic workspace and feature scaffolding | Implemented | Workspace, app, feature (screen and list), route and shared-package generators, each a CLI command and an Nx generator with dry-run and refusal of an existing destination; source tests and the packed consumer, whose generated features, routes and package pass its own `pnpm check` |
 | Workspace quality profile | Implemented | Shared ESLint, Prettier and TypeScript configuration; the packed consumer's own `pnpm check` (format, lint, typecheck, test, build, generated-check) and three lint negative controls (app-to-app import, raw colour, hand-written CSS) |
 | OpenAPI normalization and finite read/write generation | Implemented for selected profiles | Required/optional JSON, bodyless requests, typed responses, and explicit empty responses |
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
