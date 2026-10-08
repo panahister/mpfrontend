@@ -1,15 +1,15 @@
 'use client';
 import { Select } from '@mpfrontend/ui';
-import { translator } from '@mpfrontend/i18n';
 import { localeRegistry } from '../../../config/app';
 import { brands } from '../../../theme/config';
 import { usePreferences } from '../hooks/use-preferences';
+import { messages } from '../model/messages';
 import { modes, type Preferences } from '../model/preferences';
 
 /** The language, brand and appearance controls. The view renders choices and emits changes. */
 export function PreferenceControls({ initial }: { initial: Preferences }) {
   const { preferences, change } = usePreferences(initial);
-  const t = translator(preferences.locale);
+  const t = messages.translator(preferences.locale);
   return (
     <div className="flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
       <Select

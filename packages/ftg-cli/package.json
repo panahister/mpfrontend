@@ -18,6 +18,7 @@
   "dependencies": {
     "@mpfrontend/ai-skills": "workspace:*",
     "@mpfrontend/ftg-core": "workspace:*",
+    "@mpfrontend/i18n": "workspace:*",
     "@mpfrontend/nx-plugin": "workspace:*",
     "@apidevtools/swagger-parser": "13.1.0",
     "openapi-types": "12.1.3",

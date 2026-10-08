@@ -14,5 +14,8 @@
     "dist",
     "README.md"
   ],
-  "dependencies": {}
+  "dependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.18",
+    "intl-messageformat": "11.2.15"
+  }
 }

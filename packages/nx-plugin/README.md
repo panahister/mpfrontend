@@ -47,6 +47,12 @@ feature-local output stays valid. Init also writes `CODEOWNERS` with placeholder
 `.agents/skills/README.md`; create app writes `.env.example` (names only) and `docs/`. See
 [the CLI guide](../../docs/CLI-GUIDE.md).
 
+Every visible text of the application template is a catalog message: the app-wide set in
+`src/i18n/messages/<locale>.ts` and one set per feature in `model/messages/<locale>.ts`, for `en`, `ar` and
+`fa`. The app's `catalog-check` target runs `mpfrontend catalog check`. A generated feature gets a catalog
+per locale of the app's registry; locales other than the default start with the default text and are
+reported as `untranslated`.
+
 The application template is framed by `@mpfrontend/app-layout` and compiles Tailwind CSS v4 with the UI
 and shell outputs as sources. `src/app/globals.css` imports Tailwind, the neutral tokens, the component
 styles and, last, the app theme `src/theme/theme.css`; it holds no class rule. Upgrade note: apps created

@@ -22,8 +22,14 @@ negotiates the browser's Accept-Language against it and sends only an allowliste
 otherwise; without configuration it sends only `en` or `ar`, as before. A consumer whose backends answer
 in Persian lists `fa` there. The login `ui_locales` allowlist (`supportedUiLocales`) is separate.
 
-Use `translator` for core MessageKey values and a typed consumer catalog for product copy; a key missing
-in a locale falls back, key by key, to the default locale. Numbers use the locale's digits through Intl
+Write every visible text as a catalog message. The app-wide set is `src/i18n/messages/<locale>.ts` and each
+feature has `model/messages/<locale>.ts`: the default locale's file uses `defineMessages` and defines the
+keys and their parameters; every other locale is typed `Translation<typeof base>`. Build translators with
+`createMessages` (core messages are a separate set the catalog may override). Use ICU MessageFormat with
+named parameters, `plural` and `select`; never join a translated message to other text or a value. Run the
+app's `catalog-check` target: it fails on a key missing in a locale, an unused key or differing parameters.
+A key missing in a locale falls back, key by key, to the default locale at run time, but the check still
+fails on it. Translate the files that a generator reports as `untranslated`. Numbers use the locale's digits through Intl
 (`formatNumber`, `formatValue`); a `numberingSystem` in the registry overrides them. Preserve identifiers
 and machine payload values; never translate free text that users wrote. Fonts with Arabic and Persian
 glyph coverage, and their licences, are consumer-owned.

@@ -3,6 +3,17 @@ export const catalogs = {
   ar: { title:'MP Frontend', catalog:'الكتالوج', refresh:'تحديث', loading:'جار التحميل', unavailable:'الخدمة غير متاحة. حاول مرة أخرى.', empty:'لا توجد سجلات.', previous:'السابق', next:'التالي', page:'الصفحة', language:'اللغة', brand:'العلامة', mode:'المظهر', light:'فاتح', dark:'داكن', system:'النظام', docs:'توثيق الواجهة', source:'متصل بـ MP Core', search:'بحث', apply:'تطبيق', readOnly:'كتالوج عام للقراءة فقط', fields:'الحقول', true:'نعم', false:'لا', detail:'التفاصيل', back:'رجوع', save:'حفظ', forbidden:'هذه العملية غير مسموحة.', invalid:'تحقق من الحقول المسموحة.', remoteChange:'تغيرت البيانات. تم الاحتفاظ بتعديلاتك.', skipToContent:'تخطَّ إلى المحتوى', navigation:'التنقل الرئيسي' }
 } as const;
 export type MessageKey = keyof typeof catalogs.en;
+const neutral = ['loading', 'unavailable', 'empty', 'previous', 'next', 'page', 'language', 'brand', 'mode', 'light', 'dark', 'system', 'search', 'apply', 'fields', 'true', 'false', 'detail', 'back', 'save', 'refresh', 'forbidden', 'invalid', 'remoteChange', 'skipToContent', 'navigation'] as const;
+export type CoreMessageKey = (typeof neutral)[number];
+/**
+ * The neutral messages of MP Frontend, separate from any product text. A consumer catalog set overrides
+ * any of them by defining the same key. `catalogs` keeps its earlier keys for compatibility.
+ */
+export const coreMessages: Readonly<Record<'en' | 'ar', Readonly<Record<CoreMessageKey, string>>>> = {
+  en: Object.fromEntries(neutral.map(key => [key, catalogs.en[key]])) as Record<CoreMessageKey, string>,
+  ar: Object.fromEntries(neutral.map(key => [key, catalogs.ar[key]])) as Record<CoreMessageKey, string>,
+};
+export { createMessages, defineMessages, checkCatalogs, messageArguments, MessageError, type Catalog, type Translation, type MessageArguments, type ArgumentList, type Translate, type Messages, type MessageValue, type ArgumentShape, type CatalogProblem } from './messages.js';
 
 export type Direction = 'ltr' | 'rtl';
 /** One locale of a registry: its writing direction and, optionally, the digits Intl uses for it. */

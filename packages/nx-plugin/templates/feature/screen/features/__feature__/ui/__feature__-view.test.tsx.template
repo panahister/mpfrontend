@@ -8,15 +8,18 @@ const render = (props: Parameters<typeof __Feature__View>[0]) =>
   renderToStaticMarkup(createElement(__Feature__View, props));
 
 test('an unbound feature is announced and cannot start', () => {
-  const html = render({ status: 'idle', available: false, onStart: () => {} });
+  const html = render({ status: 'idle', available: false, language: 'en', onStart: () => {} });
   assert.match(html, /aria-disabled="true"/);
   assert.match(html, /role="status"/);
 });
 
 test('a running feature shows its busy state and a failure is an alert', () => {
   assert.match(
-    render({ status: 'running', available: true, onStart: () => {} }),
+    render({ status: 'running', available: true, language: 'en', onStart: () => {} }),
     /aria-busy="true"/,
   );
-  assert.match(render({ status: 'failed', available: true, onStart: () => {} }), /role="alert"/);
+  assert.match(
+    render({ status: 'failed', available: true, language: 'en', onStart: () => {} }),
+    /role="alert"/,
+  );
 });

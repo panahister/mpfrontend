@@ -11,8 +11,59 @@ export function diskReader(root:string):WorkspaceReader{
   };
 }
 /** Files to create, workspace-relative, and shared files that already exist and are kept as they are. */
-export type Plan=Readonly<{files:Record<string,string>;kept:string[]}>;
+export type Plan=Readonly<{files:Record<string,string>;kept:string[];untranslated?:string[]}>;
 const prefix=(directory:string,files:Record<string,string>)=>Object.fromEntries(Object.entries(files).map(([path,content])=>[directory+'/'+path,content]));
+
+// ---------------------------------------------------------------------------------------------------- messages
+/** The locales of an app: the base catalog is the default locale's. */
+export type AppLocales=Readonly<{defaultLocale:string;locales:readonly string[]}>;
+export const TEMPLATE_LOCALES:AppLocales={defaultLocale:'en',locales:['en','ar','fa']};
+const localeCode=/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/;
+/** Reads the registry of `src/config/app.ts` as the application template writes it. */
+export function readAppLocales(source:string):AppLocales|undefined{
+  const body=/createLocaleRegistry\(\{[\s\S]*?locales:\s*\{([\s\S]*?)\}\s*,\s*defaultLocale:\s*'([^']+)'/.exec(source);
+  if(!body)return undefined;
+  const locales=[...body[1]!.matchAll(/(?:^|[,{\s])'?([a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3})'?\s*:\s*\{/g)].map(match=>match[1]!);
+  if(!locales.length||!locales.includes(body[2]!)||locales.some(code=>!localeCode.test(code)))return undefined;
+  return {defaultLocale:body[2]!,locales};
+}
+const humanize=(name:string)=>name.charAt(0).toUpperCase()+name.slice(1).replaceAll('-',' ');
+const quote=(value:string)=>"'"+value.replaceAll('\\','\\\\').replaceAll("'","\\'")+"'";
+const identifier=(code:string)=>code.replaceAll('-','_');
+/**
+ * The catalog set of a feature: one module per app locale under `model/messages/`, and `model/messages.ts`.
+ * The base locale holds the starter text; every other locale starts with the same text, to be translated.
+ */
+export function messageFiles(directory:string,base:Readonly<Record<string,string>>,locales:AppLocales,depth:number):Record<string,string>{
+  const entries=Object.entries(base).map(([key,value])=>'  '+key+': '+quote(value)+',').join('\n');
+  const files:Record<string,string>={};
+  files[directory+'/messages/'+locales.defaultLocale+'.ts']=`import { defineMessages } from '@mpfrontend/i18n';\n\nexport default defineMessages({\n${entries}\n});\n`;
+  for(const code of locales.locales.filter(code=>code!==locales.defaultLocale)){
+    files[directory+'/messages/'+code+'.ts']=`import type { Translation } from '@mpfrontend/i18n';\nimport type base from './${locales.defaultLocale}';\n\n// Starts with the base text: translate each message.\nexport default {\n${entries}\n} satisfies Translation<typeof base>;\n`;
+  }
+  const others=locales.locales.filter(code=>code!==locales.defaultLocale);
+  files[directory+'/messages.ts']=`import { coreMessages, createMessages } from '@mpfrontend/i18n';
+import { localeRegistry } from '${'../'.repeat(depth)}config/app';
+import base from './messages/${locales.defaultLocale}';
+${others.map(code=>`import ${identifier(code)} from './messages/${code}';`).join('\n')}${others.length?'\n':''}
+/** The messages of this unit. The base catalog defines the keys and their parameters. */
+export const messages = createMessages({
+  defaultLocale: ${quote(locales.defaultLocale)},
+  base,
+  translations: { ${others.map(code=>code.includes('-')?quote(code)+': '+identifier(code):code).join(', ')} },
+  core: coreMessages,
+  numberingSystem: localeRegistry.numberingSystem,
+});
+`;
+  return files;
+}
+const listMessages=(name:string)=>({
+  title:humanize(name),search:'Search',apply:'Apply',unavailable:'The data is not available. Try again.',empty:'No records found.',
+  detail:'Details',back:'Back',pagination:'Pages',pageOf:'Page {page, number} of {count, number}',previous:'Previous',next:'Next',
+});
+const screenMessages=(name:string)=>({
+  title:humanize(name),run:'Run',running:'Running',done:'Done',failed:'Not completed. Try again.',unbound:'Not available yet.',
+});
 
 // ---------------------------------------------------------------------------------------------------- features
 export type FeatureKind='screen'|'list';
@@ -21,18 +72,20 @@ export type FeatureKind='screen'|'list';
  * hook, a model, a request boundary and a helper. With a resource of the app's `ftg.config.json` it is a
  * `list` feature: a URL-driven list and detail over that generated read, its entity and its server boundary.
  */
-export async function featureFiles(name:string,options:{resource?:string;generatedOutput?:string}={}):Promise<Record<string,string>>{
+export async function featureFiles(name:string,options:{resource?:string;generatedOutput?:string;locales?:AppLocales}={}):Promise<Record<string,string>>{
   if(!NAME_PATTERN.test(name))throw new Error('INVALID_FEATURE_NAME');
-  if(options.resource===undefined)return prefix('src',await templateFiles('feature/screen',{__feature__:name,__Feature__:pascal(name)}));
+  const locales=options.locales??TEMPLATE_LOCALES;
+  const model='features/'+name+'/model';
+  if(options.resource===undefined)return prefix('src',{...await templateFiles('feature/screen',{__feature__:name,__Feature__:pascal(name)}),...messageFiles(model,screenMessages(name),locales,3)});
   if(!NAME_PATTERN.test(options.resource))throw new Error('INVALID_RESOURCE_NAME');
   const output=safeRelative(options.generatedOutput??'','INVALID_GENERATED_OUTPUT');
-  return prefix('src',await templateFiles('feature/list',{
+  return prefix('src',{...await templateFiles('feature/list',{
     __FEATURE_TO_OUTPUT__:importPath('src/features/'+name+'/model',output),
     __ENTITY_TO_OUTPUT__:importPath('src/entities/'+options.resource+'/model',output),
     __SERVER_TO_OUTPUT__:importPath('src/api/server',output),
     __RESOURCE_CONSTANT__:constant(options.resource),
     __feature__:name,__Feature__:pascal(name),__resource__:options.resource,__Resource__:pascal(options.resource),
-  }));
+  }),...messageFiles(model,listMessages(name),locales,3)});
 }
 export type FeatureRequest=Readonly<{app:string;name:string;resource?:string}>;
 export async function planFeature(reader:WorkspaceReader,request:FeatureRequest):Promise<Plan>{
@@ -40,6 +93,8 @@ export async function planFeature(reader:WorkspaceReader,request:FeatureRequest)
   if(!NAME_PATTERN.test(request.name))throw new Error('INVALID_FEATURE_NAME');
   if(!await reader.exists(app+'/project.json'))throw new Error('APP_NOT_FOUND');
   if(await reader.exists(app+'/src/features/'+request.name))throw new Error('DESTINATION_EXISTS');
+  const locales=readAppLocales(await reader.read(app+'/src/config/app.ts')??'');
+  if(!locales)throw new Error('APP_PREREQUISITE_MISSING:src/config/app.ts locale registry');
   // Feature screens render inside the shared page frame.
   const manifest=JSON.parse(await reader.read(app+'/package.json')??'{}') as {dependencies?:Record<string,string>};
   if(!manifest.dependencies?.['@mpfrontend/app-layout'])throw new Error('APP_PREREQUISITE_MISSING:@mpfrontend/app-layout');
@@ -51,14 +106,15 @@ export async function planFeature(reader:WorkspaceReader,request:FeatureRequest)
     if(!config.resources.some(resource=>resource.name===request.resource))throw new Error('UNKNOWN_RESOURCE');
     generatedOutput=posix.normalize(config.output);
   }
-  const all=prefix(app,await featureFiles(request.name,{...(request.resource!==undefined?{resource:request.resource}:{}),...(generatedOutput?{generatedOutput}:{})}));
+  const all=prefix(app,await featureFiles(request.name,{locales,...(request.resource!==undefined?{resource:request.resource}:{}),...(generatedOutput?{generatedOutput}:{})}));
   const files:Record<string,string>={},kept:string[]=[];
   for(const [path,content] of Object.entries(all)){
     // The entity and the server boundary of a resource are shared; an existing one is authored and kept.
     if(!path.startsWith(app+'/src/features/')&&await reader.exists(path)){kept.push(path);continue;}
     files[path]=content;
   }
-  return {files,kept};
+  const untranslated=Object.keys(files).filter(path=>/\/model\/messages\/[^/]+\.ts$/.test(path)&&!path.endsWith('/'+locales.defaultLocale+'.ts')).sort();
+  return {files,kept,untranslated};
 }
 
 // ------------------------------------------------------------------------------------------------------ routes
@@ -126,7 +182,7 @@ async function apply(plan:Plan,options:CreateOptions){
   const root=resolve(options.root??process.cwd());
   let formatted=false;
   if(!options.dryRun)formatted=await writeNew(root,plan.files,options.formatter??await workspaceFormatter(root));
-  return {files:Object.keys(plan.files).sort(),kept:plan.kept.sort(),dryRun:options.dryRun===true,formatted};
+  return {files:Object.keys(plan.files).sort(),kept:plan.kept.sort(),...(plan.untranslated?{untranslated:plan.untranslated}:{}),dryRun:options.dryRun===true,formatted};
 }
 export async function createFeature(request:FeatureRequest&CreateOptions){
   const plan=await planFeature(diskReader(resolve(request.root??process.cwd())),request);

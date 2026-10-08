@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
-import { translator } from '@mpfrontend/i18n';
 import { AppFrame, AppHeader, Navigation } from '@mpfrontend/app-layout';
 import { PreferenceControls, readPreferences } from '../features/preferences';
 import { appId, localeRegistry, preferenceCookie } from '../config/app';
+import { appMessages } from '../i18n';
 import './globals.css';
 
 export const metadata = {
@@ -14,11 +14,11 @@ export const metadata = {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const saved = await cookies();
   const preferences = readPreferences((key) => saved.get(preferenceCookie(key))?.value);
-  const t = translator(preferences.locale);
+  const t = appMessages.translator(preferences.locale);
   // The app passes the items it may show; the shell decides nothing about access.
   const items = [
     { href: '/catalog', label: t('catalog') },
-    { href: '/components', label: 'Components' },
+    { href: '/components', label: t('components') },
     { href: '/api/docs', label: t('docs') },
   ];
   return (

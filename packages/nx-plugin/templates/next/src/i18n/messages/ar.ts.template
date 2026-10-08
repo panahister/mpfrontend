@@ -1,0 +1,18 @@
+import type { Translation } from '@mpfrontend/i18n';
+import type base from './en';
+
+export default {
+  skipToContent: 'تخطَّ إلى المحتوى',
+  navigation: 'التنقل الرئيسي',
+  catalog: 'الكتالوج',
+  components: 'المكونات',
+  docs: 'توثيق الواجهة',
+  componentsTitle: 'أساس مكونات MP Frontend',
+  continue: 'متابعة',
+  fieldLabel: 'تسمية الحقل',
+  fieldPlaceholder: 'أدخل قيمة',
+  fieldHelper: 'نص مساعد',
+  account: 'الحساب',
+  selectOption: 'اختر خيارًا',
+  exampleAccount: 'حساب تجريبي',
+} satisfies Translation<typeof base>;

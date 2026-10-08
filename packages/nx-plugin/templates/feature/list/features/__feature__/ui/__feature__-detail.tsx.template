@@ -1,10 +1,11 @@
 import { Fragment } from 'react';
 import { PageFrame } from '@mpfrontend/app-layout';
 import { Card, type DisplayField } from '@mpfrontend/ui';
-import { formatValue, translator } from '@mpfrontend/i18n';
+import { formatValue } from '@mpfrontend/i18n';
 import { localeRegistry } from '../../../config/app';
 import type { __Resource__Item } from '../../../entities/__resource__';
-import { labels, title } from '../model/overrides';
+import { messages } from '../model/messages';
+import { labels } from '../model/overrides';
 
 type Props = Readonly<{
   item: __Resource__Item | null;
@@ -15,10 +16,10 @@ type Props = Readonly<{
 
 /** The detail view. `null` means the server boundary could not read the item. */
 export function __Feature__Detail({ item, fields, language, basePath }: Props) {
-  const t = translator(language);
+  const t = messages.translator(language);
   const values = item as Readonly<Record<string, unknown>> | null;
   return (
-    <PageFrame title={title} actions={<a href={basePath}>{t('back')}</a>}>
+    <PageFrame title={t('title')} actions={<a href={basePath}>{t('back')}</a>}>
       {values === null ? (
         <p role="alert">{t('unavailable')}</p>
       ) : (

@@ -1,0 +1,14 @@
+import { coreMessages, createMessages } from '@mpfrontend/i18n';
+import { localeRegistry } from '../../../config/app';
+import base from './messages/en';
+import ar from './messages/ar';
+import fa from './messages/fa';
+
+/** The messages of this unit. The base catalog defines the keys and their parameters. */
+export const messages = createMessages({
+  defaultLocale: 'en',
+  base,
+  translations: { ar, fa },
+  core: coreMessages,
+  numberingSystem: localeRegistry.numberingSystem,
+});

@@ -1,3 +1,3 @@
-// Authored product labels, formatting and behavior belong here; generators never overwrite this file.
-export const title = '__feature__';
+// Authored product formatting and behavior belong here; generators never overwrite this file. Visible text
+// comes from the catalogs in ../messages, for example a column label: labels = { name: t('nameColumn') }.
 export const labels: Readonly<Record<string, string>> = {};

@@ -1,29 +1,35 @@
 import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Card } from '@mpfrontend/ui';
 import type { __Feature__Status } from '../model/__feature__';
-import { labels } from '../model/overrides';
+import { messages } from '../model/messages';
 
-type Props = Readonly<{ status: __Feature__Status; available: boolean; onStart: () => void }>;
+type Props = Readonly<{
+  status: __Feature__Status;
+  available: boolean;
+  language: string;
+  onStart: () => void;
+}>;
 
 /** The view renders the state it is given and emits the start intent; it holds no workflow state. */
-export function __Feature__View({ status, available, onStart }: Props) {
+export function __Feature__View({ status, available, language, onStart }: Props) {
+  const t = messages.translator(language);
   const message = !available
-    ? labels.unbound
+    ? t('unbound')
     : status === 'done'
-      ? labels.done
+      ? t('done')
       : status === 'failed'
-        ? labels.failed
+        ? t('failed')
         : '';
   return (
-    <PageFrame title={labels.title}>
+    <PageFrame title={t('title')}>
       <Card>
         <Button
           onClick={onStart}
           restricted={!available}
           loading={status === 'running'}
-          loadingLabel={labels.running}
+          loadingLabel={t('running')}
         >
-          {labels.run}
+          {t('run')}
         </Button>
         <p role={status === 'failed' ? 'alert' : 'status'}>{message}</p>
       </Card>

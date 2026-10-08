@@ -167,7 +167,8 @@ import {fixtureFoundation} from '@independent/foundation';
 import {requests} from '../../api/generated/catalog/requests.gen';
 import {parseRequest} from '../../api/generated/catalog/request-models.gen';
 export default function RequestCheck(){const [values,setValues]=useState<Record<string,unknown>>({name:'Example',quantity:1,approved:false}),[result,setResult]=useState('');
-return <main><h1>Synthetic request preview</h1><p>{fixtureFoundation}</p><p>No API mutation is sent.</p><ResourceForm fields={requests[0]!.fields} values={values} saveLabel="Validate payload" onChange={(key,value)=>setValues(old=>({...old,[key]:value}))} onSubmit={()=>{try{setResult(JSON.stringify(parseRequest('submission',values)));}catch{setResult('Invalid fixture request');}}}/><p role="status">{result}</p></main>;}
+// A synthetic verification page: it shows machine values only, so it needs no catalog message.
+return <main><p>{fixtureFoundation}</p><ResourceForm fields={requests[0]!.fields} values={values} saveLabel={requests[0]!.name} onChange={(key,value)=>setValues(old=>({...old,[key]:value}))} onSubmit={()=>{try{setResult(JSON.stringify(parseRequest('submission',values)));}catch{setResult('INVALID_API_REQUEST');}}}/><p role="status">{result}</p></main>;}
 `);
 const overridePath=join(workspace,'apps/sample/src/features/catalog/model/overrides/index.ts');
 const authored=(await readFile(overridePath,'utf8'))+'\n// Consumer-authored preservation sentinel.\n';
@@ -253,16 +254,26 @@ await run('pnpm',['run','format:check']);
 await run('pnpm',['exec','mpfrontend','create','app','--name','other','--directory','apps/other']);
 const probes={'apps/sample/src/boundary-probe.ts':"import { appId } from '../../other/src/config/app';\nexport const probe = appId;\n",
   'apps/sample/src/app/entry-probe/page.tsx':"export { CatalogList as default } from '../../features/catalog/ui/catalog-list';\n",
+  'apps/sample/src/text-probe.tsx':'export const Probe = () => <p>Literal text</p>;\n',
+  'apps/sample/src/join-probe.tsx':"declare const t: (key: string) => string;\nexport const Probe = ({ n }: { n: number }) => <p>{t('page')} {n}</p>;\n",
   'apps/sample/src/colour-probe.tsx':'export const Probe = () => <p className="bg-[#123456]" />;\n',
   'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n'};
 for(const [path,content]of Object.entries(probes)){await mkdir(dirname(join(workspace,path)),{recursive:true});await writeFile(join(workspace,path),content);}
 const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
-const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry'];
+const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry','mpfrontend/no-literal-text'];
 for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
 console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
 for(const path of Object.keys(probes))await rm(join(workspace,path));
 await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
 await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
+// Negative control of the catalog check: a key that no code uses fails it; the catalog is then restored.
+const catalogPath=join(workspace,'apps/sample/src/i18n/messages/en.ts'),catalogSource=await readFile(catalogPath,'utf8');
+await writeFile(catalogPath,catalogSource.replace("skipToContent: 'Skip to content',","skipToContent: 'Skip to content',\n  neverUsed: 'Never used',"));
+const catalogFailure=await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{expectedCode:3,capture:true});
+assert.ok(catalogFailure.includes('"UNUSED_KEY"')&&catalogFailure.includes('"MISSING_KEY"'),'CATALOG_NEGATIVE_CONTROL_MISSING');
+await writeFile(catalogPath,catalogSource);
+assert.equal(JSON.parse(await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{capture:true})).ok,true);
+console.log(JSON.stringify({stage:'catalog-negative-control',ok:true,observedFailures:['UNUSED_KEY','MISSING_KEY']}));
 const {parseRead}=await import(join(workspace,'apps/sample/src/api/generated/catalog/read-models.gen.ts'));
 const valid={items:[{name:'Consumer fixture'}],number:1,size:12,total:1,pageCount:1,hasMore:false};
 assert.equal(parseRead('catalog',valid),valid);
@@ -304,5 +315,5 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-fa-rtl/unknown-locale-default','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-fa-rtl/unknown-locale-default','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // Keep the test-only generated workspace for diagnosis; no user files are deleted.

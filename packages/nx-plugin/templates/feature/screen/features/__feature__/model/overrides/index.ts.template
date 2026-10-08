@@ -1,9 +1,0 @@
-// Authored product labels belong here; generators never overwrite this file.
-export const labels = {
-  title: '__feature__',
-  run: 'Run',
-  running: 'Running',
-  done: 'Done',
-  failed: 'Not completed. Try again.',
-  unbound: 'Not available yet.',
-} as const;

@@ -1,0 +1,17 @@
+import { defineMessages } from '@mpfrontend/i18n';
+
+export default defineMessages({
+  skipToContent: 'Skip to content',
+  navigation: 'Main navigation',
+  catalog: 'Catalog',
+  components: 'Components',
+  docs: 'API documentation',
+  componentsTitle: 'MP Frontend component foundation',
+  continue: 'Continue',
+  fieldLabel: 'Field label',
+  fieldPlaceholder: 'Enter value',
+  fieldHelper: 'Helper text',
+  account: 'Account',
+  selectOption: 'Select an option',
+  exampleAccount: 'Example account',
+});

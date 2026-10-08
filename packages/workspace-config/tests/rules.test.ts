@@ -5,6 +5,7 @@ import tseslint from 'typescript-eslint';
 import noRawColor from '../src/rules/no-raw-color.js';
 import noHandwrittenCss from '../src/rules/no-handwritten-css.js';
 import publicEntry from '../src/rules/public-entry.js';
+import noLiteralText from '../src/rules/no-literal-text.js';
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -124,5 +125,27 @@ code.run('public-entry', publicEntry, {
     {name: 'a re-export from inside a feature', filename: app + '/app/layout.tsx', code: "export * from '../features/orders/model/orders';", errors: [{messageId: 'privateImport'}]},
     {name: 'a feature reaches into an entity', filename: app + '/features/orders/api/orders.ts', code: "import { rule } from '../../../entities/order/model/order';", errors: [{messageId: 'privateImport'}]},
     {name: 'a dynamic import inside a feature', filename: app + '/app/page.tsx', code: "const view = import('../features/orders/ui/orders-view');", errors: [{messageId: 'privateImport'}]},
+  ],
+});
+
+code.run('no-literal-text', noLiteralText, {
+  valid: [
+    {name: 'a catalog message', code: "const view = <h1>{t('title')}</h1>;"},
+    {name: 'a message with parameters placed by the message', code: "const view = <span>{t('pageOf', {page, count})}</span>;"},
+    {name: 'a separator without letters', code: 'const view = <span> · </span>;'},
+    {name: 'a value that is not text', code: 'const view = <td>{row.total}</td>;'},
+    {name: 'machine attributes', code: 'const view = <a href="/list" className="flex" id="main" data-state="open" />;'},
+    {name: 'a translated attribute', code: "const view = <input aria-label={t('search')} />;"},
+    {name: 'an allowlisted literal', code: 'const view = <code>JSON</code>;', options: [{allow: ['^JSON$']}]},
+    {name: 'a translation beside an element', code: "const view = <p>{t('intro')}<a href='/more'>{t('more')}</a></p>;"},
+  ],
+  invalid: [
+    {name: 'literal text in JSX', code: 'const view = <h1>Orders</h1>;', errors: [{messageId: 'literalText'}]},
+    {name: 'a literal string child', code: "const view = <p>{'Orders'}</p>;", errors: [{messageId: 'literalText'}]},
+    {name: 'a literal visible attribute', code: 'const view = <Field label="Name" placeholder="Enter a name" />;', errors: [{messageId: 'literalText'}, {messageId: 'literalText'}]},
+    {name: 'concatenation', code: "const text = t('page') + ' ' + page;", errors: [{messageId: 'joinedTranslation'}]},
+    {name: 'a template literal', code: "const text = `${t('page')} ${page}`;", errors: [{messageId: 'joinedTranslation'}]},
+    {name: 'adjacent JSX', code: "const view = <span>{t('page')} {data.number} / {data.pageCount}</span>;", errors: [{messageId: 'joinedTranslation'}]},
+    {name: 'a translator under another name', code: "const view = <span>{messages.say('page')} {n}</span>;", options: [{translators: ['say']}], errors: [{messageId: 'joinedTranslation'}]},
   ],
 });

@@ -45,7 +45,10 @@ async function files(root: string, directory = ''): Promise<string[]> {
 test('the template catalog example is the output of the feature and route generators', async () => {
   const app = await applicationFiles('web');
   const feature = await featureFiles('catalog', {resource: 'catalog', generatedOutput: 'src/api/generated/catalog'});
-  for (const [path, content] of Object.entries(feature)) assert.equal(app[path], content, path);
+  // The template translates its example's catalogs; every other generated file is used as generated.
+  const translated = ['src/features/catalog/model/messages/ar.ts', 'src/features/catalog/model/messages/fa.ts'];
+  for (const [path, content] of Object.entries(feature)) if (!translated.includes(path)) assert.equal(app[path], content, path);
+  for (const path of translated) assert.notEqual(app[path], feature[path], path + ' is translated');
   for (const [path, content] of Object.entries({...routeFiles('catalog', 'catalog', 'CatalogScreen'),
     ...routeFiles('catalog/[position]', 'catalog', 'CatalogDetailScreen')})) assert.equal(app[path], content, path);
   for (const folder of ['ui', 'model', 'hooks', 'api', 'utils']) {
@@ -82,6 +85,11 @@ test('a screen feature has the five folders and an entry; dry-run writes nothing
     const feature = created.files.map(path => relative('apps/web/src/features/order-review', path));
     for (const folder of ['ui', 'model', 'hooks', 'api', 'utils']) assert.ok(feature.some(path => path.startsWith(folder + '/')), folder);
     assert.ok(feature.includes('index.ts'));
+    // A catalog per app locale; the base text is the starting point of every translation.
+    for (const code of ['en', 'ar', 'fa']) assert.ok(feature.includes('model/messages/' + code + '.ts'), code);
+    assert.ok(feature.includes('model/messages.ts'));
+    assert.deepEqual(created.untranslated, ['apps/web/src/features/order-review/model/messages/ar.ts', 'apps/web/src/features/order-review/model/messages/fa.ts']);
+    assert.match(await readFile(join(root, 'apps/web/src/features/order-review/model/messages/en.ts'), 'utf8'), /title: 'Order review'/);
     for (const path of created.files) {
       const content = await readFile(join(root, path), 'utf8');
       if ((await prettier.getFileInfo(path)).inferredParser) assert.ok(await prettier.check(content, {...formatter, filepath: path}), path);

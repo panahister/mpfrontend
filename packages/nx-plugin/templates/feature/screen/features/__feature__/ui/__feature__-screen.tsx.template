@@ -1,7 +1,6 @@
-'use client';
-import type { __Feature__Request } from '../api/__feature__';
-import { use__Feature__ } from '../hooks/use-__feature__';
-import { __Feature__View } from './__feature__-view';
+import { cookies } from 'next/headers';
+import { localeRegistry, preferenceCookie } from '../../../config/app';
+import { __Feature__Panel } from './__feature__-panel';
 
 export type __Feature__ScreenProps = Readonly<{
   params?: Promise<Readonly<Record<string, string>>>;
@@ -9,15 +8,8 @@ export type __Feature__ScreenProps = Readonly<{
   basePath: string;
 }>;
 
-/**
- * The screen binds the feature to its request. Until a request is bound to a generated contract adapter,
- * the feature renders as not available rather than inventing an endpoint.
- */
-const request: __Feature__Request | undefined = undefined;
-
-export function __Feature__Screen(_props: __Feature__ScreenProps) {
-  const state = use__Feature__(request);
-  return (
-    <__Feature__View status={state.status} available={state.available} onStart={state.start} />
-  );
+/** The screen of the feature: it resolves the visitor's locale on the server and renders the panel. */
+export async function __Feature__Screen(_props: __Feature__ScreenProps) {
+  const language = localeRegistry.locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  return <__Feature__Panel language={language} />;
 }

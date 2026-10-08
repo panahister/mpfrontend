@@ -5,8 +5,10 @@ import tseslint from 'typescript-eslint';
 import noHandwrittenCss from './rules/no-handwritten-css.js';
 import noRawColor from './rules/no-raw-color.js';
 import publicEntry from './rules/public-entry.js';
+import noLiteralText from './rules/no-literal-text.js';
 
 export {globalEntryAtRules} from './rules/no-handwritten-css.js';
+export {visibleTextAttributes} from './rules/no-literal-text.js';
 
 /** One constraint of `@nx/enforce-module-boundaries`, keyed by the project tags the generators write. */
 export type DepConstraint = Readonly<{
@@ -51,12 +53,16 @@ export type WorkspaceConfigOptions = Readonly<{
   globalStyleEntries?: readonly string[];
   /** Added to the default ignores. */
   ignores?: readonly string[];
+  /** Names of translator functions whose results must not be joined to other text; default `t`. */
+  translators?: readonly string[];
+  /** The documented allowlist of literal strings that are not user-visible text, as regular expressions. */
+  allowedText?: readonly string[];
 }>;
 
 /** The MP Frontend rules, for consumers that compose their own configuration. */
 export const plugin: ESLint.Plugin = {
   meta: {name: '@mpfrontend/workspace-config'},
-  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss, 'public-entry': publicEntry},
+  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss, 'public-entry': publicEntry, 'no-literal-text': noLiteralText},
 };
 
 /**
@@ -87,6 +93,7 @@ export function workspaceConfig(options: WorkspaceConfigOptions = {}): Linter.Co
         'mpfrontend/no-raw-color': 'error',
         'mpfrontend/no-handwritten-css': ['error', {inlineStyle: 'custom-properties'}],
         'mpfrontend/public-entry': 'error',
+        'mpfrontend/no-literal-text': ['error', {translators: [...(options.translators ?? ['t'])], allow: [...(options.allowedText ?? [])]}],
       },
     },
     {

@@ -123,6 +123,17 @@ packages/<name>/               code that two apps need: tags, a public entry and
 - Tests sit beside the code they test (`*.test.ts`, `*.test.tsx`); app-level integration tests go in
   `src/tests/`.
 
+## Text and catalogs
+
+Every user-visible text is a catalog message. An app keeps its app-wide catalog set in
+`src/i18n/messages/<locale>.ts`, and each feature its own set in `model/messages/<locale>.ts`; the default
+locale's catalog defines the keys and, through its literal types, the parameters of each message, and every
+other locale has the same keys. Messages use ICU MessageFormat with named parameters, so each locale
+places the values; never join a translated message to other text or a value. `pnpm check` runs
+`catalog-check`, which fails on a key missing in a locale, a key that no code uses and a parameter that
+differs between locales, and lint fails on literal text in JSX. Free text that users wrote is shown as it
+is, never translated.
+
 ## State, effects, and data access
 
 - Derive values during render when they follow from props or state; do not synchronize derived values with
@@ -253,6 +264,7 @@ ambiguous. It must not choose a business rule merely because one implementation 
 | Feature-Sliced Design, [Public API](https://feature-sliced.design/docs/reference/public-api) | One public entry per feature or entity, with deeper imports refused |
 | ESLint, [Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files), and [Prettier](https://prettier.io/docs/) | One shared flat configuration and formatter profile that each project extends |
 | Testing Library, [Guiding Principles](https://testing-library.com/docs/guiding-principles) | Tests emphasize observable behavior over implementation detail |
+| Unicode, [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) | Messages with named parameters, plural and select rules per locale, placed by each translation |
 | OpenAPI Initiative, [Specification](https://spec.openapis.org/oas/latest.html) | The captured API description is a reviewed contract input |
 | Robert C. Martin, *Clean Architecture* (2017) | Dependencies point toward stable policy rather than transport and frameworks |
 | MP Frontend [Architecture](ARCHITECTURE.md) | Product/foundation ownership, browser/BFF trust, generation, and failure model |

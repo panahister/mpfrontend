@@ -9,11 +9,11 @@ from the work required for a stable package and production deployment.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 28/28 |
+| `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 32/32 |
 | `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 19/19 |
 | `@mpfrontend/ftg-core` | `0.1.0-dev.5` | included in source and consumer gates |
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 75/75 |
+| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 90/90 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
 | `@mpfrontend/security-bff` | `0.1.0-dev.6` | 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
@@ -41,6 +41,7 @@ run in that local fixture.
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
 | English, Arabic and Persian; LTR/RTL foundations | Implemented | A configurable locale registry (`en`, `ar` and `fa` ship; direction and digits per locale), an allowlisted upstream Accept-Language in the Security BFF, i18n and BFF tests, and the packed consumer serving `fa` right to left with logical CSS; Persian product text is the consumer's catalog |
+| Typed message catalogs | Implemented | ICU MessageFormat through `intl-messageformat` with parameters typed from the base catalog (compile-time tests of missing and extra parameters), per-locale plural, select, numbers and dates through Intl, `mpfrontend catalog check` and the `no-literal-text` lint rule; the packed consumer's template uses catalog messages only and observes the literal-text and catalog negative controls |
 | Shared application frame and template styling | Implemented | `@mpfrontend/app-layout` markup tests in both directions and for the keyboard path; the packed consumer's build compiles Tailwind v4 over the UI and shell output (`p-6` of Card is a rule of the built CSS) and loads the app theme after the neutral tokens. A browser check of a generated app in English and Arabic was run once by hand; it is not an automated gate |
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |

@@ -69,7 +69,9 @@ and formats what it writes with the workspace's own Prettier configuration when 
 `mpfrontend create feature --app <app-directory> --name <feature> [--resource <ftg-resource>] [--dry-run] [--json]`
 
 - **Does:** creates `src/features/<feature>/` with `ui/`, `model/`, `hooks/`, `api/`, `utils/` and an
-  `index.ts` public entry, each with a small working file and tests. Without `--resource` it is a screen
+  `index.ts` public entry, each with a small working file and tests, and a catalog per app locale in
+  `model/messages/`; every locale other than the default starts with the default text and is listed under
+  `untranslated` in the output. Without `--resource` it is a screen
   feature: a view that emits intent, a hook that holds the workflow state, a model of its transitions, a
   cancellable and time-bounded request boundary and a helper; its request is unbound until the app binds
   it to a generated contract adapter. With `--resource` it is a list feature over a read that the app's
@@ -134,6 +136,19 @@ deeper import, and the same rule applies to `src/entities/<entity>/`.
 - **Writes:** nothing.
 - **Refuses:** drift (exit `3`), and the same inputs as `ftg generate`.
 
+### `mpfrontend catalog check`
+
+`mpfrontend catalog check --app <app-directory> [--json]`
+
+- **Does:** reads the app's locale registry (`localeRegistry` of `src/config/app.ts`) and every catalog set
+  (`messages/<locale>.ts` under `src/`), and checks that every registry locale has a catalog, every
+  catalog has exactly the base keys, every message parses as ICU MessageFormat, every locale takes the
+  base parameters, and code uses every key (a feature's keys within that feature).
+- **When:** in every review; the app's `catalog-check` target runs it inside `pnpm check`.
+- **Writes:** nothing.
+- **Refuses:** an app whose registry cannot be read (exit `2`); any problem above (exit `3`, listed in the
+  output).
+
 ## Design source
 
 ### `mpfrontend design attach` and `mpfrontend design status`
@@ -183,7 +198,7 @@ CLI prepares.
 
 | Command | Does |
 |---|---|
-| `pnpm check` | The format check, then `lint`, `typecheck`, `test`, `build` and `generated-check` of every project |
+| `pnpm check` | The format check, then `lint`, `typecheck`, `test`, `build`, `generated-check` and `catalog-check` of every project |
 | `pnpm format` / `pnpm format:check` | Formats or checks the whole workspace |
-| `pnpm exec nx run <project>:<target>` | One target: `format`, `format:check`, `lint`, `test`, `typecheck`, `build`, `ftg-generate`, `generated-check` |
+| `pnpm exec nx run <project>:<target>` | One target: `format`, `format:check`, `lint`, `test`, `typecheck`, `build`, `ftg-generate`, `generated-check`, `catalog-check` |
 | `sh tools/ci/check.sh` | The CI-neutral gate: a frozen install, then the uncached check |

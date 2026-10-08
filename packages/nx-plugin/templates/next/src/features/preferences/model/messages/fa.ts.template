@@ -1,0 +1,11 @@
+import type { Translation } from '@mpfrontend/i18n';
+import type base from './en';
+
+export default {
+  language: 'زبان',
+  brand: 'برند',
+  mode: 'ظاهر',
+  light: 'روشن',
+  dark: 'تیره',
+  system: 'سیستم',
+} satisfies Translation<typeof base>;

@@ -1,0 +1,10 @@
+import { defineMessages } from '@mpfrontend/i18n';
+
+export default defineMessages({
+  language: 'Language',
+  brand: 'Brand',
+  mode: 'Appearance',
+  light: 'Light',
+  dark: 'Dark',
+  system: 'System',
+});

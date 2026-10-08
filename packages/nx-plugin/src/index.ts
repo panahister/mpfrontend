@@ -15,11 +15,12 @@ const envExample='# Environment variables this app reads. Supply values from the
  */
 export async function applicationFiles(name:string):Promise<Record<string,string>>{
   if(!/^[a-z][a-z0-9-]{1,48}$/.test(name))throw new Error('INVALID_APP_NAME');
+  // The template's own files come last: they hold the translated catalogs of its example feature.
   return {
-    ...await templateFiles('next',{__APP_NAME__:name}),
     ...await featureFiles('catalog',{resource:'catalog',generatedOutput:'src/api/generated/catalog'}),
     ...routeFiles('catalog','catalog','CatalogScreen'),
     ...routeFiles('catalog/[position]','catalog','CatalogDetailScreen'),
+    ...await templateFiles('next',{__APP_NAME__:name}),
     '.env.example':envExample,
   };
 }

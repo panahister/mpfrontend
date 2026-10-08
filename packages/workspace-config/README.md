@@ -64,3 +64,13 @@ The colour rule reads string literals, template literals, style objects, SVG col
 values. A colour computed at run time from numbers is not detected. A string such as `'#add'` outside a
 reference attribute (`href`, `id`, `htmlFor`) is read as a colour; disable the rule for that line with a
 reason. Module boundaries need the Nx project graph, so they run through the workspace `lint` targets.
+
+## Text
+
+`mpfrontend/no-literal-text` fails on literal user-visible text in JSX (text children, string children and
+the attributes `alt`, `title`, `placeholder`, `aria-label`, `label`, `helper`, `caption` and the other
+visible-text attributes), and on a translated message joined to other text or a value by `+`, a template
+literal or adjacent JSX text and expressions. Text comes from catalog messages with named parameters. The
+documented allowlist for strings that are not user-visible text is the `allowedText` option of
+`workspaceConfig` (regular expressions); strings without letters, such as a separator, are always allowed.
+The translator names default to `t` (`translators` option).

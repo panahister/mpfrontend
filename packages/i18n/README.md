@@ -22,3 +22,26 @@ for `fa`); strings and booleans are never reinterpreted. `translator(locale)(key
 to the default locale for a key that a locale's catalog lacks; the core catalogs hold `en` and `ar` text,
 and `fa` text belongs to the consumer's catalog.
 
+## Message catalogs
+
+A consumer owns its catalogs. The catalog of the default locale defines the keys:
+`defineMessages({...})` keeps their literal types, and every other locale is typed
+`Translation<typeof base>`, so a key missing in a locale is a type error. `createMessages({defaultLocale,
+base, translations, core, numberingSystem})` builds one translator per locale; `core` is the separate set of
+neutral MP Frontend messages (`coreMessages`) that the catalog may override by defining the same key.
+
+Messages use ICU MessageFormat: named parameters placed by the message (`Page {page, number} of {count,
+number}`), `plural`, `selectordinal` and `select` by locale, and `number`, `date` and `time` arguments
+formatted through Intl. The parameters of a message are part of its type: `t('pageOf', {page, count})`
+compiles, while a missing or extra parameter, or a text where a number is expected, is a type error. A
+missing message falls back, key by key, to the default locale; a formatting failure names the key, never a
+parameter value.
+
+Formatting uses FormatJS `intl-messageformat` 11.2.15 with its parser `@formatjs/icu-messageformat-parser`
+3.5.18. The reason: ICU plural and select rules and the grammar are easy to get wrong, and this is the
+established ICU implementation for JavaScript, built on Intl.PluralRules, Intl.NumberFormat and
+Intl.DateTimeFormat. `checkCatalogs` and `messageArguments` are the check behind
+`mpfrontend catalog check`: a key missing in a locale or extra, an unused key, a message that does not parse
+and a parameter that differs between locales each fail it.
+
+`translator(locale)(key)` and `catalogs` keep working for their existing keys.

@@ -1,22 +1,29 @@
 import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Field, Select, Card } from '@mpfrontend/ui';
+import { appMessages } from '../../i18n';
+import { requestLocale } from '../../i18n/server';
 
-export default function Components() {
+export default async function Components() {
+  const t = appMessages.translator(await requestLocale());
   return (
-    <PageFrame title="MP Frontend component foundation">
+    <PageFrame title={t('componentsTitle')}>
       <Card>
         <div className="flex flex-wrap items-end gap-4">
-          <Button>Continue</Button>
-          <Button tone="secondary">Continue</Button>
-          <Button disabled>Continue</Button>
+          <Button>{t('continue')}</Button>
+          <Button tone="secondary">{t('continue')}</Button>
+          <Button disabled>{t('continue')}</Button>
         </div>
         <div className="mt-8 flex flex-wrap items-end gap-4 [&>.mp-field]:w-[180px]">
-          <Field label="Field label" placeholder="Enter value" helper="Helper text" />
-          <Select label="Account" defaultValue="">
+          <Field
+            label={t('fieldLabel')}
+            placeholder={t('fieldPlaceholder')}
+            helper={t('fieldHelper')}
+          />
+          <Select label={t('account')} defaultValue="">
             <option value="" disabled>
-              Select an option
+              {t('selectOption')}
             </option>
-            <option value="example">Example account</option>
+            <option value="example">{t('exampleAccount')}</option>
           </Select>
         </div>
       </Card>

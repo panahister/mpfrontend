@@ -27,14 +27,14 @@ async function unformatted(files: Record<string, string>): Promise<string[]> {
 test('init writes the quality profile, the check and a CI-neutral gate', () => {
   const files = workspaceFiles('consumer');
   const manifest = JSON.parse(files['package.json']!);
-  assert.equal(manifest.scripts.check, 'prettier --check . && nx run-many -t lint typecheck test build generated-check');
+  assert.equal(manifest.scripts.check, 'prettier --check . && nx run-many -t lint typecheck test build generated-check catalog-check');
   assert.equal(manifest.scripts['format:check'], 'prettier --check .');
   assert.equal(manifest.scripts.format, 'prettier --write .');
   for (const dependency of ['@mpfrontend/workspace-config', 'eslint', 'prettier', 'tsx', 'nx', 'typescript']) {
     assert.ok(manifest.devDependencies[dependency], dependency + ' is pinned by init');
   }
   const nx = JSON.parse(files['nx.json']!);
-  for (const target of ['build', 'typecheck', 'lint', 'test', 'format:check']) {
+  for (const target of ['build', 'typecheck', 'lint', 'test', 'format:check', 'catalog-check']) {
     assert.equal(nx.targetDefaults[target].cache, true, target + ' is cached');
     assert.deepEqual(nx.targetDefaults[target].inputs, ['default', 'sharedGlobals']);
   }

@@ -23,7 +23,10 @@ requests and persistence in `api/` and small pure helpers in `utils/`; code outs
 `index.ts`, which lint enforces. Types and rules that several features of one entity share go in
 `src/entities/<entity>/`; code that two apps need goes in a package from `mpfrontend create package`.
 Never invent a contract or an endpoint to fill a generated file; a screen feature stays unbound until
-an approved contract adapter exists.
+an approved contract adapter exists. Every visible text of the feature is a message in its
+`model/messages/<locale>.ts` catalogs, with named parameters placed by each message; translate the
+locales the generator reports as `untranslated`, and keep `catalog-check` and the `no-literal-text` lint
+rule passing.
 
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
 shapes. Publish protected asynchronous results through `@mpfrontend/access-core` `AuthorityFence` and

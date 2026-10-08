@@ -1,12 +1,13 @@
 'use client';
 import { PageFrame } from '@mpfrontend/app-layout';
 import { Button, Card, Field, ResourceTable, type DisplayField } from '@mpfrontend/ui';
-import { formatValue, translator } from '@mpfrontend/i18n';
+import { formatValue } from '@mpfrontend/i18n';
 import { localeRegistry } from '../../../config/app';
 import { itemPosition, type __Resource__Page } from '../../../entities/__resource__';
 import { use__Feature__Search } from '../hooks/use-__feature__-search';
+import { messages } from '../model/messages';
 import { PAGE_SIZE, type ListQuery } from '../model/__feature__-query';
-import { labels, title } from '../model/overrides';
+import { labels } from '../model/overrides';
 import { detailHref, listHref } from '../utils/__feature__-href';
 
 type Props = Readonly<{
@@ -19,10 +20,10 @@ type Props = Readonly<{
 
 /** The list view: it renders the page it is given and emits navigation and search intent. */
 export function __Feature__List({ page, fields, query, language, basePath }: Props) {
-  const t = translator(language);
+  const t = messages.translator(language);
   const search = use__Feature__Search(basePath, query.search);
   return (
-    <PageFrame title={title}>
+    <PageFrame title={t('title')}>
       <form
         role="search"
         action={basePath}
@@ -52,9 +53,9 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
           <ResourceTable
             fields={fields}
             rows={page.items}
-            caption={title}
+            caption={t('title')}
             format={(value) => formatValue(value, language, localeRegistry)}
-            labels={labels}
+            labels={{ ...labels, detail: t('detail') }}
             detail={(row) => (
               <a
                 href={detailHref(
@@ -67,13 +68,11 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
             )}
           />
           {page.items.length === 0 && <p>{t('empty')}</p>}
-          <nav aria-label={t('page')} className="mt-4 flex flex-wrap items-center gap-4">
+          <nav aria-label={t('pagination')} className="mt-4 flex flex-wrap items-center gap-4">
             {page.number > 1 && (
               <a href={listHref(basePath, { ...query, page: page.number - 1 })}>{t('previous')}</a>
             )}
-            <span>
-              {t('page')} {page.number} / {page.pageCount}
-            </span>
+            <span>{t('pageOf', { page: page.number, count: page.pageCount })}</span>
             {page.hasMore && (
               <a href={listHref(basePath, { ...query, page: page.number + 1 })}>{t('next')}</a>
             )}

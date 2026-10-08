@@ -1,0 +1,16 @@
+import type { Translation } from '@mpfrontend/i18n';
+import type base from './en';
+
+export default {
+  title: 'کاتالوگ',
+  search: 'جستجو',
+  apply: 'اعمال',
+  unavailable: 'داده در دسترس نیست. دوباره تلاش کنید.',
+  empty: 'رکوردی یافت نشد.',
+  detail: 'جزئیات',
+  back: 'بازگشت',
+  pagination: 'صفحه‌ها',
+  pageOf: 'صفحه {page, number} از {count, number}',
+  previous: 'قبلی',
+  next: 'بعدی',
+} satisfies Translation<typeof base>;
