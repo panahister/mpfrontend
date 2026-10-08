@@ -25,3 +25,7 @@
 .mp-table-wrap th,.mp-table-wrap td { border-color:var(--mp-border-default); }
 .mp-table-wrap th { color:var(--mp-foreground-secondary); }
 .mp-table-wrap caption { text-align:start; padding-block:1rem; }
+.mp-dialog { background:var(--mp-surface-panel); color:var(--mp-foreground-primary); border-color:var(--mp-border-default); }
+.mp-dialog::backdrop { background:color-mix(in srgb, var(--mp-surface-canvas) 70%, transparent); }
+.mp-dialog-close { background:transparent; color:var(--mp-foreground-secondary); border:0; cursor:pointer; font:inherit; }
+.mp-dialog-close:focus-visible { outline:2px solid var(--mp-focus-ring); outline-offset:2px; }

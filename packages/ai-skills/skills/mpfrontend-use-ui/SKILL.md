@@ -1,12 +1,13 @@
 ---
 name: mpfrontend-use-ui
-description: Compose the existing neutral MP Frontend Button, Field, Select, Card, ResourceTable and ResourceForm with consumer-owned DLS styling. Not a complete Figma component library or design-sync workflow.
+description: Compose the existing neutral MP Frontend components (Button, Field, Select, Card, ResourceTable, ResourceForm, Dialog, OneTimeCodeField, ConfirmWithCode) with consumer-owned DLS styling. Not a complete Figma component library or design-sync workflow.
 ---
 
 # Use the neutral component boundary
 
 Read the consumer instructions and installed `@mpfrontend/ui` types before implementation. The
-current public kit has six components: Button, Field, Select, Card, ResourceTable and ResourceForm.
+current public kit has Button, Field, Select, Card, ResourceTable, ResourceForm, Dialog,
+OneTimeCodeField and ConfirmWithCode.
 Use those exports rather than private package internals or copying core into the product. Read and
 request forms have different metadata; route to the installed table/form procedures when applicable.
 
@@ -35,6 +36,11 @@ about access, and every text is a prop. Import `@mpfrontend/ui/tailwind.css` and
 structural classes, and verify a built rule such as `p-6` of Card. Take spacing and layout from the
 components and utility classes; never add a layout stylesheet, a class rule to the global entry or a raw
 colour, which the shared lint rules refuse.
+
+For a sensitive action confirmed by a code sent to the person, use `ConfirmWithCode` (built on `Dialog` and
+`OneTimeCodeField`): its `onConfirm` posts the code through the BFF with the CSRF token and an idempotency
+key, and the server alone checks it. Never check a code in the browser, keep it in storage or put it in a
+URL. Pass every label from the catalog; verify Tab, Shift+Tab, Escape and focus return in both directions.
 
 If a missing reusable component is requested, record its neutral behavioral contract and test it
 before extending core; do not label an invented component as a verified Figma implementation.

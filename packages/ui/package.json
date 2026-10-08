@@ -21,6 +21,10 @@
   "dependencies": {
     "@mpfrontend/primitives": "workspace:*"
   },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "20.14.5",
+    "happy-dom": "20.14.5"
+  },
   "peerDependencies": {
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
