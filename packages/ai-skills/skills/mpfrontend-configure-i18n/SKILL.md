@@ -12,7 +12,9 @@ Intl digits. The default locale is configured per app and is `en` when unset. Di
 the registry; never derive it from a list of codes in feature code. `locale`, `direction`, `translator`,
 `formatValue`, `formatNumber`, `negotiateLocale`, Locale and MessageKey remain the public helpers.
 
-Keep the app's registry in `src/config/app.ts`. Validate a persisted or requested locale with the
+Keep the app's registry in `src/config/app.ts`, with the shared preference cookie
+(`createPreferenceCookie({name, locales, themes})`) that carries the language and theme for the first paint
+and for the identity provider's `ui_locales`. Validate a persisted or requested locale with the
 registry's `locale`; an unknown value is the default. Set document `lang` and `dir` together from the
 registry, and use logical CSS start/end rather than left/right. Preserve the existing persistence and
 avoid SSR/hydration disagreement. Changing locale must not reset auth, cart or an editing draft.

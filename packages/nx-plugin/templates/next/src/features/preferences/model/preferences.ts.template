@@ -1,5 +1,5 @@
 import { validMode, type Mode } from '@mpfrontend/tokens';
-import { localeRegistry } from '../../../config/app';
+import { brandCookie, localeRegistry, preferenceCookie } from '../../../config/app';
 import { validBrand, type Brand } from '../../../theme/config';
 
 export type AppLocale = (typeof localeRegistry.locales)[number];
@@ -8,11 +8,15 @@ export type Preferences = Readonly<{ locale: AppLocale; brand: Brand; mode: Mode
 export type PreferenceKey = keyof Preferences;
 export const modes = ['light', 'dark', 'system'] as const;
 
-/** Every value is validated; an unknown or missing value is the registry default. */
-export function readPreferences(read: (key: PreferenceKey) => string | undefined): Preferences {
+/**
+ * Reads the shared preference cookie (language and theme) and the app's brand cookie by name. Every value is
+ * validated; an unknown or missing value is the default, and an invalid cookie is ignored.
+ */
+export function readPreferences(cookie: (name: string) => string | undefined): Preferences {
+  const shared = preferenceCookie.parse(cookie(preferenceCookie.name));
   return {
-    locale: localeRegistry.locale(read('locale')),
-    brand: validBrand(read('brand')),
-    mode: validMode(read('mode')),
+    locale: localeRegistry.locale(shared.lang),
+    brand: validBrand(cookie(brandCookie)),
+    mode: validMode(shared.theme),
   };
 }

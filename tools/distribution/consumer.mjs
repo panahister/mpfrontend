@@ -235,18 +235,22 @@ const server=spawn(join(workspace,'apps/sample/node_modules/.bin/next'),['start'
 try{
   const page=async locale=>{
     for(let attempt=0;attempt<120;attempt++){
-      try{const response=await fetch('http://127.0.0.1:'+port+'/catalog',{headers:locale?{cookie:'sample_locale='+locale}:{}});if(response.ok)return await response.text();}catch{}
+      try{const response=await fetch('http://127.0.0.1:'+port+'/catalog',{headers:locale?{cookie:'mp_preferences='+locale}:{}});if(response.ok)return await response.text();}catch{}
       await new Promise(resolve=>setTimeout(resolve,250));
     }
     throw new Error('APP_DID_NOT_START');
   };
-  const persian=await page('fa');
-  assert.match(persian,/<html lang="fa" dir="rtl"/);
+  // The first paint takes language, direction and theme from the shared preference cookie.
+  const persian=await page('lang=fa&theme=dark');
+  assert.match(persian,/<html lang="fa" dir="rtl" data-brand="neutral" data-mode="dark"/);
   assert.match(persian,/focus:start-4/);assert.match(persian,/border-s-4/);
   assert.doesNotMatch(persian,/\b(?:ml|mr|pl|pr|left|right)-\d/);
-  assert.match(await page('xx'),/<html lang="en" dir="ltr"/);
+  assert.match(await page('lang=xx'),/<html lang="en" dir="ltr"/);
+  const crafted=await page('lang=%3Cprobe%3E&theme=%3Cprobe%3E');
+  assert.match(crafted,/<html lang="en" dir="ltr" data-brand="neutral" data-mode="system"/);
+  assert.ok(!crafted.includes('<probe>')&&!crafted.includes('%3Cprobe%3E'),'an invalid preference is never echoed');
   assert.match(await page(),/<html lang="en" dir="ltr"/);
-  console.log(JSON.stringify({stage:'served-locales',ok:true,fa:'rtl',unknown:'default-en'}));
+  console.log(JSON.stringify({stage:'served-locales',ok:true,fa:'rtl',firstPaintTheme:'dark',unknown:'default-en',invalidPreference:'ignored-not-echoed'}));
 }finally{try{process.kill(-server.pid,'SIGTERM');}catch{}}
 // A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
 await run('pnpm',['run','format:check']);

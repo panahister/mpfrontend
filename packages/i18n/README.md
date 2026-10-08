@@ -45,3 +45,13 @@ Intl.DateTimeFormat. `checkCatalogs` and `messageArguments` are the check behind
 and a parameter that differs between locales each fail it.
 
 `translator(locale)(key)` and `catalogs` keep working for their existing keys.
+
+## Preference cookie
+
+`createPreferenceCookie({name, locales, themes})` is the contract of the one readable cookie that carries a
+person's language and theme and that an app shares with the identity provider's pages on a common parent
+domain. Its value is `lang=<locale>&theme=<theme>` (cookie values cannot hold `;`), each value must be in
+the allowlist, and `parse`/`read` drop anything else; an invalid value is ignored and never echoed. The
+Security BFF reads it for `ui_locales`, and an app's server reads it for the first paint, setting `lang`,
+`dir` and the theme on the document before any script runs. It never carries an identity claim and never
+decides anything about authority.

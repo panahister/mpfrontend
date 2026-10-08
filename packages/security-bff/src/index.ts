@@ -1,7 +1,7 @@
 import {createHash,createPublicKey,randomBytes,verify,timingSafeEqual,type JsonWebKey} from 'node:crypto';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 import {setTimeout as delay} from 'node:timers/promises';
-import {negotiateLocale} from '@mpfrontend/i18n';
+import {createPreferenceCookie,negotiateLocale,type PreferenceCookieContract} from '@mpfrontend/i18n';
 import {createMemorySessionVault,type SessionVault} from './session-store.js';
 
 export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
@@ -9,9 +9,11 @@ export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];orig
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** The previous behaviour: only en and ar were ever forwarded, en by default. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en','ar']),defaultLocale:'en'});
-export type BffConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;development:true;sessionVault?:SessionVault;loginRateLimit?:(peer:string)=>Promise<boolean>};
-type Claims={iss:string;aud:string|string[];azp?:string;sub:string;exp:number;iat:number;nbf?:number;nonce?:string;preferred_username?:string;tenant_id?:string;realm_access?:{roles?:string[]}};
-type Session={access:string;refresh:string;claims:Claims;csrf:string;expires:number;absoluteExpires:number};
+export type BffConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;development:true;sessionVault?:SessionVault;loginRateLimit?:(peer:string)=>Promise<boolean>};
+type Claims={iss:string;aud:string|string[];azp?:string;sub:string;exp:number;iat:number;nbf?:number;nonce?:string;preferred_username?:string;tenant_id?:string;realm_access?:{roles?:string[]};[claim:string]:unknown};
+/** A projected claim value: plain data only, never an object, never a token. */
+export type ClaimValue=string|number|boolean|readonly string[];
+type Session={access:string;refresh:string;claims:Claims;identity?:Readonly<Record<string,ClaimValue>>;csrf:string;expires:number;absoluteExpires:number};
 type Transaction={verifier:string;nonce:string;expires:number};
 const opaque=()=>randomBytes(32).toString('base64url');
 const jsonHeaders={'content-type':'application/json','cache-control':'no-store','x-content-type-options':'nosniff'};
@@ -25,6 +27,21 @@ class IdentityUnavailable extends Error {
   readonly status=503;
   constructor(){super('IDENTITY_UNAVAILABLE');}
 }
+const MAX_PROJECTION=4096,compactToken=/^[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*$/;
+/** The allowlisted claims for /context, bounded in size. A token, an object or an oversized value is left out. */
+export function projectClaims(claims:Readonly<Record<string,unknown>>,allowed:readonly string[]):Readonly<Record<string,ClaimValue>>{
+  const projection:Record<string,ClaimValue>={};let size=2;
+  const plain=(value:unknown):value is string|number|boolean=>typeof value==='number'?Number.isFinite(value):typeof value==='boolean'||(typeof value==='string'&&value.length<=512&&!compactToken.test(value));
+  for(const name of allowed){
+    const value=claims[name];
+    const accepted=plain(value)?value:Array.isArray(value)&&value.length<=16&&value.every(entry=>typeof entry==='string'&&entry.length<=128&&!compactToken.test(entry))?Object.freeze([...value] as string[]):undefined;
+    if(accepted===undefined)continue;
+    const cost=JSON.stringify(name).length+JSON.stringify(accepted).length+2;
+    if(size+cost>MAX_PROJECTION)continue;
+    size+=cost;projection[name]=accepted;
+  }
+  return Object.freeze(projection);
+}
 function write(res:ServerResponse,status:number,body:unknown){res.writeHead(status,jsonHeaders);res.end(JSON.stringify(body));}
 async function body(req:IncomingMessage){const chunks:Buffer[]=[];let size=0;for await(const raw of req){const chunk=Buffer.from(raw);size+=chunk.length;if(size>65536)fail(413,'BODY_TOO_LARGE');chunks.push(chunk);}return Buffer.concat(chunks);}
 export function createBff(config:BffConfig){
@@ -35,6 +52,10 @@ export function createBff(config:BffConfig){
   const supportedUiLocales=new Set(config.supportedUiLocales??[]);
   if([...supportedUiLocales].some(value=>!/^[-a-zA-Z0-9]{2,16}$/.test(value)))throw new Error('INVALID_UI_LOCALE');
   if(config.uiLocaleCookie&&!/^[a-z][a-z0-9_]{1,60}$/.test(config.uiLocaleCookie))throw new Error('INVALID_UI_LOCALE_COOKIE');
+  const contextClaims=[...(config.contextClaims??[])],claimSource=config.contextClaimSource??'id';
+  if(contextClaims.length>32||new Set(contextClaims).size!==contextClaims.length||contextClaims.some(name=>!/^[a-zA-Z][a-zA-Z0-9_:.-]{0,63}$/.test(name)||/token/i.test(name)||['at_hash','c_hash','nonce'].includes(name)))throw new Error('INVALID_CONTEXT_CLAIMS');
+  if(claimSource!=='id'&&claimSource!=='access')throw new Error('INVALID_CONTEXT_CLAIMS');
+  const preferences=config.preferenceCookie?createPreferenceCookie(config.preferenceCookie):undefined;
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
   for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');}
@@ -96,7 +117,11 @@ export function createBff(config:BffConfig){
         const tokens=await tokenRequest(new URLSearchParams({grant_type:'refresh_token',refresh_token:current.value.refresh}));
         const claims=await validate(tokens.access_token,config.audience);
         if(claims.sub!==current.value.claims.sub||claims.tenant_id!==current.value.claims.tenant_id)fail(401,'SESSION_CHANGED');
-        const next={...current.value,access:tokens.access_token,refresh:tokens.refresh_token,claims,expires:claims.exp*1000};
+        // The projection follows a refreshed ID token of the same subject, or the refreshed access token.
+        let identity=current.value.identity;
+        if(claimSource==='access')identity=projectClaims(claims,contextClaims);
+        else if(tokens.id_token){const refreshed=await validate(tokens.id_token,config.clientId);if(refreshed.sub!==claims.sub)fail(401,'SESSION_CHANGED');identity=projectClaims(refreshed,contextClaims);}
+        const next={...current.value,access:tokens.access_token,refresh:tokens.refresh_token,claims,...(identity?{identity}:{}),expires:claims.exp*1000};
         // CAS requires both the original revision and the still-owned lease. Logout cannot be undone.
         if(!await vault.update(id,current,next,owner))fail(401,'LOGIN_REQUIRED');
         return {id,value:next};
@@ -123,7 +148,8 @@ export function createBff(config:BffConfig){
         await vault.create('transaction',state,{verifier,nonce,expires},expires);
         const redirect=new URL(issuer+'/protocol/openid-connect/auth');
         const parameters=new URLSearchParams({client_id:config.clientId,response_type:'code',prompt:'login',scope:'openid profile',redirect_uri:publicOrigin+'/api/session/callback',state,nonce,code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'});
-        const uiLocale=url.searchParams.get('ui_locales')??(config.uiLocaleCookie?cookieValue(req.headers.cookie,config.uiLocaleCookie):undefined);
+        // The query wins, then the preference cookie's language, then the older whole-value locale cookie.
+        const uiLocale=url.searchParams.get('ui_locales')??preferences?.read(req.headers.cookie).lang??(config.uiLocaleCookie?cookieValue(req.headers.cookie,config.uiLocaleCookie):undefined);
         if(uiLocale&&supportedUiLocales.has(uiLocale))parameters.set('ui_locales',uiLocale);
         redirect.search=parameters.toString();
         res.writeHead(302,{'location':redirect.href,'set-cookie':cookie(transactionCookie,state,300),'cache-control':'no-store'});res.end();return;
@@ -140,7 +166,8 @@ export function createBff(config:BffConfig){
         if(identity.sub!==claims.sub||(config.requireTenant&&!claims.tenant_id&&!config.tenantExemptRoles?.some(role=>claims.realm_access?.roles?.includes(role))))fail(401,'INVALID_IDENTITY');
         const old=cookieValue(req.headers.cookie,config.cookieName);if(old)await vault.remove('session',old);
         const id=opaque(),absoluteExpires=Date.now()+8*3600000;
-        await vault.create('session',id,{access:tokens.access_token,refresh:tokens.refresh_token,claims,csrf:opaque(),expires:claims.exp*1000,absoluteExpires},absoluteExpires);
+        const projected=projectClaims(claimSource==='id'?identity:claims,contextClaims);
+        await vault.create('session',id,{access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires},absoluteExpires);
         res.writeHead(303,{'location':publicOrigin+'/','set-cookie':[cookie(config.cookieName,id,28800),cookie(transactionCookie,'',0)],'cache-control':'no-store'});res.end();return;
       }
       const current=await session(req,!(url.pathname==='/logout'&&method==='POST'));
@@ -149,7 +176,7 @@ export function createBff(config:BffConfig){
         if(req.headers['content-type']?.split(';')[0]!=='application/json')fail(415,'JSON_REQUIRED');
       }
       if(url.pathname==='/context'&&method==='GET'){
-        const c=current.value.claims;write(res,200,{authenticated:true,subject:c.sub,name:c.preferred_username??c.sub,roles:c.realm_access?.roles??[],tenant:c.tenant_id??null,csrf:current.value.csrf,expiresAt:current.value.absoluteExpires});return;
+        const c=current.value.claims;write(res,200,{authenticated:true,subject:c.sub,name:c.preferred_username??c.sub,roles:c.realm_access?.roles??[],tenant:c.tenant_id??null,claims:current.value.identity??{},csrf:current.value.csrf,expiresAt:current.value.absoluteExpires});return;
       }
       if(url.pathname==='/logout'&&method==='POST'){
         await vault.remove('session',current.id);

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { localeRegistry, preferenceCookie } from '../../../config/app';
+import { preferenceCookie, visitorLocale } from '../../../config/app';
 import { load__Feature__Page } from '../api/__feature__';
 import { fields } from '../model/__feature__-fields';
 import { listQuery, type SearchParams } from '../model/__feature__-query';
@@ -14,7 +14,7 @@ export type __Feature__ScreenProps = Readonly<{
 /** The list screen. The query comes from the URL and the data from the server boundary. */
 export async function __Feature__Screen({ searchParams, basePath }: __Feature__ScreenProps) {
   const query = listQuery((await searchParams) ?? {});
-  const language = localeRegistry.locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  const language = visitorLocale((await cookies()).get(preferenceCookie.name)?.value);
   const page = await load__Feature__Page(query, language).catch(() => undefined);
   return (
     <__Feature__List

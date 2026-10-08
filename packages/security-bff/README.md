@@ -11,6 +11,21 @@ An application can declare an allowlist with `supportedUiLocales`. A matching `u
 authorization request; unlisted values are ignored and an explicit query value wins over the cookie.
 The identity provider remains responsible for translated login, registration and recovery messages.
 
+`contextClaims` is an allowlist of claim names that `/context` returns under `claims`. The claims come from
+the validated ID token at sign-in and from a refreshed ID token of the same subject at refresh
+(`contextClaimSource: 'id'`, the default); `contextClaimSource: 'access'` takes them from the access token
+instead. Only plain values are projected: a string of at most 512 characters, a finite number, a boolean
+or a list of at most sixteen short strings. Objects, token-shaped strings and values beyond the 4 KiB
+budget of the projection are left out, and a claim name that refers to a token (`*token*`, `at_hash`,
+`c_hash`, `nonce`) is refused at startup. Tokens never reach `/context`, and no claim is written into a
+cookie.
+
+`preferenceCookie: {name, locales, themes}` names the preference cookie that an app shares with the
+identity provider's pages (language and theme only, value `lang=<locale>&theme=<theme>`). On `/login`
+the BFF takes `ui_locales` from an explicit query value first, then the cookie's language when it is
+allowlisted, then the older whole-value `uiLocaleCookie`. An invalid value is ignored and never echoed;
+the cookie never decides anything about authority.
+
 `apiLocales: {supported, defaultLocale}` is the allowlist for the `Accept-Language` header the BFF sends
 upstream. The browser's header is negotiated against it by quality, exact range and primary language;
 only an allowlisted token is ever sent, and the default replaces anything else, including malformed or

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { localeRegistry, preferenceCookie } from '../../../config/app';
+import { preferenceCookie, visitorLocale } from '../../../config/app';
 import { __Feature__Panel } from './__feature__-panel';
 
 export type __Feature__ScreenProps = Readonly<{
@@ -10,6 +10,6 @@ export type __Feature__ScreenProps = Readonly<{
 
 /** The screen of the feature: it resolves the visitor's locale on the server and renders the panel. */
 export async function __Feature__Screen(_props: __Feature__ScreenProps) {
-  const language = localeRegistry.locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  const language = visitorLocale((await cookies()).get(preferenceCookie.name)?.value);
   return <__Feature__Panel language={language} />;
 }

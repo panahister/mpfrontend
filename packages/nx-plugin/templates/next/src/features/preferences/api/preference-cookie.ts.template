@@ -1,13 +1,14 @@
-import { preferenceCookie } from '../../../config/app';
-import type { PreferenceKey } from '../model/preferences';
+import { brandCookie, preferenceCookie, preferenceCookieDomain } from '../../../config/app';
+import type { Preferences } from '../model/preferences';
 
-/** Persists one validated preference for the next server render; the cookie holds no identity. */
-export function persistPreference(key: PreferenceKey, value: string): void {
-  const secure = location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie =
-    preferenceCookie(key) +
-    '=' +
-    encodeURIComponent(value) +
-    '; Path=/; SameSite=Lax; Max-Age=31536000' +
-    secure;
+const attributes = () =>
+  '; Path=/; SameSite=Lax; Max-Age=31536000' +
+  (location.protocol === 'https:' ? '; Secure' : '') +
+  (preferenceCookieDomain ? '; Domain=' + preferenceCookieDomain : '');
+
+/** Persists validated preferences for the next first paint; the cookies hold no identity. */
+export function persistPreferences(preferences: Preferences): void {
+  const shared = preferenceCookie.value({ lang: preferences.locale, theme: preferences.mode });
+  document.cookie = preferenceCookie.name + '=' + shared + attributes();
+  document.cookie = brandCookie + '=' + encodeURIComponent(preferences.brand) + attributes();
 }

@@ -1,8 +1,8 @@
 import 'server-only';
 import { cookies } from 'next/headers';
-import { localeRegistry, preferenceCookie } from '../config/app';
+import { preferenceCookie, visitorLocale } from '../config/app';
 
 /** The locale of the current request: the visitor's validated preference, or the registry default. */
 export async function requestLocale() {
-  return localeRegistry.locale((await cookies()).get(preferenceCookie('locale'))?.value);
+  return visitorLocale((await cookies()).get(preferenceCookie.name)?.value);
 }

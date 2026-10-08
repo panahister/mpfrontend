@@ -122,3 +122,4 @@ export function formatNumber(value: number, language: string, options: Intl.Numb
   const numberingSystem = registry.numberingSystem(language);
   return new Intl.NumberFormat(registry.locale(language), { maximumFractionDigits: 8, ...(numberingSystem ? { numberingSystem } : {}), ...options }).format(value);
 }
+export { createPreferenceCookie, type Preference, type PreferenceCookie, type PreferenceCookieContract } from './preferences.js';

@@ -1,23 +1,29 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { validMode } from '@mpfrontend/tokens';
 import { localeRegistry } from '../../../config/app';
-import { persistPreference } from '../api/preference-cookie';
-import { readPreferences, type PreferenceKey, type Preferences } from '../model/preferences';
+import { validBrand } from '../../../theme/config';
+import { persistPreferences } from '../api/preference-cookie';
+import type { PreferenceKey, Preferences } from '../model/preferences';
 
 /** Applies a changed preference to the document at once, persists it and re-renders the server parts. */
 export function usePreferences(initial: Preferences) {
   const router = useRouter();
   const [preferences, setPreferences] = useState(initial);
   function change(key: PreferenceKey, value: string) {
-    const next = readPreferences((name) => (name === key ? value : preferences[name]));
+    const next: Preferences = {
+      locale: key === 'locale' ? localeRegistry.locale(value) : preferences.locale,
+      brand: key === 'brand' ? validBrand(value) : preferences.brand,
+      mode: key === 'mode' ? validMode(value) : preferences.mode,
+    };
     setPreferences(next);
     const root = document.documentElement;
     root.lang = next.locale;
     root.dir = localeRegistry.direction(next.locale);
     root.dataset.brand = next.brand;
     root.dataset.mode = next.mode;
-    persistPreference(key, next[key]);
+    persistPreferences(next);
     if (key === 'locale') router.refresh();
   }
   return { preferences, change };

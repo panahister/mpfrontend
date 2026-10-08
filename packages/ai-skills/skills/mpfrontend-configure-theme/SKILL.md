@@ -21,6 +21,12 @@ SSR initialization paths; clean up media-query listeners and avoid hydration dis
 light/dark must not change with OS preference; system mode must. Theme switching must preserve
 locale, identity and active drafts.
 
+The theme (light, dark or system) and the language travel in one shared preference cookie
+(`createPreferenceCookie` of `@mpfrontend/i18n`, value `lang=<locale>&theme=<theme>`), which the identity
+provider's pages may read on a common parent domain. The app's server reads it for the first paint and sets
+`data-mode`, `lang` and `dir` before any script runs, so the page does not flash; an invalid value is
+ignored. The brand stays an app cookie. Never put an identity claim in that cookie.
+
 Each app has one theme file, `src/theme/theme.css`, that the global stylesheet imports after the neutral
 fallback of `@mpfrontend/tokens` and the component styles. Set token values there, scoped to a brand of
 `src/theme/config.ts` (for example `:root[data-brand='product'] { --mp-surface-canvas: ... }`), or import
