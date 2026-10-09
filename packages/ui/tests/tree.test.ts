@@ -4,6 +4,9 @@ import {GlobalRegistrator} from '@happy-dom/global-registrator';
 
 GlobalRegistrator.register({url:'http://localhost/'});
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
+// React reports a state update outside act on console.error; these tests leave none.
+const actWarnings:string[]=[],report=console.error;
+console.error=(...values:unknown[])=>{if(String(values[0]).includes('not wrapped in act'))actWarnings.push(String(values[0]));else report(...values);};
 const {act,createElement,useState}=await import('react');
 const {createRoot}=await import('react-dom/client');
 const {Tree,treeKey,visibleRows,descendantIds}=await import('../src/index.js');
@@ -26,7 +29,9 @@ async function mount(props:Record<string,unknown>,direction:'ltr'|'rtl'='ltr'){
   await act(async()=>{root.render(createElement(Host));});
   const key=async(name:string)=>{await act(async()=>{(document.activeElement??document.body).dispatchEvent(new KeyboardEvent('keydown',{key:name,bubbles:true,cancelable:true}));});await act(async()=>{await Promise.resolve();});};
   const focused=()=>document.activeElement?.getAttribute('aria-labelledby')?.split(' ')[0]?document.getElementById(document.activeElement.getAttribute('aria-labelledby')!.split(' ')[0]!)?.textContent:undefined;
-  return {host,activated,key,focused,unmount:async()=>{await act(async()=>{root.unmount();});host.remove();}};
+  // Focus moves the active row, a state update, so it happens inside act.
+  const focusFirst=async()=>{await act(async()=>{host.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]')!.focus();});};
+  return {host,activated,key,focused,focusFirst,unmount:async()=>{await act(async()=>{root.unmount();});host.remove();}};
 }
 
 for(const direction of ['ltr','rtl'] as const){
@@ -34,7 +39,7 @@ for(const direction of ['ltr','rtl'] as const){
     const [open,close]=direction==='rtl'?['ArrowLeft','ArrowRight']:['ArrowRight','ArrowLeft'];
     const t=await mount({},direction);
     try{
-      t.host.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]')!.focus();
+      await t.focusFirst();
       assert.equal(t.focused(),'Menu');
       await t.key(open);
       assert.equal(t.host.querySelector('[role="treeitem"][aria-expanded="true"]')!.getAttribute('aria-level'),'1','the inward arrow expands');
@@ -87,7 +92,8 @@ test('ten thousand nodes stay responsive: only the rows in view are rendered, an
     const rendered=host.querySelectorAll('[role="treeitem"]').length;
     assert.ok(rendered<=30,'rendered '+rendered+' of 10100 rows');
     assert.ok(performance.now()-started<3000,'rendered within three seconds');
-    host.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]')!.focus();
+    // Focus moves the active row, a state update, so it happens inside act.
+    await act(async()=>{host.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]')!.focus();});
     await act(async()=>{document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'End',bubbles:true,cancelable:true}));});
     await act(async()=>{await Promise.resolve();});
     const last=host.querySelector('[role="treeitem"][tabindex="0"]')!;
@@ -102,11 +108,15 @@ test('the component never changes the data and has no state rule of its own',asy
   const states=freeze({'menu':'on'});
   const t=await mount({states,stateLabels:{on:'Shown'}});
   try{
-    t.host.querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]')!.focus();
+    await t.focusFirst();
     await t.key('ArrowRight');await t.key('ArrowRight');await t.key('Enter');
     assert.deepEqual(t.activated,['menu-file'],'activation is reported; the consumer decides any change');
     assert.ok(!t.host.textContent?.includes('Hidden'));
     assert.equal(t.host.querySelector('[aria-labelledby$="-state"]')?.getAttribute('aria-labelledby')?.includes('state'),true);
   }finally{await t.unmount();}
   assert.deepEqual(treeKey([],undefined,'ArrowDown','ltr'),undefined);
+});
+
+test('no state update of the tree happens outside act',()=>{
+  assert.deepEqual(actWarnings,[]);
 });
