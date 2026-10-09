@@ -8,7 +8,9 @@ export type SocketContext={subject:string;tenant:string|null;roles:string[];csrf
 export type AdmissionTicket={cookieHash:string;revision:string;expires:number};
 /**
  * consume must be atomic across all presentation replicas. `security` describes the vault behind a store that
- * keeps its tickets in one, as `createVaultTicketStore` of the Security BFF's session store sets it.
+ * keeps its tickets in one, as `createVaultTicketStore` of the Security BFF's session store sets it. The
+ * production profile refuses a shared store that does not declare it, all three flags, because a store that
+ * says nothing cannot be shown to be reached over TLS and with authentication.
  */
 export type AdmissionTicketStore={readonly shared?:boolean;readonly security?:Readonly<{durable:boolean;tls:boolean;authenticated:boolean}>;issue:(id:string,ticket:AdmissionTicket)=>Promise<void>;consume:(id:string)=>Promise<AdmissionTicket|undefined>};
 type CommonSocketConfig={publicOrigin:string;bffOrigin:string;resolve:(resource:string,context:SocketContext)=>string|undefined;pollMs?:number};
@@ -24,6 +26,10 @@ export function presentationProductionRefusals(config:ProductionSocketConfig):st
   let https=false;try{https=new URL(config.publicOrigin).protocol==='https:';}catch{https=false;}
   if(!https)refusals.push('HTTPS_PUBLIC_ORIGIN_REQUIRED');
   if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');
+  // A store that every replica shares is reached over a network, so it must say how: one that declares nothing is
+  // refused, as the Security BFF refuses a session vault that declares nothing, instead of passing for lack of a claim.
+  const declared=(security:AdmissionTicketStore['security'])=>typeof security?.durable==='boolean'&&typeof security.tls==='boolean'&&typeof security.authenticated==='boolean';
+  if(config.production?.ticketStore?.shared===true&&!declared(config.production.ticketStore.security))refusals.push('TICKET_STORE_SECURITY_REQUIRED');
   // Tickets in a durable vault travel and rest under the vault's own protection, which must be TLS and authentication.
   const vault=config.production?.ticketStore?.security;
   if(vault?.durable&&vault.tls!==true)refusals.push('TICKET_STORE_TLS_REQUIRED');

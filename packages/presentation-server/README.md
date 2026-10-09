@@ -36,7 +36,9 @@ public origin, a ticket store that every replica shares (`shared: true`, for exa
 the names `HTTPS_PUBLIC_ORIGIN_REQUIRED`, `SHARED_TICKET_STORE_REQUIRED` or
 `SHARED_CONNECTION_BUDGET_REQUIRED`. A ticket store over a durable vault (one that declares `security`, as
 `createVaultTicketStore` does) is also refused unless the vault is reached over TLS
-(`TICKET_STORE_TLS_REQUIRED`) and with authentication (`TICKET_STORE_AUTHENTICATION_REQUIRED`). There is
-no process-memory default in this profile. The development
+(`TICKET_STORE_TLS_REQUIRED`) and with authentication (`TICKET_STORE_AUTHENTICATION_REQUIRED`). A shared
+store must declare `security` (`durable`, `tls` and `authenticated`, all three): a custom store that declares
+nothing cannot be shown to use TLS and authentication, so it is refused with `TICKET_STORE_SECURITY_REQUIRED`
+rather than accepted for lack of a claim. There is no process-memory default in this profile. The development
 profile (`development: true`) is unchanged and still refused under `NODE_ENV=production`. Retained event
 replay is not part of either profile. See the core shared-runtime acceptance document.

@@ -122,6 +122,9 @@ const mutations=[
   {name:'presentation-ticket-store-authentication',package:'presentation-server',test:'production.test.ts',file:'index.ts',
     before:"  if(vault?.durable&&vault.authenticated!==true)refusals.push('TICKET_STORE_AUTHENTICATION_REQUIRED');\n",after:'',
     expected:'a ticket store over a durable vault is refused'},
+  {name:'presentation-ticket-store-security-declared',package:'presentation-server',test:'production.test.ts',file:'index.ts',
+    before:"  if(config.production?.ticketStore?.shared===true&&!declared(config.production.ticketStore.security))refusals.push('TICKET_STORE_SECURITY_REQUIRED');\n",after:'',
+    expected:'a shared ticket store that declares nothing about its security is refused in production'},
   {name:'presentation-shared-tickets',package:'presentation-server',test:'production.test.ts',file:'index.ts',
     before:"  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');\n",after:'',
     expected:'refuses each missing condition by name and has no memory default'}
