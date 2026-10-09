@@ -38,3 +38,28 @@ test('a ticket store over a durable vault is refused unless the vault is reached
   assert.equal(refusal(over({durable:true,tls:false,authenticated:false})),'PRODUCTION_PROFILE_REFUSED:TICKET_STORE_TLS_REQUIRED,TICKET_STORE_AUTHENTICATION_REQUIRED');
   assert.equal(refusal(over({durable:true,tls:true,authenticated:true})),'STARTED');
 });
+
+test('production admission answers 503 while the ticket store is unavailable and never falls back to memory',async()=>{
+  const {createServer}=await import('node:http');
+  let unavailable=true;
+  const issued:string[]=[];
+  const store={shared:true as const,async issue(id:string){if(unavailable)throw new Error('STORE_UNAVAILABLE');issued.push(id);},async consume(){return undefined;}};
+  const bff=createServer((_req,res)=>{res.setHeader('content-type','application/json');res.end(JSON.stringify({subject:'person-1',tenant:null,roles:[],csrf:'csrf'}));});
+  await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
+  const runtime=createPresentationRealtime({...complete,bffOrigin:'http://127.0.0.1:'+(bff.address() as {port:number}).port,production:{ticketStore:store,connectionBudget:sharedBudget}});
+  const app=createServer((req,res)=>{void runtime.handleHttp(req,res);});
+  await new Promise<void>(resolve=>app.listen(0,'127.0.0.1',resolve));
+  try{
+    const ask=()=>fetch('http://127.0.0.1:'+(app.address() as {port:number}).port+'/api/realtime/ticket',{method:'POST',headers:{origin:complete.publicOrigin,cookie:'app_session=opaque','x-csrf-token':'csrf'}});
+    const refused=await ask();
+    assert.equal(refused.status,503);
+    assert.equal((await refused.json() as {title:string}).title,'AUTHORITY_UNAVAILABLE');
+    assert.deepEqual(issued,[],'no ticket was kept anywhere');
+    unavailable=false;
+    const admitted=await ask();
+    assert.equal(admitted.status,200);assert.equal(issued.length,1);
+  }finally{
+    runtime.close();
+    for(const server of [app,bff]){server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));}
+  }
+});
