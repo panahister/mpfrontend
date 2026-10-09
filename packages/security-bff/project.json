@@ -12,7 +12,7 @@
     "test-redis": {
       "executor": "nx:run-commands",
       "cache": false,
-      "dependsOn": [{"target":"build","projects":["presentation-server"]}],
+      "dependsOn": ["^build", {"target":"build","projects":["presentation-server"]}],
       "options": {
         "command": "node --import tsx --test packages/security-bff/tests/redis.integration.ts",
         "env": {"TSX_TSCONFIG_PATH": "tsconfig.base.json"}
