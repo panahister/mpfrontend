@@ -63,6 +63,22 @@ and formats what it writes with the workspace's own Prettier configuration when 
 - **When:** for each independently deployable app.
 - **Writes:** only inside the new app directory.
 - **Refuses:** an existing destination; an invalid name.
+- **Does not create:** folders that would start empty. Create each one with its first file, as the app's
+  `docs/overview.md` lists them:
+
+  | Location | Create it when |
+  |---|---|
+  | `src/ui/` | a second feature needs a component that one feature holds |
+  | `src/hooks/` | a second feature needs a hook that carries no domain rule |
+  | `src/utils/` | a second feature needs a pure helper without React, network or domain rule |
+  | `src/tests/` | the first test covers more than one feature or the app as a whole |
+  | `public/` | the app has its first static asset |
+  | `docs/business-rules.md` | the first business rule or constraint of the app is agreed |
+  | `docs/adr/` | the first decision is taken that concerns this app only |
+  | `infra/` (workspace root) | the workspace first needs a local proxy or a deployment template |
+
+  Until then code stays in its feature (`ui/`, `hooks/`, `utils/`) and a unit test beside its file; code
+  that two apps need goes in a package.
 
 ### `mpfrontend create feature` and `nx g @mpfrontend/nx-plugin:feature`
 

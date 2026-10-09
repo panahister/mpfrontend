@@ -71,6 +71,11 @@ test('create app writes the repository files of the layout standard without valu
   assert.equal(app['.env.example'], '# Environment variables this app reads. Supply values from the deployment, never from this file.\nBFF_ORIGIN=\nENABLE_API_DOCS=\n');
   for (const line of app['.env.example']!.split('\n')) assert.ok(line === '' || line.startsWith('#') || line.endsWith('='), line);
   assert.ok(app['docs/overview.md']?.includes('/catalog/[position]'));
+  // The folders of the layout standard that start empty are documented with their rule, never generated.
+  for (const location of ['src/ui/', 'src/hooks/', 'src/utils/', 'src/tests/', 'public/', 'docs/business-rules.md', 'docs/adr/', 'infra/']) {
+    assert.ok(app['docs/overview.md']?.includes('`' + location + '`'), location);
+    assert.ok(!Object.keys(app).some(path => path.startsWith(location)), location + ' is not generated');
+  }
   assert.ok(app['docs/api-contracts.md']?.includes('src/api/generated/catalog/'));
 });
 

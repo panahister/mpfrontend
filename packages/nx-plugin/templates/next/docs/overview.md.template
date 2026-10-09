@@ -41,5 +41,20 @@ every `messages/en.ts` to `messages/<code>.ts` with the text of that locale, and
 Add a feature with `mpfrontend create feature`, a screen with `mpfrontend create route` and a package
 that two apps need with `mpfrontend create package`; see the CLI guide of MP Frontend.
 
-Business rules go in `docs/business-rules.md` and decisions in `docs/adr/` when the first one exists.
+## Folders created when needed
+
+The generator does not create these empty; create each one with its first file, under this rule.
+
+| Location | Holds | Create it when |
+| --- | --- | --- |
+| `src/ui/` | Components shared by features of this app | A second feature needs a component that one feature holds; a component of one feature stays in its `ui/` |
+| `src/hooks/` | Domain-neutral React hooks reused by features of this app | A second feature needs a hook that carries no domain rule; a hook of one feature stays in its `hooks/` |
+| `src/utils/` | Domain-neutral pure helpers reused within this app | A second feature needs a helper without React, network or domain rule; a helper of one feature stays in its `utils/` |
+| `src/tests/` | Integration, contract, end-to-end and smoke tests, and their mock fixtures | The first test covers more than one feature or the app as a whole; a unit test stays beside the file it tests |
+| `public/` | Static assets this app owns | The app has its first static asset |
+| `docs/business-rules.md` | The rules and constraints of this app | The first business rule or constraint is agreed |
+| `docs/adr/` | Architecture decisions of this app, one file each | The first decision is taken that concerns this app only; a decision for every app goes in the workspace's `docs/` |
+| `infra/` (workspace root) | A local proxy example and the deployment templates of each app, without secrets | The workspace first needs a local proxy or a deployment template |
+
+Code that two apps need goes in a package (`mpfrontend create package`), never in one app's `src/`.
 The contracts this app reads are listed in [api-contracts.md](api-contracts.md).
