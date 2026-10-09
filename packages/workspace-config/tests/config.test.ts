@@ -111,6 +111,33 @@ test('an allowed physical value needs its reason, and the profile passes the all
   assert.throws(() => verify([{value: 'left-0', reason: ''}]), /logical-properties/);
 });
 
+test('a physical side planted in a stylesheet fails the lint as one planted in a class name does, and the allowances reach both', async () => {
+  // Every stylesheet kind a generated app has: the theme layer (no other rule applies there), the one global
+  // entry (base element rules are allowed there) and a plain stylesheet, next to a class name in a component.
+  const files = {
+    'apps/web/src/theme/side.css': ':root { margin-left: 1rem; }\n',
+    'apps/web/src/app/globals.css': '@import "tailwindcss";\nbody { text-align: left; }\n',
+    'apps/web/src/features/list/ui/side.css': '.row { float: right; }\n',
+    'apps/web/src/features/list/ui/side.tsx': 'export const Side = () => <ul className="ml-2" />;\n',
+    'apps/web/src/theme/logical.css': ':root { margin-inline-start: 1rem; text-align: start; }\n',
+    'apps/web/src/features/list/ui/logical.tsx': 'export const Logical = () => <ul className="ms-2" />;\n',
+  };
+  const results = await lint(files, workspaceConfig());
+  const rule = ['mpfrontend/logical-properties'];
+  assert.deepEqual(results['apps/web/src/theme/side.css'], rule, 'margin-left in a theme stylesheet');
+  assert.deepEqual(results['apps/web/src/app/globals.css'], rule, 'text-align: left in the global entry');
+  assert.ok(results['apps/web/src/features/list/ui/side.css']!.includes(rule[0]!), 'float: right in a plain stylesheet');
+  assert.deepEqual(results['apps/web/src/features/list/ui/side.tsx'], rule, 'ml-2 in a class name');
+  assert.deepEqual(results['apps/web/src/theme/logical.css'], [], 'logical properties in a stylesheet');
+  assert.deepEqual(results['apps/web/src/features/list/ui/logical.tsx'], [], 'ms-2 in a class name');
+  // The same allowance, with its reason, reaches the stylesheet rule and the class-name rule.
+  const allowed = await lint(files, workspaceConfig({allowedPhysical: [
+    {value: 'margin-left', reason: 'Pinned to the physical edge of a print layout'}, {value: 'ml-2', reason: 'Pinned to the physical edge of a print layout'}]}));
+  assert.deepEqual(allowed['apps/web/src/theme/side.css'], [], 'an allowed margin-left in a stylesheet');
+  assert.deepEqual(allowed['apps/web/src/features/list/ui/side.tsx'], [], 'an allowed ml-2 in a class name');
+  assert.deepEqual(allowed['apps/web/src/app/globals.css'], rule, 'an allowance covers only its own value');
+});
+
 test('the sources and templates of MP Frontend use logical properties only', async () => {
   // Every UI source, every template and every stylesheet of the packages, read as the profile reads them.
   const {readdir} = await import('node:fs/promises');

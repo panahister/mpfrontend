@@ -339,11 +339,24 @@ const probes={'apps/sample/src/boundary-probe.ts':"import { appId } from '../../
   'apps/sample/src/join-probe.tsx':"declare const t: (key: string) => string;\nexport const Probe = ({ n }: { n: number }) => <p>{t('page')} {n}</p>;\n",
   'apps/sample/src/colour-probe.tsx':'export const Probe = () => <p className="bg-[#123456]" />;\n',
   'apps/sample/src/physical-probe.tsx':'export const Probe = () => <p className="ml-2" style={{ paddingRight: 4 }} />;\n',
-  'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n'};
+  'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n',
+  'apps/sample/src/physical-probe.css':'.physical-probe {\n  margin-left: 1rem;\n}\n'};
 for(const [path,content]of Object.entries(probes)){await mkdir(dirname(join(workspace,path)),{recursive:true});await writeFile(join(workspace,path),content);}
 const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
 const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry','mpfrontend/no-literal-text','mpfrontend/logical-properties'];
 for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
+// The findings ESLint printed under one file: its report is the path, then one indented line per finding.
+function findingsUnder(report,suffix){
+  const lines=report.replace(/\u001b\[[0-9;]*m/g,'').split('\n'),start=lines.findIndex(line=>line.trimEnd().endsWith(suffix));
+  if(start<0)return '';
+  const end=lines.findIndex((line,index)=>index>start&&line.trim()==='');
+  return lines.slice(start+1,end<0?undefined:end).join('\n');
+}
+// A physical side in a stylesheet is refused by this rule, as one in a class name is: the finding for that very value,
+// under the file that holds it (physical-probe.tsx has an inline style that the rule refuses too, so the rule name alone proves nothing).
+const physicalFinding=(file,value)=>findingsUnder(lintFailure,file).split('\n').some(line=>line.includes("Physical '"+value+"'")&&line.includes('mpfrontend/logical-properties'));
+assert.ok(physicalFinding('apps/sample/src/physical-probe.css','margin-left'),'LINT_NEGATIVE_CONTROL_MISSING:logical-properties-in-stylesheet');
+assert.ok(physicalFinding('apps/sample/src/physical-probe.tsx','ml-2'),'LINT_NEGATIVE_CONTROL_MISSING:logical-properties-in-class-name');
 assert.ok(!lintFailure.includes('Error reading "tsconfig.base.json"'),'the boundary rule finds the root TypeScript configuration');
 console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
 for(const path of Object.keys(probes))await rm(join(workspace,path));
@@ -427,7 +440,7 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
 // path printed first, for diagnosis. No other file is deleted.
 await rm(temporary,{recursive:true,force:true});
