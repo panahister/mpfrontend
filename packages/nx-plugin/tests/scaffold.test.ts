@@ -68,7 +68,7 @@ test('the template catalog example is the output of the feature and route genera
 
 test('create app writes the repository files of the layout standard without values', async () => {
   const app = await applicationFiles('web');
-  assert.equal(app['.env.example'], '# Environment variables this app reads. Supply values from the deployment, never from this file.\nBFF_ORIGIN=\nENABLE_API_DOCS=\n');
+  assert.equal(app['.env.example'], '# Environment variables this app reads. Supply values from the deployment, never from this file.\nBFF_ORIGIN=\nBFF_SESSION_COOKIE=\nENABLE_API_DOCS=\n');
   for (const line of app['.env.example']!.split('\n')) assert.ok(line === '' || line.startsWith('#') || line.endsWith('='), line);
   assert.ok(app['docs/overview.md']?.includes('/catalog/[position]'));
   // The folders of the layout standard that start empty are documented with their rule, never generated.

@@ -9,3 +9,5 @@ if (
 )
   throw new Error('INVALID_BFF_ORIGIN');
 export const appId = '__APP_NAME__';
+/** The name of the BFF's session cookie: the one cookie the transfer relay forwards to the BFF. */
+export const bffSessionCookie = process.env.BFF_SESSION_COOKIE;

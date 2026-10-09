@@ -73,6 +73,11 @@ English only, so a product that keeps `ar` adds it in its own repository:
 4. Pass the app's registry to `formatNumber` and `formatValue`, and the product's `labels` for booleans;
    the built-in `locale`, `direction` and `translator` know English only.
 
+The application template relays the BFF's streamed routes for uploads and downloads in
+`src/app/api/transfer/[...path]/route.ts`, through `src/api/server/transfer.ts` and `createRelay` of
+`@mpfrontend/presentation-server/relay`, as streams in both directions; its test sends and receives
+8 MiB through a fake BFF. `BFF_SESSION_COOKIE` names the session cookie it forwards.
+
 The application template is framed by `@mpfrontend/app-layout` and compiles Tailwind CSS v4 with the UI
 and shell outputs as sources. `src/app/globals.css` imports Tailwind, the neutral tokens, the component
 styles and, last, the app theme `src/theme/theme.css`; it holds no class rule. Upgrade note: apps created

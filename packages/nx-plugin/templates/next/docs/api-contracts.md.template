@@ -6,6 +6,11 @@
   `src/api/generated/catalog/`, and the `generated-check` target refuses drift.
 - Server boundary: `src/api/server/catalog.ts` validates the query, calls the BFF and validates the
   response with the generated reader before a feature sees it.
+- Transfers: `src/app/api/transfer/[...path]/route.ts` relays the BFF's streamed routes under
+  `/__APP_NAME__/transfer/` (uploads and downloads, as streams) through `src/api/server/transfer.ts`. It
+  forwards only the session cookie named by `BFF_SESSION_COOKIE`, Origin, the CSRF token, the
+  idempotency key, Accept-Language and the content headers; the BFF's routes decide which paths, media
+  types and sizes exist.
 - Example read: the template reads `listCatalog`, a paged response with `items`, `number`, `pageCount`
   and `hasMore`. Replace it with an approved contract of this product.
 

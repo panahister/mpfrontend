@@ -28,7 +28,12 @@ an approved contract adapter exists. Every visible text of the feature is a mess
 locales the generator reports as `untranslated`, and keep `catalog-check` and the `no-literal-text` lint
 rule passing. A sensitive write sends an `Idempotency-Key`; when the BFF answers `STEP_UP_REQUIRED`, keep
 the person's input, run the step-up and resubmit only a request whose `resubmit` is `idempotent`, with the
-same key. Never replay a write without a key automatically.
+same key. Never replay a write without a key automatically. A feature that uploads or downloads a file
+uses the app's transfer route (`/api/transfer/...`), which relays a streamed BFF route as streams: send
+the file as the request body with its Content-Type and Content-Length, the CSRF token and, for a
+sensitive write, an idempotency key; read a download as a stream; handle 411, 413, 415, 401, 502 and 504
+as states of the slice. Never read a whole file into memory to send it, and never invent a route,
+media type or size that the BFF's approved stream policy does not declare.
 
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
 shapes. Publish protected asynchronous results through `@mpfrontend/access-core` `AuthorityFence` and

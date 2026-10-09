@@ -8,7 +8,7 @@ export {featureFiles,routeFiles,packageFiles,planFeature,planRoute,planPackage,c
 export {workspaceFormatter,type Formatter} from './templates.js';
 export type ApplicationOptions={name:string;directory:string;dryRun?:boolean;formatter?:Formatter};
 /** Names only: values are deployment configuration and never belong in the repository. */
-const envExample='# Environment variables this app reads. Supply values from the deployment, never from this file.\nBFF_ORIGIN=\nENABLE_API_DOCS=\n';
+const envExample='# Environment variables this app reads. Supply values from the deployment, never from this file.\nBFF_ORIGIN=\nBFF_SESSION_COOKIE=\nENABLE_API_DOCS=\n';
 /**
  * The application template. Its catalog example is produced by the feature generator (a list feature over
  * the generated `catalog` read) and its two screens by the route generator: one list route and one detail route.

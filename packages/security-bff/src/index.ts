@@ -12,7 +12,28 @@ export type {VaultSecurity} from './session-store.js';
 export type AuthenticationRequirement=Readonly<{maxAge?:number;acr?:readonly string[]}>;
 /** The typed answer when the current sign-in is not enough; it never names the provider's origin. */
 export type StepUpChallenge=Readonly<{maxAge?:number;acrValues?:readonly string[];login:string;resubmit:'idempotent'|'manual'}>;
-export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;authentication?:AuthenticationRequirement;invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
+/** The response headers a streamed route may pass to the client; no other upstream header ever crosses. */
+export const STREAM_RESPONSE_HEADERS=Object.freeze(['content-type','content-length','content-disposition','content-security-policy'] as const);
+export type StreamResponseHeader=(typeof STREAM_RESPONSE_HEADERS)[number];
+/**
+ * A route whose bodies stream instead of being read whole as JSON. The consumer sets every value; nothing has
+ * a default. A request body (any method but GET) needs `requestTypes` and `maxRequestBytes`, and its
+ * Content-Length; the answer must have one of `responseTypes`. `responseHeaders` names the headers passed to
+ * the client and includes `content-type`. The timeouts and the session check interval are milliseconds.
+ */
+export type StreamPolicy=Readonly<{
+  requestTypes?:readonly string[];
+  maxRequestBytes?:number;
+  responseTypes:readonly string[];
+  responseHeaders:readonly StreamResponseHeader[];
+  idleTimeoutMs:number;
+  totalTimeoutMs:number;
+  sessionCheckMs:number;
+}>;
+export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];origin:string;prefix?:string;authentication?:AuthenticationRequirement;
+  /** A streamed body (see StreamPolicy); a route without it keeps the JSON contract. Not allowed with invoke. */
+  stream?:StreamPolicy;
+  invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
 /** The locales the BFF may send upstream as Accept-Language; anything else becomes the default. */
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** English only, MP Frontend's one built-in language; a product lists the locales its backends answer in. */
@@ -129,6 +150,25 @@ export function projectClaims(claims:Readonly<Record<string,unknown>>,allowed:re
 }
 function write(res:ServerResponse,status:number,body:unknown){res.writeHead(status,jsonHeaders);res.end(JSON.stringify(body));}
 async function body(req:IncomingMessage){const chunks:Buffer[]=[];let size=0;for await(const raw of req){const chunk=Buffer.from(raw);size+=chunk.length;if(size>65536)fail(413,'BODY_TOO_LARGE');chunks.push(chunk);}return Buffer.concat(chunks);}
+const mediaTypePattern=/^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_.+-]{0,126}$/;
+/** The media type of a Content-Type value, without its parameters and in lower case; undefined when there is none. */
+function mediaType(value:string|null|undefined){const type=value?.split(';')[0]!.trim().toLowerCase();return type||undefined;}
+/** The longest timeout a streamed route may set: one day. */
+const STREAM_TIMEOUT_MAX_MS=86400000;
+/** Refuses a stream policy that is incomplete or out of bounds; nothing is filled in with a default. */
+function checkStream(route:ApiRoute){
+  const stream=route.stream!,refuse=()=>{throw new Error('INVALID_ROUTE_STREAM');};
+  // An in-process route keeps its contract: one body in, one JSON answer out.
+  if(route.invoke)refuse();
+  const types=(list:readonly string[]|undefined)=>Array.isArray(list)&&list.length>0&&list.length<=32&&new Set(list).size===list.length&&list.every(type=>typeof type==='string'&&mediaTypePattern.test(type));
+  if(route.method==='GET'){if(stream.requestTypes!==undefined||stream.maxRequestBytes!==undefined)refuse();}
+  else if(!types(stream.requestTypes)||!Number.isSafeInteger(stream.maxRequestBytes)||stream.maxRequestBytes!<1)refuse();
+  if(!types(stream.responseTypes))refuse();
+  const names=stream.responseHeaders;
+  if(!Array.isArray(names)||new Set(names).size!==names.length||!names.every(name=>(STREAM_RESPONSE_HEADERS as readonly string[]).includes(name))||!names.includes('content-type'))refuse();
+  const time=(value:number)=>Number.isSafeInteger(value)&&value>=10&&value<=STREAM_TIMEOUT_MAX_MS;
+  if(!time(stream.idleTimeoutMs)||!time(stream.totalTimeoutMs)||!time(stream.sessionCheckMs)||stream.idleTimeoutMs>stream.totalTimeoutMs||stream.sessionCheckMs>stream.totalTimeoutMs)refuse();
+}
 export function createBff(config:BffConfig){
   if('production' in config&&config.production!==undefined){
     // No condition falls back: a missing one refuses startup and names what is missing.
@@ -192,7 +232,7 @@ export function createBff(config:BffConfig){
   };
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
-  for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');}
+  for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');if(route.stream!==undefined)checkStream(route);}
   // Production never uses the memory vault; development keeps it as its default.
   const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();
   let keys:{kid:string;jwk:JsonWebKey}[]=[],keysUntil=0;
@@ -370,6 +410,119 @@ export function createBff(config:BffConfig){
     await vault.create('transaction',replayKey,true,Date.now()+360000).catch(async error=>{if(await vault.read('transaction',replayKey))return;throw error;});
     res.writeHead(200,{'cache-control':'no-store'});res.end();
   }
+  type StreamCall={route:ApiRoute;stream:StreamPolicy;target:URL;method:string;headers:Record<string,string>;requestId:string;resubmit:'idempotent'|'manual';sessionId:string};
+  /**
+   * Relays one streamed route after every check of an ordinary route has passed. The request body goes
+   * upstream through a pull stream that reads the next chunk from the client only when the upstream
+   * connection asks for one, so the BFF holds a bounded window of the body, never all of it; the answer comes
+   * back the same way. The BFF never parses, inspects, stores or logs a streamed body.
+   */
+  async function streamRoute(req:IncomingMessage,res:ServerResponse,call:StreamCall){
+    const {stream,headers}=call,hasBody=call.method!=='GET';
+    let length=0;
+    if(hasBody){
+      // Until these checks pass, a refusal ends the connection (set by the handler for a streamed body).
+      const type=mediaType(req.headers['content-type']);
+      if(!type||!stream.requestTypes!.includes(type))fail(415,'MEDIA_TYPE_NOT_ALLOWED');
+      // The size is known before the first byte goes upstream: a streamed body declares its length.
+      const declared=req.headers['content-length'];
+      if(declared===undefined)fail(411,'LENGTH_REQUIRED');
+      if(!/^\d{1,15}$/.test(declared))fail(400,'INVALID_CONTENT_LENGTH');
+      length=Number(declared);
+      if(length>stream.maxRequestBytes!)fail(413,'BODY_TOO_LARGE');
+      res.removeHeader('connection');
+      headers['content-type']=req.headers['content-type']!;headers['content-length']=declared;
+    }
+    const upstream=new AbortController();
+    let finished=false,idle:NodeJS.Timeout|undefined,received=0;
+    const finish=()=>{finished=true;clearTimeout(idle);clearTimeout(total);clearInterval(check);};
+    /** Ends the transfer: the upstream call is aborted; the client gets an error, or a cut connection once the answer has started. */
+    const end=(status:number,code:string)=>{
+      if(finished)return;
+      finish();upstream.abort();
+      if(res.headersSent){res.destroy();return;}
+      if(res.destroyed)return;
+      res.setHeader('connection','close');write(res,status,{type:'about:blank',status,title:code});
+    };
+    /** A client that goes away ends the upstream call; nobody is left to answer. */
+    const abandon=()=>{if(finished)return;finish();upstream.abort();};
+    // The transfer's timers never keep a process alive on their own; the server does.
+    const activity=()=>{clearTimeout(idle);idle=setTimeout(()=>end(504,'UPSTREAM_TIMEOUT'),stream.idleTimeoutMs).unref();};
+    const total=setTimeout(()=>end(504,'UPSTREAM_TIMEOUT'),stream.totalTimeoutMs).unref();
+    activity();
+    /** True while the session record exists and its absolute lifetime has not ended (logout, revocation, rotation or expiry end it). */
+    const sessionAlive=async()=>{const record=await vault.read<Session>('session',call.sessionId);return !!record?.value&&record.value.absoluteExpires>Date.now();};
+    const check=setInterval(()=>{if(!finished)sessionAlive().then(alive=>{if(!alive)end(401,'LOGIN_REQUIRED');},()=>end(503,'SESSION_STORE_UNAVAILABLE'));},stream.sessionCheckMs).unref();
+    res.on('close',()=>{if(!res.writableFinished)abandon();});
+    req.on('error',abandon);
+    /**
+     * The session is read again when the request body ends: before its last chunk goes upstream, so that an
+     * upstream that frames the body by its Content-Length never receives the whole body of an ended session.
+     */
+    const bodyEnds=async()=>{
+      let alive=false;
+      try{alive=await sessionAlive();}catch{end(503,'SESSION_STORE_UNAVAILABLE');}
+      if(!alive)end(401,'LOGIN_REQUIRED');
+      return !finished;
+    };
+    const chunks=req[Symbol.asyncIterator]() as AsyncIterator<Buffer>;
+    const body=hasBody?new ReadableStream<Uint8Array>({
+      async pull(controller){
+        let next:IteratorResult<Buffer>;
+        try{next=await chunks.next();}catch(error){abandon();controller.error(error);return;}
+        if(finished){controller.error(new Error('TRANSFER_ENDED'));return;}
+        if(next.done){
+          if(received!==length){abandon();controller.error(new Error('INCOMPLETE_BODY'));return;}
+          if(length===0&&!await bodyEnds()){controller.error(new Error('TRANSFER_ENDED'));return;}
+          controller.close();return;
+        }
+        const chunk=next.value;
+        received+=chunk.length;activity();
+        // The declared length and the route's maximum bound the count as well.
+        if(received>length||received>stream.maxRequestBytes!){end(413,'BODY_TOO_LARGE');controller.error(new Error('BODY_TOO_LARGE'));return;}
+        if(received===length&&!await bodyEnds()){controller.error(new Error('TRANSFER_ENDED'));return;}
+        controller.enqueue(new Uint8Array(chunk.buffer,chunk.byteOffset,chunk.byteLength));
+      },
+      cancel(){void chunks.return?.();},
+    },{highWaterMark:0}):undefined;
+    let answer:Response;
+    try{
+      answer=await fetch(call.target,{method:call.method,headers,...(body?{body,duplex:'half'}:{}),redirect:'error',signal:upstream.signal} as RequestInit);
+    }catch{end(503,'SERVICE_UNAVAILABLE');return;}
+    if(finished){await answer.body?.cancel().catch(()=>undefined);return;}
+    activity();
+    // An upload the upstream answered before reading it whole leaves the rest of the body unread.
+    const unread=()=>{if(hasBody&&received<length)res.setHeader('connection','close');};
+    const challenge=answer.status===401?upstreamStepUp(answer.headers.get('www-authenticate')):undefined;
+    if(challenge){finish();upstream.abort();unread();stepUp(res,challenge,call.resubmit);return;}
+    const type=mediaType(answer.headers.get('content-type'));
+    const empty=type===undefined&&([204,205,304].includes(answer.status)||answer.headers.get('content-length')==='0');
+    // An answer of a type the route does not list is refused whole: none of its body is read.
+    if(!empty&&(type===undefined||!stream.responseTypes.includes(type))){end(502,'UPSTREAM_MEDIA_TYPE_REJECTED');return;}
+    const passed:Record<string,string>={'x-content-type-options':'nosniff','cache-control':'no-store','x-correlation-id':call.requestId,
+      ...(answer.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})};
+    for(const name of stream.responseHeaders){
+      const value=answer.headers.get(name);
+      // fetch decodes a content encoding, after which the encoded length no longer applies.
+      if(value!==null&&!(name==='content-length'&&answer.headers.has('content-encoding')))passed[name]=value;
+    }
+    unread();
+    try{res.writeHead(answer.status,passed);}catch{end(502,'UPSTREAM_HEADER_REJECTED');return;}
+    if(empty){finish();upstream.abort();res.end();return;}
+    const reader=answer.body!.getReader();
+    try{
+      for(;;){
+        const {done,value}=await reader.read();
+        if(finished)return;
+        if(done)break;
+        activity();
+        if(!res.write(value))await new Promise<void>(resolve=>{const go=()=>{res.off('drain',go);res.off('close',go);resolve();};res.on('drain',go);res.on('close',go);});
+        if(finished)return;
+        activity();
+      }
+    }catch{end(502,'UPSTREAM_INTERRUPTED');return;}
+    finish();res.end();
+  }
   return async function handle(req:IncomingMessage,res:ServerResponse){
     try{
       const url=new URL(req.url??'/',publicOrigin),method=req.method??'GET';
@@ -438,11 +591,17 @@ export function createBff(config:BffConfig){
         if(!backChannel)fail(404,'OPERATION_NOT_FOUND');
         await backChannelLogout(req,res);return;
       }
+      // A body for a streamed route is not read before its checks pass; a refusal closes the connection, so
+      // that the body is never read only to be discarded. The route itself removes this when it streams.
+      const own=url.pathname==='/context'||url.pathname==='/logout';
+      const streamed=method!=='GET'&&!own&&config.routes.find(r=>r.method===method&&r.pattern.test(url.pathname))?.stream!==undefined;
+      if(streamed)res.setHeader('connection','close');
       const current=await session(req,!(url.pathname==='/logout'&&method==='POST'));
       if(current.rotated)res.setHeader('set-cookie',sessionSetCookie(current.id,Math.max(1,Math.floor((current.value.absoluteExpires-Date.now())/1000))));
       if(method!=='GET'){
         if(req.headers.origin!==publicOrigin||typeof req.headers['x-csrf-token']!=='string'||!equal(current.value.csrf,req.headers['x-csrf-token']))fail(403,'CSRF_REJECTED');
-        if(req.headers['content-type']?.split(';')[0]!=='application/json')fail(415,'JSON_REQUIRED');
+        // A streamed route checks the media types it declares, after the allowlist; every other request is JSON.
+        if(!streamed&&req.headers['content-type']?.split(';')[0]!=='application/json')fail(415,'JSON_REQUIRED');
       }
       if(url.pathname==='/context'&&method==='GET'){
         const c=current.value.claims;write(res,200,{authenticated:true,subject:c.sub,name:c.preferred_username??c.sub,roles:c.realm_access?.roles??[],tenant:c.tenant_id??null,claims:current.value.identity??{},csrf:current.value.csrf,expiresAt:current.value.absoluteExpires});return;
@@ -470,6 +629,7 @@ export function createBff(config:BffConfig){
       if(needsStepUp(current.value,route.authentication)){stepUp(res,route.authentication!,resubmit);return;}
       const target=new URL((route.prefix??'')+url.pathname+url.search,route.origin);
       if(target.origin!==route.origin)fail(400,'INVALID_PATH');
+      if(route.stream){await streamRoute(req,res,{route,stream:route.stream,target,method,headers,requestId,resubmit,sessionId:current.id});return;}
       const bytes=method==='GET'?undefined:await body(req);
       if(route.invoke){const reply=await route.invoke({path:url.pathname,headers,body:bytes});write(res,reply.status,reply.body);return;}
       const upstream=await fetch(target,{method,headers,...(bytes?{body:new Uint8Array(bytes)}:{}),redirect:'error',signal:AbortSignal.timeout(15000)});
@@ -478,6 +638,8 @@ export function createBff(config:BffConfig){
       if(challenge){stepUp(res,challenge,resubmit);return;}
       res.writeHead(upstream.status,{...jsonHeaders,'x-correlation-id':requestId,...(upstream.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})});res.end(raw);
     }catch(error){
+      // A streamed answer that has started cannot become an error answer; its connection is cut.
+      if(res.headersSent){res.destroy();return;}
       const status=(error as {status?:number}).status??503;
       write(res,status,{type:'about:blank',status,title:status===503?'SERVICE_UNAVAILABLE':(error as Error).message});
     }

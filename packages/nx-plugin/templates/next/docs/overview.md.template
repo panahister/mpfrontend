@@ -11,6 +11,8 @@ describe the structure that `mpfrontend create app` wrote.
 - `/catalog/[position]` is the detail screen of one item, a child route of the list
   (`src/app/catalog/[position]/page.tsx`).
 - `/components` shows the framework components (`src/app/components/page.tsx`).
+- `/api/transfer/...` relays the BFF's streamed routes for uploads and downloads
+  (`src/app/api/transfer/[...path]/route.ts`); see [api-contracts.md](api-contracts.md).
 
 ## Layout
 

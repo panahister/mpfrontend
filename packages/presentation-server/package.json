@@ -4,7 +4,7 @@
   "type":"module",
   "main":"./dist/index.js",
   "types":"./dist/index.d.ts",
-  "exports":{".":{"types":"./dist/index.d.ts","import":"./dist/index.js"}},
+  "exports":{".":{"types":"./dist/index.d.ts","import":"./dist/index.js"},"./relay":{"types":"./dist/relay.d.ts","import":"./dist/relay.js"}},
   "files":["dist","README.md"],
   "dependencies":{"ws":"8.22.0"}
 }

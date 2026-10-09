@@ -42,3 +42,26 @@ nothing cannot be shown to use TLS and authentication, so it is refused with `TI
 rather than accepted for lack of a claim. There is no process-memory default in this profile. The development
 profile (`development: true`) is unchanged and still refused under `NODE_ENV=production`. Retained event
 replay is not part of either profile. See the core shared-runtime acceptance document.
+
+## Transfer relay
+
+`@mpfrontend/presentation-server/relay` relays a streamed route of the Security BFF from a route handler
+of the presentation application (Web `Request` and `Response`, as in Next.js), as streams in both
+directions: it never holds a whole body. `createRelay({bffOrigin, basePath, sessionCookie})` returns
+`relay(request, segments)`, which calls `<bffOrigin><basePath>/<segments>` with the request's query.
+
+- Towards the BFF it forwards only what the BFF checks and the content headers: the session cookie named
+  `sessionCookie` (no other cookie), Origin, `X-CSRF-Token`, `Idempotency-Key`, Accept-Language,
+  Content-Type and Content-Length (`RELAY_REQUEST_HEADERS`). A body without Content-Length is refused by
+  the BFF with 411.
+- Back to the browser it passes the status, the content headers, the BFF's `X-Content-Type-Options`,
+  `Cache-Control`, correlation id and `Idempotency-Replayed` (`RELAY_RESPONSE_HEADERS`), and a
+  `Set-Cookie` only when it sets the session cookie (a rotated session id). Content-Length is dropped
+  when fetch has decoded a content encoding.
+- Each path segment is encoded again, so that a segment cannot leave `basePath`; an empty, `.` or `..`
+  segment is answered 404 without a call. A client that goes away aborts the call to the BFF, which ends
+  the upstream call.
+
+The relay decides nothing itself: the BFF's allowlist, session, Origin, CSRF, media types, sizes and
+timeouts do. The application template wires it in `src/app/api/transfer/[...path]/route.ts` through
+`src/api/server/transfer.ts`, with the session cookie name in `BFF_SESSION_COOKIE`.

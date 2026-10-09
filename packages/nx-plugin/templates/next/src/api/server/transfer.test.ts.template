@@ -1,0 +1,131 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  createServer,
+  type IncomingHttpHeaders,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
+import { createHash } from 'node:crypto';
+import { transferHandler } from './transfer';
+
+const MB = 1024 * 1024;
+const size = 8 * MB;
+const file = Buffer.alloc(size);
+for (let index = 0; index < size; index++) file[index] = index % 256;
+const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
+const context = { params: Promise.resolve({ path: ['files', 'report'] }) };
+
+/** A fake BFF on a loopback port, so that the relay is tested without a backend. */
+async function fakeBff(handle: (req: IncomingMessage, res: ServerResponse) => Promise<void>) {
+  const server = createServer((req, res) => {
+    handle(req, res).catch(() => res.destroy());
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as { port: number };
+  return {
+    origin: 'http://127.0.0.1:' + port,
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.closeAllConnections();
+        server.close(() => resolve());
+      }),
+  };
+}
+
+test('a file of several megabytes goes to the BFF and back through the relay, as streams', async () => {
+  let seen: IncomingHttpHeaders = {};
+  const received: Buffer[] = [];
+  let reportArrival = () => {};
+  const arrived = new Promise<void>((resolve) => {
+    reportArrival = resolve;
+  });
+  const bff = await fakeBff(async (req, res) => {
+    if (req.method === 'GET') {
+      res.writeHead(200, {
+        'content-type': 'application/octet-stream',
+        'content-length': String(size),
+        'x-internal': 'not passed',
+      });
+      res.end(file);
+      return;
+    }
+    seen = req.headers;
+    for await (const chunk of req) {
+      received.push(chunk as Buffer);
+      reportArrival();
+    }
+    res.writeHead(201, { 'content-type': 'application/json', 'set-cookie': 'tracker=1' });
+    res.end('{"stored":true}');
+  });
+  try {
+    const handle = transferHandler(() => ({
+      bffOrigin: bff.origin,
+      basePath: '/app/transfer',
+      sessionCookie: 'app_session',
+    }));
+    // The client produces 1 MiB, then waits until the BFF has bytes: a relay that held the whole body
+    // would never let the upload finish.
+    let offset = 0;
+    const body = new ReadableStream<Uint8Array>(
+      {
+        async pull(controller) {
+          if (offset === MB) await arrived;
+          if (offset >= size) {
+            controller.close();
+            return;
+          }
+          const chunk = file.subarray(offset, offset + 65536);
+          offset += chunk.length;
+          controller.enqueue(new Uint8Array(chunk));
+        },
+      },
+      { highWaterMark: 0 },
+    );
+    const upload = {
+      method: 'PUT',
+      body,
+      duplex: 'half',
+      headers: {
+        cookie: 'theme=dark; app_session=opaque',
+        origin: 'http://localhost',
+        'x-csrf-token': 'token',
+        'content-type': 'application/octet-stream',
+        'content-length': String(size),
+        authorization: 'Bearer not-forwarded',
+      },
+    };
+    const uploaded = await handle(
+      new Request('http://localhost/api/transfer/files/report', upload as RequestInit),
+      context,
+    );
+    assert.equal(uploaded.status, 201);
+    assert.equal(digest(Buffer.concat(received)), digest(file));
+    assert.equal(seen.cookie, 'app_session=opaque');
+    assert.equal(seen['x-csrf-token'], 'token');
+    assert.equal(seen.authorization, undefined);
+    assert.deepEqual(uploaded.headers.getSetCookie(), []);
+    const downloaded = await handle(
+      new Request('http://localhost/api/transfer/files/report', {
+        headers: { cookie: 'app_session=opaque' },
+      }),
+      context,
+    );
+    assert.equal(downloaded.status, 200);
+    assert.equal(digest(new Uint8Array(await downloaded.arrayBuffer())), digest(file));
+    assert.equal(downloaded.headers.get('content-length'), String(size));
+    assert.equal(downloaded.headers.get('x-internal'), null);
+  } finally {
+    await bff.close();
+  }
+});
+
+test('without a session cookie name the relay is not configured', async () => {
+  const handle = transferHandler(() => ({
+    bffOrigin: 'http://127.0.0.1:9',
+    basePath: '/app/transfer',
+    sessionCookie: '',
+  }));
+  const response = await handle(new Request('http://localhost/api/transfer/files/report'), context);
+  assert.equal(response.status, 503);
+});

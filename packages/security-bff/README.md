@@ -3,8 +3,9 @@
 Node HTTP handler for independently deployed, product-neutral OIDC mediation. Implements Authorization
 Code with S256 PKCE, state and nonce, RS256 JWT/JWKS validation, opaque HttpOnly cookies, same-origin
 and CSRF checks, endpoint/method/role allowlists, bounded request bodies and server-held token refresh.
-The product supplies its API routes and identity-provider settings. Neither tokens nor upstream response
-headers cross the presentation boundary. The browser calls Next.js; only its server calls this BFF.
+The product supplies its API routes and identity-provider settings. No token crosses the presentation
+boundary, and no upstream response header crosses it except the content headers that a streamed route
+names (see "Streamed routes"). The browser calls Next.js; only its server calls this BFF.
 
 An application can declare an allowlist with `supportedUiLocales`. A matching `ui_locales` value on
 `/login`, or the matching value of an optional `uiLocaleCookie`, is forwarded through the standard OIDC
@@ -116,6 +117,75 @@ when its id is rotated at refresh, so that a failed index leaves no session that
 refuses the option at startup. The endpoint carries no browser session or CSRF token: route it only from
 the identity provider's network path, for example a separate internal listener or an ingress rule that
 admits the provider alone, and never expose it to browsers.
+
+## Streamed routes
+
+A route of the allowlist may declare `stream`, for files of several megabytes that pass between the browser
+and a backend. A route without it behaves exactly as before: the body is read whole up to 64 KiB, it must
+be `application/json`, the answer is written as JSON with fixed headers, and the upstream call is bounded
+by 15 seconds. An in-process route (`invoke`) cannot declare a stream; its contract is unchanged.
+
+```ts
+{
+  method: 'PUT', pattern: /^\/v1\/documents\/[a-z0-9-]+$/, origin: 'https://documents.internal',
+  stream: {
+    requestTypes: ['<media type>'],          // a body of any other type, or none, is refused with 415
+    maxRequestBytes: <bytes>,                 // a declared Content-Length above it is refused with 413
+    responseTypes: ['<media type>'],          // an answer of any other type is refused with 502
+    responseHeaders: ['content-type', 'content-disposition'],
+    idleTimeoutMs: <ms>, totalTimeoutMs: <ms>, sessionCheckMs: <ms>,
+  },
+}
+```
+
+Every value is the consumer's: the package ships no list of media types, no size, no timeout and no
+route. `createBff` refuses an incomplete or out-of-bounds policy with `INVALID_ROUTE_STREAM`: media types
+are explicit `type/subtype` values without parameters or wildcards, a GET route has no request types or
+size, `responseHeaders` comes from the closed set `STREAM_RESPONSE_HEADERS` (`content-type`,
+`content-length`, `content-disposition`, `content-security-policy`) and includes `content-type`, and each
+time is between 10 ms and one day with the idle timeout and the session check no longer than the total.
+
+Before any byte of the body is read, a streamed request passes every check of an ordinary route, in the
+same order: the session and its refresh, Origin and the CSRF token for every method other than GET, the
+allowlist and its roles, the Idempotency-Key rule, the correlation id and the route's sign-in
+requirement. Then:
+
+- **Size known first.** A request with a body must declare `Content-Length`: without it the answer is
+  411 `LENGTH_REQUIRED`, above `maxRequestBytes` it is 413 `BODY_TOO_LARGE`, and a media type (its
+  parameters ignored) outside `requestTypes` is 415 `MEDIA_TYPE_NOT_ALLOWED`, each before any upstream
+  call. Such a refusal closes the connection, so that an unread body is never read only to be discarded.
+  The count of bytes is also checked as they stream.
+- **Headers upstream.** The upstream gets the fixed headers of every route (the access token,
+  the negotiated Accept-Language, the correlation id and an allowlisted Idempotency-Key) and, in
+  addition, the accepted Content-Type and the Content-Length; no other request header.
+- **The body streams.** The request body goes upstream as it arrives, through a pull stream that reads
+  the next chunk from the client only when the upstream connection asks for one, so the client is held
+  back by backpressure. The BFF holds a bounded window of a body, never all of it: the inbound socket and
+  request buffers (Node's 64 KiB high-water mark each; the test measured at most 130,775 bytes), the
+  chunk being forwarded and the outbound socket buffer (64 KiB high-water mark): at most about 256 KiB of
+  process memory per transfer, whatever the size of the body. Kernel socket buffers come on top.
+- **The answer streams.** The answer reaches the client as it arrives, byte for byte, with the upstream
+  status and only the headers the route names, plus `X-Content-Type-Options: nosniff`,
+  `Cache-Control: no-store` and the correlation id. An answer whose media type is not in `responseTypes`
+  is refused with 502 `UPSTREAM_MEDIA_TYPE_REJECTED` and none of its body is read; an answer without a
+  body (204, 205, 304, or a Content-Length of 0) needs no type. An upstream `Set-Cookie` or any unnamed
+  header never crosses. When the upstream answer is content-encoded, fetch decodes it and its
+  Content-Length is not passed. An RFC 9470 challenge becomes the same typed step-up as on other routes.
+- **The session stays checked.** The session record is read again every `sessionCheckMs` and once more
+  when the request body ends, before its last chunk goes upstream. A session that has ended (logout from
+  another request, back-channel logout, a rotated session id or its absolute expiry) ends the transfer:
+  the upstream call is aborted and the client gets 401 `LOGIN_REQUIRED`, or, once the answer has
+  started, a cut connection, never a success; a session store that cannot be read ends it with 503. The
+  session's idle timeout is not applied during a transfer, which counts as activity only when it starts.
+- **Time and cancellation.** A transfer with no byte moving for `idleTimeoutMs`, or lasting longer than
+  `totalTimeoutMs`, aborts the upstream call and answers 504 `UPSTREAM_TIMEOUT` when no answer has
+  started, or cuts the connection when one has. A client that cancels an upload or a download ends the
+  upstream call at once.
+
+The BFF never parses, inspects, stores or logs a streamed body, a file name or any content; content checks
+belong to the backend. Range requests, resumable uploads and multipart parsing are not provided. The
+presentation application relays
+a streamed route with `createRelay` of `@mpfrontend/presentation-server/relay` (see that package).
 
 ## Production profile
 

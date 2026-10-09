@@ -1,0 +1,22 @@
+import { appId, bffOrigin, bffSessionCookie } from '../../../../config/server';
+import { transferHandler, type TransferContext } from '../../../../api/server/transfer';
+
+/**
+ * Relays the BFF's streamed routes under `/<app>/transfer/`: uploads and downloads pass as streams. The
+ * BFF's allowlist decides which paths, types and sizes exist; this route adds none.
+ */
+const transfer = transferHandler(() => ({
+  bffOrigin,
+  basePath: '/' + appId + '/transfer',
+  sessionCookie: bffSessionCookie ?? '',
+}));
+
+export async function GET(request: Request, context: TransferContext) {
+  return transfer(request, context);
+}
+export async function POST(request: Request, context: TransferContext) {
+  return transfer(request, context);
+}
+export async function PUT(request: Request, context: TransferContext) {
+  return transfer(request, context);
+}

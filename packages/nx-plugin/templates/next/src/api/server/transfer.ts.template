@@ -1,0 +1,25 @@
+import { createRelay, type RelayOptions } from '@mpfrontend/presentation-server/relay';
+
+/** The context that Next.js passes to the catch-all transfer route. */
+export type TransferContext = { params: Promise<{ path: string[] }> };
+
+/**
+ * The transfer relay: it passes a streamed BFF route between the browser and the BFF, as streams in both
+ * directions, and forwards only what the BFF checks and the content headers. It reads no configuration
+ * itself, so that a test can run it; the route passes the server configuration. Without a session cookie
+ * name the relay is not configured and answers 503.
+ */
+export function transferHandler(options: () => RelayOptions) {
+  return async (request: Request, context: TransferContext): Promise<Response> => {
+    let relay;
+    try {
+      relay = createRelay(options());
+    } catch {
+      return new Response(JSON.stringify({ title: 'TRANSFER_NOT_CONFIGURED' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+    return relay(request, (await context.params).path);
+  };
+}

@@ -5,6 +5,8 @@ import {join,dirname,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {createServer as createNetServer} from 'node:net';
+import {createServer as createHttpServer,request as httpRequest} from 'node:http';
+import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {parse,stringify} from 'yaml';
 import {verifyDesignConsumer} from './design-consumer.mjs';
@@ -288,11 +290,11 @@ assert.match(builtCss,/max-width:var\(--mp-shell-content-max\)/,'SHELL_STRUCTURA
 const fallback=builtCss.indexOf('--mp-surface-canvas:'),theme=builtCss.search(/:root\[data-brand=["']?neutral["']?\]\{--mp-shell-content-max:75rem/);
 assert.ok(fallback>=0&&theme>fallback,'THEME_FILE_NOT_AFTER_TOKEN_FALLBACK');
 console.log(JSON.stringify({stage:'built-css',ok:true,structuralClass:'p-6',shellClass:'max-w-[var(--mp-shell-content-max)]',themeAfterFallback:true}));
-// Each built app is served on a free loopback port; its BFF origin is a closed local port.
-async function served(directory,check){
+// Each built app is served on a free loopback port; its BFF origin is a closed local port unless a check names one.
+async function served(directory,check,env={}){
   const port=await new Promise((resolve,reject)=>{const probe=createNetServer();probe.once('error',reject);probe.listen(0,'127.0.0.1',()=>{const value=probe.address().port;probe.close(()=>resolve(value));});});
   const server=spawn(join(directory,'node_modules/.bin/next'),['start','.','-p',String(port),'-H','127.0.0.1'],{cwd:directory,detached:true,stdio:'ignore',
-    env:{...process.env,PATH:independentPath,NEXT_TELEMETRY_DISABLED:'1',BFF_ORIGIN:'http://127.0.0.1:9'}});
+    env:{...process.env,PATH:independentPath,NEXT_TELEMETRY_DISABLED:'1',BFF_ORIGIN:'http://127.0.0.1:9',...env}});
   try{
     await check(async preference=>{
       for(let attempt=0;attempt<120;attempt++){
@@ -300,7 +302,7 @@ async function served(directory,check){
         await new Promise(resolve=>setTimeout(resolve,250));
       }
       throw new Error('APP_DID_NOT_START');
-    });
+    },'http://127.0.0.1:'+port);
   }finally{try{process.kill(-server.pid,'SIGTERM');}catch{}}
 }
 const escapeExpression=text=>text.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
@@ -337,6 +339,57 @@ await served(productApp,async page=>{
   assert.match(await page('lang=en&theme=dark'),new RegExp('<html lang="'+RTL+'" dir="rtl" data-brand="neutral" data-mode="dark"'));
 });
 console.log(JSON.stringify({stage:'served-product-locale',ok:true,locale:RTL,direction:'rtl',englishFallbackShown:0}));
+// The transfer relay of the built app: a file of several megabytes goes through `next start` to a fake BFF
+// and back, as streams in both directions, with only the session cookie and the headers the BFF checks.
+const transferSize=8*1024*1024,transferFile=Buffer.alloc(transferSize);
+for(let index=0;index<transferSize;index++)transferFile[index]=index%256;
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+const within=(promise,ms,code)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(code)),ms);})]).finally(()=>clearTimeout(timer));};
+const bffReceived=[];let bffSeen={},reportArrival,clientHasBytes;
+const arrival=new Promise(resolve=>{reportArrival=resolve;}),clientHolds=new Promise(resolve=>{clientHasBytes=resolve;});
+const fakeBff=createHttpServer(async(req,res)=>{
+  try{
+    if(!req.url.startsWith('/sample/transfer/')){res.writeHead(404,{'content-type':'application/json'});res.end('{}');return;}
+    if(req.method==='GET'){
+      res.writeHead(200,{'content-type':'application/octet-stream','content-length':String(transferSize),'x-internal':'not passed','set-cookie':'tracker=1'});
+      // The rest is sent only once the browser side holds the first bytes: nothing may wait for the whole answer.
+      res.write(transferFile.subarray(0,65536));await clientHolds;res.end(transferFile.subarray(65536));return;
+    }
+    bffSeen=req.headers;
+    for await(const chunk of req){bffReceived.push(chunk);reportArrival();}
+    res.writeHead(201,{'content-type':'application/json','set-cookie':'tracker=1'});res.end('{"stored":true}');
+  }catch{res.destroy();}
+});
+await new Promise(resolve=>fakeBff.listen(0,'127.0.0.1',resolve));
+try{
+  await served(join(workspace,'apps/sample'),async(page,appOrigin)=>{
+    await page();
+    const uploaded=await within(new Promise((resolve,reject)=>{
+      const client=httpRequest(appOrigin+'/api/transfer/files/report',{method:'PUT',headers:{cookie:'theme=dark; app_session=opaque',origin:appOrigin,
+        'x-csrf-token':'token','content-type':'application/octet-stream','content-length':String(transferSize),authorization:'Bearer not-forwarded'}});
+      client.on('response',res=>{const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks).toString()}));});
+      client.on('error',reject);
+      (async()=>{
+        for(let offset=0;offset<transferSize;offset+=65536){
+          // After 1 MiB the client waits until the BFF has bytes: an app that held the whole body would stall here.
+          if(offset===1024*1024)await within(arrival,30000,'TRANSFER_UPLOAD_NOT_STREAMED');
+          if(!client.write(transferFile.subarray(offset,offset+65536)))await new Promise(resolve=>client.once('drain',resolve));
+        }
+        client.end();
+      })().catch(reject);
+    }),60000,'TRANSFER_UPLOAD_DID_NOT_FINISH');
+    assert.equal(uploaded.status,201);assert.equal(uploaded.body,'{"stored":true}');
+    assert.equal(sha(Buffer.concat(bffReceived)),sha(transferFile));
+    assert.equal(bffSeen.cookie,'app_session=opaque');assert.equal(bffSeen['x-csrf-token'],'token');assert.equal(bffSeen.authorization,undefined);
+    assert.equal(uploaded.headers['set-cookie'],undefined);
+    const downloaded=await fetch(appOrigin+'/api/transfer/files/report',{headers:{cookie:'app_session=opaque'}});
+    assert.equal(downloaded.status,200);assert.equal(downloaded.headers.get('x-internal'),null);assert.deepEqual(downloaded.headers.getSetCookie(),[]);
+    const reader=downloaded.body.getReader(),chunks=[];
+    await within((async()=>{for(;;){const {done,value}=await reader.read();if(done)return;chunks.push(value);clientHasBytes();}})(),60000,'TRANSFER_DOWNLOAD_NOT_STREAMED');
+    assert.equal(sha(Buffer.concat(chunks)),sha(transferFile));
+  },{BFF_ORIGIN:'http://127.0.0.1:'+fakeBff.address().port,BFF_SESSION_COOKIE:'app_session'});
+}finally{fakeBff.closeAllConnections();await new Promise(resolve=>fakeBff.close(resolve));}
+console.log(JSON.stringify({stage:'served-transfer-relay',ok:true,uploadBytes:transferSize,downloadBytes:transferSize,streamedBothWays:true,forwardedCookie:'session-only'}));
 // A build must not rewrite a formatted file (for example a framework editing the app tsconfig).
 await run('pnpm',['run','format:check']);
 // Negative controls of the profile: an app importing another app, a raw colour and hand-written CSS fail lint.
@@ -451,7 +504,7 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
 // path printed first, for diagnosis. No other file is deleted.
 await rm(temporary,{recursive:true,force:true});

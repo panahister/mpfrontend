@@ -39,12 +39,19 @@ must end sessions at once (an account disabled, a provider logout), enable `back
 back-channel logout URL in the provider without changing provider configuration yourself. For
 sensitive operations give the route `authentication: {maxAge}` (and `acr` only when the product defines
 levels in `acrValues`); handle the typed `STEP_UP_REQUIRED` answer by sending the person to its `login`
-path with an allowlisted `return_to`, and list every return path in `returnPaths`. Never log tokens,
-authorization codes, cookies, client secrets or personal data.
+path with an allowlisted `return_to`, and list every return path in `returnPaths`. For files that pass
+between the browser and a backend, give the route a `stream` policy with the product's approved request
+and response media types, maximum size, response headers, idle and total timeouts and session check
+interval; nothing has a default, so ask for each value rather than inventing it. Relay it from the
+presentation application with `createRelay` of `@mpfrontend/presentation-server/relay` (the template's
+`/api/transfer/...` route) and set `BFF_SESSION_COOKIE` to the BFF's session cookie name. A streamed
+upload declares Content-Length; never parse, inspect or log a streamed body or a file name in the
+presentation application. Never log tokens, authorization codes, cookies, client secrets or personal data.
 
 Add focused tests for login/callback, state replay, nonce/issuer/audience/expiry rejection, logout,
 refresh rotation/outage, CSRF/origin rejection, locale propagation and absence of browser token
-exposure. Verify an actual browser sign-in and return URL without collecting real credentials. Record
+exposure; for a streamed route also 411, 413 and 415 before any upstream call, a refused response type,
+the headers that cross, and a transfer ended by logout, timeout and cancellation. Verify an actual browser sign-in and return URL without collecting real credentials. Record
 the approved cookie/session settings and remaining HA/TLS/key-rotation work.
 
 Do not create or mutate Keycloak realms, clients, users, roles, resources or grants through this skill.
