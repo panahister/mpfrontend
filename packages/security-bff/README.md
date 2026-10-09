@@ -111,7 +111,8 @@ endpoint answers 503 without recording the token, so that the provider's retry s
 served meanwhile.
 
 The vault indexes each session by the provider's session id (from the ID token's `sid`) and by subject;
-the Redis index holds hashed session addresses only. A vault without `indexSession` and `revokeIndexed`
+the Redis index holds hashed session addresses only. A session is indexed before it is stored, so that a
+failed index leaves no session that a logout could not find. A vault without `indexSession` and `revokeIndexed`
 refuses the option at startup. The endpoint carries no browser session or CSRF token: route it only from
 the identity provider's network path, for example a separate internal listener or an ingress rule that
 admits the provider alone, and never expose it to browsers.

@@ -242,7 +242,11 @@ export function createBff(config:BffConfig){
     return claims;
   }
   if(backChannel&&(!vault.indexSession||!vault.revokeIndexed))throw new Error('BACKCHANNEL_LOGOUT_VAULT_UNSUPPORTED');
-  /** Indexes a session by the provider's session id and by subject, for back-channel logout. */
+  /**
+   * Indexes a session by the provider's session id and by subject, for back-channel logout. A session is
+   * indexed before it is stored: when indexing fails no session exists that a logout could not find, and an
+   * index entry without its session is harmless.
+   */
   async function index(id:string,value:Session){
     if(backChannel)await vault.indexSession!(id,{...(value.sid?{sid:value.sid}:{}),sub:value.claims.sub},value.absoluteExpires);
   }
@@ -316,8 +320,8 @@ export function createBff(config:BffConfig){
         if(authority(claims)!==authority(current.value.claims)){
           // Changed roles or authorization claims rotate the session id: a new record, the old one removed.
           const rotated=opaque();
-          await vault.create('session',rotated,next,current.value.absoluteExpires);
           await index(rotated,next);
+          await vault.create('session',rotated,next,current.value.absoluteExpires);
           await vault.remove('session',id);
           return {id:rotated,value:next,rotated:true};
         }
@@ -417,8 +421,8 @@ export function createBff(config:BffConfig){
         const created:Session={access:tokens.access_token,refresh:tokens.refresh_token,claims,identity:projected,csrf:opaque(),expires:claims.exp*1000,absoluteExpires,lastSeen:Date.now(),
           ...(authTime!==undefined?{authTime}:{}),...(acrClaim!==undefined?{acr:acrClaim}:{}),
           ...(typeof identity.sid==='string'&&identity.sid.length<=256?{sid:identity.sid}:{})};
-        await vault.create('session',id,created,absoluteExpires);
         await index(id,created);
+        await vault.create('session',id,created,absoluteExpires);
         const cookies=[sessionSetCookie(id,absoluteSeconds),cookie(transactionCookie,'',0)];
         if(sameSite==='Strict'){
           // A Strict cookie set at the end of a cross-site redirect chain is not sent on the next hop of that

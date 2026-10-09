@@ -33,18 +33,21 @@ async function harness(options:{enabled?:boolean;vault?:SessionVault}={}){
     backChannelLogout:options.enabled??true,...(options.vault?{sessionVault:options.vault}:{})}));
   await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+(bff.address() as {port:number}).port;
-  const signIn=async(sub:string,sid:string)=>{
+  const attempt=async(sub:string,sid:string)=>{
     next={sub,sid};
     const login=await fetch(base+'/login',{redirect:'manual'}),target=new URL(login.headers.get('location')!);
     nonce=target.searchParams.get('nonce')!;
-    const callback=await fetch(base+'/callback?code=ok&state='+target.searchParams.get('state'),{headers:{cookie:login.headers.getSetCookie()[0]!.split(';')[0]!},redirect:'manual'});
+    return await fetch(base+'/callback?code=ok&state='+target.searchParams.get('state'),{headers:{cookie:login.headers.getSetCookie()[0]!.split(';')[0]!},redirect:'manual'});
+  };
+  const signIn=async(sub:string,sid:string)=>{
+    const callback=await attempt(sub,sid);
     assert.equal(callback.status,303);return callback.headers.getSetCookie()[0]!.split(';')[0]!;
   };
   const status=async(cookie:string)=>(await fetch(base+'/context',{headers:{cookie}})).status;
   const logoutToken=(claims:Record<string,unknown>)=>jwt({iss:issuer,aud:'web',iat:now(),exp:now()+120,jti:randomUUID(),events:event,...claims});
   const post=(token:string,type='application/x-www-form-urlencoded')=>fetch(base+'/backchannel-logout',{method:'POST',headers:{'content-type':type},body:new URLSearchParams({logout_token:token}).toString()});
   const close=async()=>{for(const server of [bff,provider])server.closeAllConnections();await Promise.all([bff,provider].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));};
-  return {issuer,jwt,other,now,signIn,status,logoutToken,post,close};
+  return {issuer,jwt,other,now,attempt,signIn,status,logoutToken,post,close};
 }
 
 test('a valid logout token with a sid ends exactly the sessions of that provider session',async()=>{
@@ -139,6 +142,25 @@ test('a store outage fails closed: the logout is not acknowledged, no session is
     assert.equal(await h.status(cookie),503,'no session is served while the store is unavailable');
     unavailable=false;
     assert.equal((await h.post(token)).status,200,'the provider may retry the same token');
+    assert.equal(await h.status(cookie),401);
+  }finally{await h.close();}
+});
+
+test('a session is never stored before it is indexed: an index that fails leaves nothing a logout would miss',async()=>{
+  const memory=createMemorySessionVault(),stored:string[]=[];
+  let indexFails=true;
+  const vault:SessionVault={...memory,
+    create:async(kind,id,value,expiresAt)=>{if(kind==='session')stored.push(id);await memory.create(kind,id,value,expiresAt);},
+    indexSession:async(id,keys,expiresAt)=>{if(indexFails)throw new Error('INDEX_UNAVAILABLE');await memory.indexSession!(id,keys,expiresAt);}};
+  const h=await harness({vault});
+  try{
+    const failed=await h.attempt('person-1','sid-1');
+    assert.equal(failed.status,503);
+    assert.ok(!failed.headers.getSetCookie().some(header=>header.startsWith('test_session=')),'no session cookie is issued');
+    for(const id of stored)assert.equal(await memory.read('session',id),undefined,'no unindexed session is stored');
+    indexFails=false;
+    const cookie=await h.signIn('person-1','sid-1');
+    assert.equal((await h.post(h.logoutToken({sid:'sid-1'}))).status,200);
     assert.equal(await h.status(cookie),401);
   }finally{await h.close();}
 });
