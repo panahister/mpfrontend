@@ -30,6 +30,15 @@ the root `eslint.config.mjs`, `prettier.config.mjs`, `.prettierignore`, `check` 
 its own formatting-only change, then fix every lint finding; do not widen allowed paths or switch a rule
 off to pass.
 
+A consumer of the previous cohort that used its built-in `ar` locale keeps it by adding it in its own
+repository, since MP Frontend now ships English only: register `ar: { direction: 'rtl' }` in the app's
+locale registry; keep or add `messages/ar.ts` in every catalog set, listed in each set's `translations`,
+with text for every key the set uses (the core messages no longer hold it), and run `catalog-check`; in
+the Security BFF set `apiLocales: { supported: ['en', 'ar'], defaultLocale: 'en' }` and add `ar` to
+`supportedUiLocales` and `preferenceCookie.locales`. A BFF without `apiLocales` now sends the default
+locale upstream. Pass the app's registry to `formatNumber` and `formatValue`. Follow the upgrade note of
+the nx-plugin README; never put the product's text into MP Frontend.
+
 If a gate fails, preserve diagnostics and restore only files owned by this upgrade when the user's
 authorized rollback is unambiguous; never overwrite unrelated local work. Report old/new cohort,
 changed files, exact evidence and known migration gaps.

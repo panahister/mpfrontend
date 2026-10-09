@@ -56,6 +56,22 @@ feature gets a catalog per locale of the app's registry, with the default locale
 locales other than the default start with the default text and are reported as `untranslated`. A list
 feature shows booleans with its own `yes` and `no` messages.
 
+Upgrade note for the `ar` locale: the previous cohort shipped `ar` as a built-in locale, with its catalogs,
+its core messages and its place in the Security BFF's default upstream locales. MP Frontend now ships
+English only, so a product that keeps `ar` adds it in its own repository:
+
+1. Register it in the app's locale registry (`src/config/app.ts`): `ar: { direction: 'rtl' }`, with a
+   `numberingSystem` when its digits must differ from the Intl default.
+2. Keep or add `messages/ar.ts` in every catalog set, typed `Translation<typeof base>`, list it in the
+   `translations` of each set, and give it the text of every key the set uses, including the neutral keys
+   that the core messages no longer hold for it; then run the app's `catalog-check` target.
+3. In the Security BFF set `apiLocales: { supported: ['en', 'ar'], defaultLocale: 'en' }`. A BFF without
+   `apiLocales` now sends the default locale, `en`, upstream whatever the browser asks for. Add `ar` to
+   `supportedUiLocales` for the identity provider's pages and to `preferenceCookie.locales` (the app's
+   own preference cookie takes its locales from the registry).
+4. Pass the app's registry to `formatNumber` and `formatValue`, and the product's `labels` for booleans;
+   the built-in `locale`, `direction` and `translator` know English only.
+
 The application template is framed by `@mpfrontend/app-layout` and compiles Tailwind CSS v4 with the UI
 and shell outputs as sources. `src/app/globals.css` imports Tailwind, the neutral tokens, the component
 styles and, last, the app theme `src/theme/theme.css`; it holds no class rule. Upgrade note: apps created
