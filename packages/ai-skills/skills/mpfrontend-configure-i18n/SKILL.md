@@ -33,7 +33,9 @@ feature has `model/messages/<locale>.ts`: the default locale's file uses `define
 keys and their parameters; every other locale is typed `Translation<typeof base>`. Build translators with
 `createMessages` (core messages are a separate set the catalog may override). Use ICU MessageFormat with
 named parameters, `plural` and `select`; never join a translated message to other text or a value. Run the
-app's `catalog-check` target: it fails on a key missing in a locale, an unused key or differing parameters.
+app's `catalog-check` target: it fails on a key missing in a locale, an unused key, a key that code uses
+and the base does not define, or differing parameters. The base catalog defines every key its code uses;
+the core messages are not a fallback for a key the base lacks.
 A key missing in a locale falls back, key by key, to the default locale at run time, but the check still
 fails on it. Translate the files that a generator reports as `untranslated`. To add a locale, register it
 and add `messages/<code>.ts` to every set, listed in the set's `translations`; to replace English, rename

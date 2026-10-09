@@ -68,3 +68,18 @@ test('an app without a readable locale registry is refused',async()=>{
   try{await assert.rejects(catalogCheck(root),/LOCALE_REGISTRY_UNREADABLE/);}
   finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('a key that code asks a translator for and the base does not define fails the check',async()=>{
+  const root=await app({...clean,
+    'src/features/review/ui/review.tsx':"import { messages } from '../model/messages';\nconst t = messages.translator('en') as unknown as (key: string) => string;\nexport const heading = [t('heading'), t('ghost')];\n",
+    'src/app/layout.tsx':"import { appMessages } from '../i18n';\nconst t = appMessages.translator('en');\nexport const view = [t('title'), t('count', { n: 1 }), t('phantom')];\n",
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.equal(result.ok,false);
+    assert.deepEqual(result.problems.map(problem=>[problem.catalog,problem.code,problem.key??'']).sort(),[
+      ['src/features/review/model/messages','UNDEFINED_KEY','ghost'],
+      ['src/i18n/messages','UNDEFINED_KEY','phantom'],
+    ]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});

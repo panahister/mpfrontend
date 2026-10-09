@@ -130,8 +130,8 @@ Every user-visible text is a catalog message. An app keeps its app-wide catalog 
 locale's catalog defines the keys and, through its literal types, the parameters of each message, and every
 other locale has the same keys. Messages use ICU MessageFormat with named parameters, so each locale
 places the values; never join a translated message to other text or a value. `pnpm check` runs
-`catalog-check`, which fails on a key missing in a locale, a key that no code uses and a parameter that
-differs between locales, and lint fails on literal text in JSX. Free text that users wrote is shown as it
+`catalog-check`, which fails on a key missing in a locale, a key that no code uses, a key that code uses
+and the base does not define, and a parameter that differs between locales, and lint fails on literal text in JSX. Free text that users wrote is shown as it
 is, never translated.
 
 MP Frontend ships English only, and no other language belongs in it. A product adds its own locales, left

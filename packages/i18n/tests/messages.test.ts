@@ -97,3 +97,12 @@ test('the catalog check finds missing, extra and unused keys and differing param
   assert.deepEqual(checkCatalogs({ defaultLocale: RTL, locales: [RTL], catalogs: { [RTL]: { a: '[rtl] Hello {name}' } }, isUsed: () => true }), []);
   assert.deepEqual(checkCatalogs({ defaultLocale: RTL, locales: [RTL], catalogs: { en: { a: 'Hello {name}' } }, isUsed: () => true }), [{ code: 'MISSING_LOCALE', locale: RTL }]);
 });
+
+test('the catalog check reports a key that code uses and the base does not define', () => {
+  // The typed translator cannot reach a key outside the base, so the base must define every key code uses.
+  const problems = checkCatalogs({
+    defaultLocale: 'en', locales: ['en'], catalogs: { en: { title: 'Orders' } },
+    isUsed: () => true, usedKeys: ['title', 'search', 'search'],
+  });
+  assert.deepEqual(problems, [{ code: 'UNDEFINED_KEY', key: 'search' }]);
+});

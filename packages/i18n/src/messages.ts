@@ -154,19 +154,22 @@ export function messageArguments(message: string): ArgumentShape {
 }
 
 export type CatalogProblem = Readonly<{
-  code: 'MISSING_LOCALE' | 'UNKNOWN_LOCALE' | 'MISSING_KEY' | 'EXTRA_KEY' | 'UNUSED_KEY' | 'PARAMETER_MISMATCH' | 'INVALID_MESSAGE';
+  code: 'MISSING_LOCALE' | 'UNKNOWN_LOCALE' | 'MISSING_KEY' | 'EXTRA_KEY' | 'UNUSED_KEY' | 'UNDEFINED_KEY' | 'PARAMETER_MISMATCH' | 'INVALID_MESSAGE';
   locale?: string;
   key?: string;
 }>;
 /**
  * Checks one catalog set: every locale has exactly the base keys, every message parses, every locale
- * takes the same parameters as the base message, and every key is used by code.
+ * takes the same parameters as the base message, every key is used by code, and every key that code asks a
+ * translator for (`usedKeys`) is defined by the base. A typed translator cannot reach a key outside the base,
+ * so a key used without being defined is reported rather than left to a fallback.
  */
 export function checkCatalogs(input: Readonly<{
   defaultLocale: string;
   locales: readonly string[];
   catalogs: Readonly<Record<string, Catalog | undefined>>;
   isUsed: (key: string) => boolean;
+  usedKeys?: Iterable<string>;
 }>): CatalogProblem[] {
   const problems: CatalogProblem[] = [];
   const base = input.catalogs[input.defaultLocale];
@@ -177,6 +180,7 @@ export function checkCatalogs(input: Readonly<{
     catch { problems.push({ code: 'INVALID_MESSAGE', locale: input.defaultLocale, key }); }
     if (!input.isUsed(key)) problems.push({ code: 'UNUSED_KEY', key });
   }
+  for (const key of new Set(input.usedKeys ?? [])) if (!Object.hasOwn(base, key)) problems.push({ code: 'UNDEFINED_KEY', key });
   for (const locale of input.locales) {
     if (locale === input.defaultLocale) continue;
     const catalog = input.catalogs[locale];

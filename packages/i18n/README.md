@@ -57,8 +57,10 @@ Formatting uses FormatJS `intl-messageformat` 11.2.15 with its parser `@formatjs
 3.5.18. The reason: ICU plural and select rules and the grammar are easy to get wrong, and this is the
 established ICU implementation for JavaScript, built on Intl.PluralRules, Intl.NumberFormat and
 Intl.DateTimeFormat. `checkCatalogs` and `messageArguments` are the check behind
-`mpfrontend catalog check`: a key missing in a locale or extra, an unused key, a message that does not parse
-and a parameter that differs between locales each fail it.
+`mpfrontend catalog check`: a key missing in a locale or extra, an unused key, a key that code asks a
+translator for and the base does not define (`UNDEFINED_KEY`), a message that does not parse and a
+parameter that differs between locales each fail it. A typed translator accepts only the base's keys, so
+the base defines every key its code uses.
 
 `translator(locale)(key)` and `catalogs` keep working for their existing English keys.
 

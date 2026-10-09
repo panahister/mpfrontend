@@ -341,8 +341,8 @@ console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailu
 for(const path of Object.keys(probes))await rm(join(workspace,path));
 await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
 await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
-// Negative controls of the catalog check: a key that no code uses, a registered locale without a catalog and a
-// catalog without a key of the base each fail it. The fixture locale is registered for the control only, and
+// Negative controls of the catalog check: a key that no code uses, a key that code asks for and the base lacks,
+// a registered locale without a catalog and a catalog without a key of the base each fail it. The fixture locale is registered for the control only, and
 // the app is then restored.
 const catalogPath=join(workspace,'apps/sample/src/i18n/messages/en.ts'),catalogSource=await readFile(catalogPath,'utf8');
 const sampleConfigPath=join(workspace,'apps/sample/src/config/app.ts'),sampleConfig=await readFile(sampleConfigPath,'utf8');
@@ -351,10 +351,12 @@ await writeFile(catalogPath,catalogSource.replace("skipToContent: 'Skip to conte
 const withFixture=sampleConfig.replace("locales: { en: { direction: 'ltr' } },","locales: { en: { direction: 'ltr' }, '"+RTL+"': { direction: 'rtl' } },");
 assert.notEqual(withFixture,sampleConfig);await writeFile(sampleConfigPath,withFixture);
 await writeFile(incompleteCatalog,"export default { skipToContent: '"+MARK+"Skip to content' };\n");
+const undefinedKeyProbe=join(workspace,'apps/sample/src/app/undefined-key-probe.ts');
+await writeFile(undefinedKeyProbe,"import { appMessages } from '../i18n';\nconst t = appMessages.translator('en') as unknown as (key: string) => string;\nexport const probe = t('neverDefined');\n");
 const catalogFailure=await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{expectedCode:3,capture:true});
-const catalogCodes=['UNUSED_KEY','MISSING_KEY','MISSING_LOCALE'];
+const catalogCodes=['UNUSED_KEY','UNDEFINED_KEY','MISSING_KEY','MISSING_LOCALE'];
 for(const code of catalogCodes)assert.ok(catalogFailure.includes('"'+code+'"'),'CATALOG_NEGATIVE_CONTROL_MISSING:'+code);
-await writeFile(catalogPath,catalogSource);await writeFile(sampleConfigPath,sampleConfig);await rm(incompleteCatalog);
+await writeFile(catalogPath,catalogSource);await writeFile(sampleConfigPath,sampleConfig);await rm(incompleteCatalog);await rm(undefinedKeyProbe);
 assert.equal(JSON.parse(await run('pnpm',['exec','mpfrontend','catalog','check','--app','apps/sample','--json'],{capture:true})).ok,true);
 console.log(JSON.stringify({stage:'catalog-negative-control',ok:true,observedFailures:catalogCodes}));
 const {parseRead}=await import(join(workspace,'apps/sample/src/api/generated/catalog/read-models.gen.ts'));

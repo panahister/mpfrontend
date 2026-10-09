@@ -160,7 +160,8 @@ deeper import, and the same rule applies to `src/entities/<entity>/`.
 - **Does:** reads the app's locale registry (`localeRegistry` of `src/config/app.ts`) and every catalog set
   (`messages/<locale>.ts` under `src/`), and checks that every registry locale has a catalog, every
   catalog has exactly the base keys, every message parses as ICU MessageFormat, every locale takes the
-  base parameters, and code uses every key (a feature's keys within that feature).
+  base parameters, code uses every key (a feature's keys within that feature), and the base defines every
+  key that code asks a translator for (`t('<key>')` of `const t = <messages>.translator(...)`).
 - **When:** in every review; the app's `catalog-check` target runs it inside `pnpm check`.
 - **Writes:** nothing.
 - **Refuses:** an app whose registry cannot be read (exit `2`); any problem above (exit `3`, listed in the

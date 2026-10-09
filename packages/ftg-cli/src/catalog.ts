@@ -1,5 +1,5 @@
 import {readdir,readFile} from 'node:fs/promises';
-import {join,resolve,relative,sep} from 'node:path';
+import {dirname,join,resolve,relative,sep} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {checkCatalogs,type Catalog,type CatalogProblem} from '@mpfrontend/i18n';
 import {InputError} from './index.js';
@@ -9,6 +9,30 @@ type CatalogSet={path:string;scope:string;locales:Record<string,string>};
 const sourceFile=/\.(?:ts|tsx|mts|cts|js|jsx|mjs)$/;
 const testFile=/\.test\.[a-z]+$/;
 const literal=/(['"`])((?:\\.|(?!\1)[^\\\n])*)\1/g;
+const translatorVariable=/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([A-Za-z_$][\w$]*)\.translator\(/g;
+const namedImports=/import\s*(?:type\s+)?\{([^}]*)\}\s*from\s*(['"])(\.{1,2}\/[^'"]*)\2/g;
+const escape=(value:string)=>value.replace(/[$]/g,'\\$&');
+/**
+ * The keys a source file asks each catalog set for: the literal first argument of a call of a translator
+ * variable (`const t = messages.translator(...)`) whose messages object is imported from a set's module
+ * (`<dir>/messages`, or a folder whose `messages/` holds the set).
+ */
+function translatorKeys(file:string,source:string,sets:ReadonlySet<string>){
+  const imported=new Map<string,string>();
+  for(const match of source.matchAll(namedImports))for(const part of match[1]!.split(',')){
+    const [name,alias]=part.trim().split(/\s+as\s+/);
+    if(name)imported.set((alias??name).trim(),resolve(dirname(file),match[3]!));
+  }
+  const keys=new Map<string,Set<string>>();
+  for(const match of source.matchAll(translatorVariable)){
+    const module=imported.get(match[2]!);if(!module)continue;
+    const set=sets.has(module)?module:sets.has(join(module,'messages'))?join(module,'messages'):undefined;
+    if(!set)continue;
+    const calls=new RegExp('(?<![\\w$.])'+escape(match[1]!)+'\\(\\s*([\'"`])((?:\\\\.|(?!\\1)[^\\\\\\n$])*)\\1','g');
+    for(const call of source.matchAll(calls)){const found=keys.get(set)??new Set<string>();found.add(call[2]!);keys.set(set,found);}
+  }
+  return keys;
+}
 
 /** Every directory named `messages` under `src`, and every source file outside them; links are not followed. */
 async function walk(root:string,directory:string,sets:CatalogSet[],sources:string[]){
@@ -42,11 +66,13 @@ export async function catalogCheck(appDirectory:string){
   if(!registry||!Array.isArray(registry.locales)||typeof registry.defaultLocale!=='string')throw new InputError('LOCALE_REGISTRY_UNREADABLE');
   const sets:CatalogSet[]=[],sources:string[]=[];
   await walk(src,src,sets,sources);
-  const literals=new Map<string,Set<string>>();
+  const literals=new Map<string,Set<string>>(),requested=new Map<string,Set<string>>();
+  const setPaths=new Set(sets.map(set=>set.path));
   for(const file of sources){
-    const values=new Set<string>();
-    for(const match of (await readFile(file,'utf8')).matchAll(literal))if(!match[2]!.includes('${'))values.add(match[2]!);
+    const values=new Set<string>(),source=await readFile(file,'utf8');
+    for(const match of source.matchAll(literal))if(!match[2]!.includes('${'))values.add(match[2]!);
     literals.set(file,values);
+    for(const [set,keys] of translatorKeys(file,source,setPaths)){const all=requested.get(set)??new Set<string>();for(const key of keys)all.add(key);requested.set(set,all);}
   }
   const problems:Array<CatalogProblem&{catalog:string}>=[];
   let keys=0;
@@ -63,7 +89,9 @@ export async function catalogCheck(appDirectory:string){
     const used=new Set<string>();
     for(const [file,values] of literals)if(file.startsWith(set.scope+sep))for(const value of values)used.add(value);
     keys+=Object.keys(catalogs[registry.defaultLocale]??{}).length;
-    for(const problem of checkCatalogs({defaultLocale:registry.defaultLocale,locales:registry.locales,catalogs,isUsed:key=>used.has(key)}))problems.push({catalog:relative(app,set.path),...problem});
+    // A key that code asks for and the base lacks is reported only once the base itself is readable.
+    const usedKeys=catalogs[registry.defaultLocale]?requested.get(set.path)??[]:[];
+    for(const problem of checkCatalogs({defaultLocale:registry.defaultLocale,locales:registry.locales,catalogs,isUsed:key=>used.has(key),usedKeys}))problems.push({catalog:relative(app,set.path),...problem});
   }
   return {ok:problems.length===0,locales:registry.locales,defaultLocale:registry.defaultLocale,catalogs:sets.map(set=>relative(app,set.path)).sort(),keys,problems};
 }

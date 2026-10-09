@@ -143,7 +143,8 @@ Run \`pnpm check\` before a change is reviewed. It runs the format check, then l
 generated-check and catalog-check of every project. Lint fails on an import across app boundaries, on a raw
 colour outside the theme files, on hand-written CSS outside the theme layer and the global style entry, and
 on literal user-visible text or translated text joined to other text. Every visible text is a catalog
-message; the catalog check fails on a key missing in a locale, an unused key or differing parameters.
+message; the catalog check fails on a key missing in a locale, an unused key, a key that code uses and the
+base does not define, or differing parameters.
 Fix the code; do not weaken a rule to pass the check.
 
 Create code with the generators, not by copying: \`mpfrontend create app\`, \`create feature\`,
