@@ -214,7 +214,7 @@ exact project names and live workflow. A passing generation command alone does n
 A generated workspace takes its formatter, lint and TypeScript configuration from
 `@mpfrontend/workspace-config`, upgraded with the MP Frontend cohort. The root `eslint.config.mjs` and
 `prettier.config.mjs` re-export the shared profile; an app or a package appends only its own additions.
-`pnpm check` runs the format check, then lint, typecheck, test, build, and generated-check of every
+`pnpm check` runs the format check, then lint, typecheck, test, build, generated-check and catalog-check of every
 project. `tools/ci/check.sh` runs a frozen install and the uncached check in any CI.
 
 | Rule | What fails lint |

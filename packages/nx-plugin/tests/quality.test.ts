@@ -1,13 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp, mkdir, rm, writeFile} from 'node:fs/promises';
-import {join, dirname} from 'node:path';
+import {mkdtemp, mkdir, readdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {join, dirname, relative} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {tmpdir} from 'node:os';
 import {ESLint} from 'eslint';
 import * as prettier from 'prettier';
 import {workspaceConfig} from '@mpfrontend/workspace-config/eslint';
 import formatter from '@mpfrontend/workspace-config/prettier';
-import {applicationFiles, workspaceFiles} from '../src/index.js';
+import {applicationFiles, createApplication, workspaceFiles} from '../src/index.js';
 
 const shortName = 'ab', longName = 'a' + 'b'.repeat(48);
 /** Files that the generated .prettierignore leaves to the tool that writes them. */
@@ -70,6 +71,32 @@ test('create app writes format, format:check, lint and test targets and extends 
 test('every file that init writes passes the shared formatter for the shortest and the longest names', async () => {
   for (const name of [shortName, longName]) {
     assert.deepEqual(await unformatted(workspaceFiles(name)), [], 'workspace ' + name);
+  }
+});
+
+test('every file that create app writes through the workspace formatter is formatted for the shortest and the longest names', async () => {
+  // The workspace lives under the repository's ignored dependency cache, so that Prettier resolves as in a consumer.
+  const cache = fileURLToPath(new URL('../../../node_modules/.cache/', import.meta.url));
+  await mkdir(cache, {recursive: true});
+  const root = await mkdtemp(join(cache, 'mpfrontend-format-'));
+  try {
+    await writeFile(join(root, 'package.json'), JSON.stringify({name: 'acme', private: true}) + '\n');
+    await writeFile(join(root, 'prettier.config.mjs'), 'export default ' + JSON.stringify(formatter) + ';\n');
+    await mkdir(join(root, 'apps'));
+    for (const name of [shortName, longName]) {
+      const directory = join(root, 'apps', name);
+      const created = await createApplication({name, directory});
+      assert.equal(created.formatted, true);
+      const written: Record<string, string> = {};
+      for (const entry of await readdir(directory, {recursive: true, withFileTypes: true})) {
+        if (!entry.isFile()) continue;
+        const path = join(entry.parentPath, entry.name);
+        written[relative(directory, path)] = await readFile(path, 'utf8');
+      }
+      assert.deepEqual(await unformatted(written), [], 'app ' + name);
+    }
+  } finally {
+    await rm(root, {recursive: true, force: true});
   }
 });
 

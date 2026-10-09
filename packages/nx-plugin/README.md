@@ -22,14 +22,14 @@ the harness supplies only local unpublished-artifact overrides and an explicit s
 `prettier.config.mjs` that re-export `@mpfrontend/workspace-config`, a root `tsconfig.base.json` that
 extends its base profile (the module boundary rule reads it), a `.prettierignore` for tool-owned,
 hash-bound and generated files, `nx.json` target defaults with caching for `build`, `typecheck`, `lint`,
-`test` and `format:check`, a `check` script (format check, then lint, typecheck, test, build and
-generated-check of every project), the CI-neutral `tools/ci/check.sh` and a GitHub Actions workflow that
+`test`, `format:check` and `catalog-check`, a `check` script (format check, then lint, typecheck, test,
+build, generated-check and catalog-check of every project), the CI-neutral `tools/ci/check.sh` and a GitHub Actions workflow that
 runs it. `applicationFiles` gives every app `format`, `format:check`, `lint` and `test` targets, an
 `eslint.config.mjs` that spreads the workspace profile, a `tsconfig.json` that extends
 `@mpfrontend/workspace-config/tsconfig/next.json`, a Tailwind CSS v4 PostCSS entry, and a global style
-entry that holds only imports and base element rules. Every generated file is formatted with the shared
-profile for the shortest and the longest valid names, and the generated app passes the shared lint rules;
-both are tested.
+entry that holds only imports and base element rules. Every file that init writes, and every file that
+create app writes through the workspace formatter, is in the shared format for the shortest and the
+longest valid names, and the generated app passes the shared lint rules; all three are tested.
 
 An existing workspace adopts the profile through the `mpfrontend-upgrade-project` procedure: create a
 scratch workspace and app with the upgraded CLI outside the repository, copy the profile files and pinned

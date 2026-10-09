@@ -25,8 +25,8 @@ source workspace. It passed code-first and consumer-owned design initialization,
 removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
 design lifecycle commands, security and realtime assertions, the feature, route and package generators
 (dry-run, creation, refusal of an existing destination and an Nx generator dry-run), the generated
-workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build and
-generated-check) over the generated app, features, routes and package, a built-CSS check of the
+workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build, generated-check
+and catalog-check) over the generated app, features, routes and package, a built-CSS check of the
 Tailwind structural classes and the theme order, the served first paint of the English-only app (theme
 from the preference cookie; a locale it does not register and an invalid value ignored), a product app
 whose only locale is a right-to-left private-use fixture locale (right to left on the first visit, logical CSS,
@@ -40,7 +40,7 @@ run in that local fixture.
 | Capability | Current state | Evidence boundary |
 |---|---|---|
 | Deterministic workspace and feature scaffolding | Implemented | Workspace, app, feature (screen and list), route and shared-package generators, each a CLI command and an Nx generator with dry-run and refusal of an existing destination; source tests and the packed consumer, whose generated features, routes and package pass its own `pnpm check` |
-| Workspace quality profile | Implemented | Shared ESLint, Prettier and TypeScript configuration; the packed consumer's own `pnpm check` (format, lint, typecheck, test, build, generated-check) and three lint negative controls (app-to-app import, raw colour, hand-written CSS) |
+| Workspace quality profile | Implemented | Shared ESLint, Prettier and TypeScript configuration; the packed consumer's own `pnpm check` (format, lint, typecheck, test, build, generated-check, catalog-check) and its lint negative controls: a relative import across apps, the app-to-package tag constraint (refused when on, accepted when off), a raw colour, hand-written CSS, an import past a feature's public entry, literal text and a translation joined to other text |
 | OpenAPI normalization and finite read/write generation | Implemented for selected profiles | Required/optional JSON, bodyless requests, typed responses, and explicit empty responses |
 | Secure server-side OIDC session lifecycle | Implemented | Encrypted Redis records, refresh lease/CAS, revocation, restart, outage, and negative controls |
 | Confidential client authentication | Implemented | `private_key_jwt` (RFC 7523 assertion: token-endpoint audience, unique `jti`, 60-second lifetime, key id for rotation) and `client_secret_basic`, host-supplied credentials kept out of logs, errors, responses and `/context`; source tests and negative controls; no real identity provider was used |

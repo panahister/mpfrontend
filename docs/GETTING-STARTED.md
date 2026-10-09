@@ -77,7 +77,7 @@ remain local to that consumer. MP Frontend does not fetch or publish the design 
 
 Both modes write the same quality profile. The workspace pins `@mpfrontend/workspace-config`, ESLint,
 Prettier and tsx, and its root `eslint.config.mjs` and `prettier.config.mjs` re-export the shared profile.
-`pnpm check` runs the format check, then lint, typecheck, test, build, and generated-check of every
+`pnpm check` runs the format check, then lint, typecheck, test, build, generated-check and catalog-check of every
 project; `tools/ci/check.sh` runs a frozen install and the uncached check in any CI, and
 `.github/workflows/check.yml` runs that script on GitHub Actions. Every app that `mpfrontend create app`
 writes has `format`, `format:check`, `lint` and `test` targets. Lint enforces module boundaries, refuses

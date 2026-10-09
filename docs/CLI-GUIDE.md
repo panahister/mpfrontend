@@ -44,7 +44,12 @@ flowchart LR
 
 ### `mpfrontend --version`
 
-Prints the version of the installed CLI. It refuses any other argument beside it.
+`mpfrontend --version` (also `ftg --version`)
+
+- **Does:** prints the version of the installed CLI.
+- **When:** to confirm that the installed CLI belongs to the reviewed cohort, before init or an upgrade.
+- **Writes:** nothing.
+- **Refuses:** any other argument beside it (`VERSION_MUST_BE_STANDALONE`, exit `2`).
 
 ## Scaffolding
 
@@ -97,8 +102,11 @@ and formats what it writes with the workspace's own Prettier configuration when 
 - **When:** for each new user workflow of an app.
 - **Writes:** the feature directory; the entity and the server boundary only when they do not exist yet.
   An existing entity or boundary is kept and listed under `kept`.
-- **Refuses:** an existing feature directory; an unknown app; a resource that `ftg.config.json` does not
-  select; a list feature in an app without `src/config/app.ts` and `src/config/server.ts`.
+- **Refuses:** an existing feature directory; an invalid name; an unknown app; an app whose
+  `src/config/app.ts` has no locale registry with an explicit `defaultLocale`
+  (`APP_PREREQUISITE_MISSING:src/config/app.ts locale registry`); an app without `@mpfrontend/app-layout`;
+  a resource that `ftg.config.json` does not select; a list feature in an app without `src/config/app.ts`
+  and `src/config/server.ts`.
 
 Code outside the feature imports only its `index.ts`; the lint rule `mpfrontend/public-entry` refuses a
 deeper import, and the same rule applies to `src/entities/<entity>/`.
@@ -172,12 +180,22 @@ deeper import, and the same rule applies to `src/entities/<entity>/`.
 ### `mpfrontend design attach` and `mpfrontend design status`
 
 `mpfrontend design attach --directory <workspace> --source existing --binding <file> [--dry-run] [--json]`
-attaches a consumer-owned design binding to a workspace created with `--design-source existing`, or to a
-code-first workspace later. It writes only `.mpfrontend/design-source.json` and refuses a changed source
-once attached, a traversing path and a symlink. `mpfrontend design status --directory <workspace>
-[--json]` revalidates the recorded choice and writes nothing.
+and `mpfrontend design status --directory <workspace> [--json]`
+
+- **Does:** `attach` records a consumer-owned design binding for a workspace created with
+  `--design-source existing`, or for a code-first workspace later; `status` revalidates the recorded
+  choice.
+- **When:** `attach` once, when the product's approved design binding exists; `status` in a review or
+  before a design lifecycle command.
+- **Writes:** `attach` writes only `.mpfrontend/design-source.json` (nothing with `--dry-run`); `status`
+  writes nothing.
+- **Refuses:** a changed source once attached, a path that leaves the workspace, a symlink and an
+  missing or oversized binding.
 
 ### Design lifecycle commands
+
+- **When:** each time a reviewed design export changes, in the order of the table below, and
+  `design check` in every review of a workspace with an accepted baseline.
 
 | Command | Does | Writes | Refuses |
 |---|---|---|---|

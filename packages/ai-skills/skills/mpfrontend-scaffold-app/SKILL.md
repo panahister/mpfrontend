@@ -52,7 +52,8 @@ Init writes the quality profile: root `eslint.config.mjs` and `prettier.config.m
 `@mpfrontend/workspace-config`, a `check` script, `tools/ci/check.sh` and a GitHub Actions workflow that
 runs it. Create app gives the app `format`, `format:check`, `lint` and `test` targets and an app
 `eslint.config.mjs` that spreads the workspace profile. Run `pnpm check --skip-nx-cache` on the new
-workspace; it runs the format check, lint, typecheck, test, build and generated-check. A lint failure on
+workspace; it runs the format check, lint, typecheck, test, build, generated-check and catalog-check. A
+lint failure on
 module boundaries, raw colours or hand-written CSS is fixed in the code, never by switching a rule off.
 
 Inspect exports and imports: the new app must consume published/packed core packages and its own
