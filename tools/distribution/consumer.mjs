@@ -1,21 +1,22 @@
 // Install real packed packages into a fresh, independent Nx workspace. Never import platform source.
 import {mkdtemp, readFile, writeFile, mkdir, cp, lstat, rm, readdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
-import {join,delimiter,dirname,basename} from 'node:path';
+import {join,dirname,basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {createServer as createNetServer} from 'node:net';
 import assert from 'node:assert/strict';
 import {parse,stringify} from 'yaml';
 import {verifyDesignConsumer} from './design-consumer.mjs';
+import {independentToolchain} from './toolchain.mjs';
 const root=fileURLToPath(new URL('../../',import.meta.url));
 // Advisory upload is an explicit opt-in; offline validation must never imply it ran.
 const onlineAudit=process.argv.includes('--online-audit');
 assert.ok(process.argv.slice(2).every(arg=>arg==='--online-audit'),'UNKNOWN_CONSUMER_OPTION');
-// A nested pnpm/Nx invocation must not borrow executables from the source checkout's PATH.
-const independentPath=(process.env.PATH??'').split(delimiter)
-  .filter(path=>!path.includes('node_modules/.bin')).join(delimiter);
 const temporary=await mkdtemp(join(tmpdir(),'mpfrontend-packed-consumer-'));
+// A nested pnpm/Nx invocation must not borrow executables from the source checkout's PATH: no node_modules/.bin
+// entry is kept, and the pinned Node and pnpm are reached by their explicit paths, wherever they live.
+const independentPath=(await independentToolchain(join(temporary,'toolchain'))).path;
 const workspace=join(temporary,'consumer');
 const bootstrap=join(temporary,'bootstrap');
 await mkdir(bootstrap);
@@ -421,4 +422,6 @@ console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
     ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
-// Keep the test-only generated workspace for diagnosis; no user files are deleted.
+// The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
+// path printed first, for diagnosis. No other file is deleted.
+await rm(temporary,{recursive:true,force:true});

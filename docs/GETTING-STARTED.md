@@ -39,6 +39,11 @@ consumer, installs the packed cohort, exercises both supported design-source mod
 AI procedures, runs the consumer-level security, realtime, generation, drift, and preservation checks, and
 then runs the generated workspace's own `pnpm check` and its lint negative controls.
 
+The consumer check runs with the Node that starts it and the first `pnpm` on the PATH, wherever they live,
+including a project-local `node_modules/.bin`; nested commands get those two by their explicit paths and
+no other executable of such a directory. It removes its temporary area when it passes and leaves it, at the
+path it prints first, when it fails.
+
 Generated archives and temporary consumers are verification output. They are not committed releases.
 
 ## Run the session integration gate
