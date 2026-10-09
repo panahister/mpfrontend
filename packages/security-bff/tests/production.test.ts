@@ -44,6 +44,28 @@ test('the production profile refuses each missing condition by name',()=>{
   assert.equal(refusal({...base,production:{...base.production,secureCookies:false as never}}),'PRODUCTION_PROFILE_REFUSED:SECURE_COOKIES_REQUIRED');
 });
 
+test('the production profile refuses an identity provider origin that is not HTTPS, in the issuer and in the provider origin the BFF calls',()=>{
+  // The issuer is where the browser is sent and what a token's iss claim must equal; the provider origin is
+  // where the BFF itself fetches signing keys, exchanges codes and refresh tokens, and revokes. Each is read on
+  // its own, so each is refused on its own, and the refusal comes before any request is made.
+  const base=complete(sharedVault().vault);
+  const started=(config:ProductionBffConfig)=>{try{createBff(config);}catch(error){return (error as Error).message;}return 'STARTED';};
+  const refused='PRODUCTION_PROFILE_REFUSED:HTTPS_IDENTITY_PROVIDER_REQUIRED';
+  for(const origin of ['http://identity.example.test','ws://identity.example.test','ftp://identity.example.test','identity.example.test']){
+    const issuer={...base,issuer:origin+'/realms/product'},providerOrigin={...base,providerOrigin:origin};
+    assert.deepEqual(productionRefusals(issuer),['HTTPS_IDENTITY_PROVIDER_REQUIRED'],'issuer '+origin);
+    assert.deepEqual(productionRefusals(providerOrigin),['HTTPS_IDENTITY_PROVIDER_REQUIRED'],'provider origin '+origin);
+    assert.equal(started(issuer),refused,'issuer '+origin);
+    assert.equal(started(providerOrigin),refused,'provider origin '+origin);
+  }
+  assert.deepEqual(productionRefusals({...base,issuer:'http://identity.example.test/realms/product',providerOrigin:'http://identity.internal.test'}),
+    ['HTTPS_IDENTITY_PROVIDER_REQUIRED'],'both at once are one named refusal');
+  assert.equal(started({...base,providerOrigin:'https://identity.internal.test'}),'STARTED','an HTTPS provider origin other than the issuer is accepted');
+  // Outside production the same origins are accepted: a development profile talks to a provider on loopback.
+  const development={publicOrigin:'http://localhost:4401',issuer:'http://localhost:4402/realms/test',providerOrigin:'http://127.0.0.1:4402',clientId:'web',audience:'api',cookieName:'test_session',routes:[],development:true as const};
+  assert.equal(typeof createBff(development),'function');
+});
+
 test('the development profile behaves as before and is still refused under NODE_ENV=production',()=>{
   const development={publicOrigin:'http://localhost:4401',issuer:'http://localhost:4402/realms/test',clientId:'web',audience:'api',cookieName:'test_session',routes:[],development:true as const};
   assert.equal(typeof createBff(development),'function');
