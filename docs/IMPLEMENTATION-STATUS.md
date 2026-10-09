@@ -1,39 +1,57 @@
 # Implementation status
 
-Updated: 2026-10-08.
+Updated: 2026-10-09.
 
 MP Frontend is a verified public proof of concept. This document separates what the current source proves
 from the work required for a stable package and production deployment.
 
 ## Verified source cohort
 
+Every count in this section was recomputed from uncached runs with Node 24.19.0 and pnpm 11.25.0
+(`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
+`pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis` and
+`pnpm public:verify`), on the tree of the commit that records it. A commit cannot name itself: the commit
+before this one is `a85941a`, and the public verification line was run again on the tree that includes this
+document.
+
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 32/32 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 19/19 |
-| `@mpfrontend/ftg-core` | `0.1.0-dev.5` | included in source and consumer gates |
+| `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 33/33 |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 22/22 |
+| `@mpfrontend/ftg-core` | `0.1.0-dev.5` | 8/8 source tests, and the consumer gate |
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 90/90 |
+| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 109/109 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
-| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 40/40 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
-| `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 5/5 installed consumer assertions |
-| Complete Nx workspace | fourteen packages | 56/56 lint, typecheck, test, and build targets |
+| `@mpfrontend/presentation-server` | `0.1.0-dev.3` | 17/17 |
+| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 51/51 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 11/11 source tests, 5/5 installed consumer assertions |
+| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 317 source tests |
 | Local package cohort | fourteen archives | 14/14 pack and manifest verification |
+| Distribution negative controls | thirty-seven controls | 37/37 expected failures observed |
+| Public repository verification | one script over the working tree | `documents=53 files=301` |
 
-Fresh independent consumer `mpfrontend-packed-consumer-RE2qBH` executed the packed CLI rather than the
-source workspace. It passed code-first and consumer-owned design initialization, explicit refusal of the
-removed public-template mode, private attachment and drift checks, all eighteen AI procedures, seven
-design lifecycle commands, security and realtime assertions, the feature, route and package generators
+The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
+the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
+`.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
+would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 300
+tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
+file, so a fresh clone of the same commit prints `files=300`.
+
+Fresh independent consumer `mpfrontend-packed-consumer-lfhyVW` (the run on `a85941a`) executed the packed
+CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
+refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
+seven design lifecycle commands, security and realtime assertions, the feature, route and package generators
 (dry-run, creation, refusal of an existing destination and an Nx generator dry-run), the generated
 workspace's own uncached `pnpm check` (format check, then lint, typecheck, test, build, generated-check
 and catalog-check) over the generated app, features, routes and package, a built-CSS check of the
 Tailwind structural classes and the theme order, the served first paint of the English-only app (theme
 from the preference cookie; a locale it does not register and an invalid value ignored), a product app
 whose only locale is a right-to-left private-use fixture locale (right to left on the first visit, logical CSS,
-the product's text everywhere and no English fallback), five lint negative controls, three catalog-check
-negative controls,
-generated-contract checks, and authored-file preservation. Dependency audit was explicitly not
-run in that local fixture.
+the product's text everywhere and no English fallback), six lint rules observed refusing a planted case
+(module boundaries, raw colour, hand-written CSS, a feature's public entry, literal text, and physical left or
+right in a class name, an inline style and a stylesheet), the app-to-package tag constraint refused when on
+and accepted when off, four catalog-check negative controls, generated-contract checks, and authored-file
+preservation. Dependency audit was explicitly not run in that local fixture.
 
 ## Capability status
 
