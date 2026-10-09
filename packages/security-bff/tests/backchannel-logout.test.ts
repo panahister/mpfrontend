@@ -11,6 +11,8 @@ async function harness(options:{enabled?:boolean;vault?:SessionVault}={}){
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
   const other=generateKeyPairSync('rsa',{modulusLength:2048});
   let nonce='',issuer='',next={sub:'person-1',sid:'sid-1'};
+  /** What the next token response says: a short lifetime makes every request refresh, other roles rotate the session id. */
+  const access={lifetime:300,roles:['reader']};
   const jwt=(claims:Record<string,unknown>,key=privateKey,alg='RS256')=>{
     const header=Buffer.from(JSON.stringify({alg,kid:'idp',typ:'logout+jwt'})).toString('base64url');
     const payload=Buffer.from(JSON.stringify(claims)).toString('base64url');
@@ -23,7 +25,7 @@ async function harness(options:{enabled?:boolean;vault?:SessionVault}={}){
     if(req.url?.endsWith('/token')){
       for await(const chunk of req)void chunk;
       const base={iss:issuer,sub:next.sub,iat:now(),exp:now()+300};
-      res.end(JSON.stringify({access_token:jwt({...base,aud:'api'}),refresh_token:'r',id_token:jwt({...base,aud:'web',nonce,sid:next.sid})}));return;
+      res.end(JSON.stringify({access_token:jwt({...base,exp:now()+access.lifetime,aud:'api',realm_access:{roles:access.roles}}),refresh_token:'r',id_token:jwt({...base,aud:'web',nonce,sid:next.sid})}));return;
     }
     res.end('{}');
   });
@@ -43,11 +45,12 @@ async function harness(options:{enabled?:boolean;vault?:SessionVault}={}){
     const callback=await attempt(sub,sid);
     assert.equal(callback.status,303);return callback.headers.getSetCookie()[0]!.split(';')[0]!;
   };
-  const status=async(cookie:string)=>(await fetch(base+'/context',{headers:{cookie}})).status;
+  const context=(cookie:string)=>fetch(base+'/context',{headers:{cookie}});
+  const status=async(cookie:string)=>(await context(cookie)).status;
   const logoutToken=(claims:Record<string,unknown>)=>jwt({iss:issuer,aud:'web',iat:now(),exp:now()+120,jti:randomUUID(),events:event,...claims});
   const post=(token:string,type='application/x-www-form-urlencoded')=>fetch(base+'/backchannel-logout',{method:'POST',headers:{'content-type':type},body:new URLSearchParams({logout_token:token}).toString()});
   const close=async()=>{for(const server of [bff,provider])server.closeAllConnections();await Promise.all([bff,provider].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));};
-  return {issuer,jwt,other,now,attempt,signIn,status,logoutToken,post,close};
+  return {issuer,jwt,other,now,access,attempt,signIn,context,status,logoutToken,post,close};
 }
 
 test('a valid logout token with a sid ends exactly the sessions of that provider session',async()=>{
@@ -162,5 +165,39 @@ test('a session is never stored before it is indexed: an index that fails leaves
     const cookie=await h.signIn('person-1','sid-1');
     assert.equal((await h.post(h.logoutToken({sid:'sid-1'}))).status,200);
     assert.equal(await h.status(cookie),401);
+  }finally{await h.close();}
+});
+
+test('a session whose id is rotated is indexed before it is stored: an index that throws at rotation stores no session, and a rotated session is found by a logout',async()=>{
+  const memory=createMemorySessionVault(),stored:string[]=[];
+  let indexFails=false;
+  const vault:SessionVault={...memory,
+    create:async(kind,id,value,expiresAt)=>{if(kind==='session')stored.push(id);await memory.create(kind,id,value,expiresAt);},
+    indexSession:async(id,keys,expiresAt)=>{if(indexFails)throw new Error('INDEX_UNAVAILABLE');await memory.indexSession!(id,keys,expiresAt);}};
+  const h=await harness({vault});
+  try{
+    h.access.lifetime=20;
+    const cookie=await h.signIn('person-1','sid-1');
+    assert.equal(stored.length,1,'sign-in stored one session');
+    assert.equal((await h.context(cookie)).status,200,'unchanged roles refresh without rotating');
+    assert.equal(stored.length,1);
+    // The roles change, so the next refresh rotates the id; the index throws when it is asked to index the new id.
+    h.access.roles=['reader','approver'];indexFails=true;
+    const failed=await h.context(cookie);
+    assert.equal(failed.status,503);
+    assert.deepEqual(failed.headers.getSetCookie(),[],'no rotated cookie is issued');
+    assert.deepEqual(stored.slice(1),[],'no rotated session is stored when its index fails');
+    assert.equal(await h.status(cookie),401,'the failed rotation fails closed: the old session is gone, not served as it was');
+    // With a working index a rotated session is found by the provider's logout.
+    indexFails=false;h.access.roles=['reader'];
+    const second=await h.signIn('person-1','sid-1');
+    h.access.roles=['reader','approver'];
+    const rotation=await h.context(second);
+    assert.equal(rotation.status,200);
+    const rotated=rotation.headers.getSetCookie()[0]!.split(';')[0]!;
+    assert.notEqual(rotated,second);
+    assert.equal(await h.status(rotated),200);
+    assert.equal((await h.post(h.logoutToken({sid:'sid-1'}))).status,200);
+    assert.equal(await h.status(rotated),401,'the rotated session was indexed, so the logout ended it');
   }finally{await h.close();}
 });
