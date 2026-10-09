@@ -11,7 +11,7 @@ Every count in this section was recomputed from uncached runs with Node 24.19.0 
 (`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
 `pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis` and
 `pnpm public:verify`), on the tree of the commit that records it. A commit cannot name itself: the commit
-before this one is `a85941a`, and the public verification line was run again on the tree that includes this
+before this one is `d593b86`, and the public verification line was run again on the tree that includes this
 document.
 
 | Component | Version | Latest focused evidence |
@@ -22,22 +22,22 @@ document.
 | `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 109/109 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
-| `@mpfrontend/presentation-server` | `0.1.0-dev.3` | 17/17 |
-| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 51/51 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/presentation-server` | `0.1.0-dev.3` | 21/21 |
+| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 11/11 source tests, 5/5 installed consumer assertions |
-| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 317 source tests |
+| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 332 source tests |
 | Local package cohort | fourteen archives | 14/14 pack and manifest verification |
-| Distribution negative controls | thirty-seven controls | 37/37 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=53 files=301` |
+| Distribution negative controls | forty-nine controls | 49/49 expected failures observed |
+| Public repository verification | one script over the working tree | `documents=53 files=307` |
 
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
 the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
 `.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
-would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 300
+would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 306
 tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
-file, so a fresh clone of the same commit prints `files=300`.
+file, so a fresh clone of the same commit prints `files=306`.
 
-Fresh independent consumer `mpfrontend-packed-consumer-lfhyVW` (the run on `a85941a`) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-fIUgFB` (the run on `d593b86`) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators
