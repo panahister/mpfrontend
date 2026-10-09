@@ -89,3 +89,10 @@ test('a vault ticket store is one-time and shared only over a durable vault',asy
   assert.equal(await durable.consume('t1'),undefined);
   assert.equal(createVaultTicketStore(createMemorySessionVault()).shared,false);
 });
+
+test('a vault ticket store carries the security of its vault, so that the presentation profile can check it',()=>{
+  const plain:SessionVault={...createMemorySessionVault(),security:redisVaultSecurity({url:'redis://127.0.0.1:6379'})};
+  const secured:SessionVault={...createMemorySessionVault(),security:redisVaultSecurity({url:'rediss://vault.example.test:6380',password:'host-supplied'})};
+  assert.deepEqual(createVaultTicketStore(plain).security,{durable:true,tls:false,authenticated:false,hostKeyRing:true});
+  assert.deepEqual(createVaultTicketStore(secured).security,{durable:true,tls:true,authenticated:true,hostKeyRing:true});
+});

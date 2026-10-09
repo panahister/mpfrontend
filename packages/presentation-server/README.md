@@ -34,6 +34,9 @@ public origin, a ticket store that every replica shares (`shared: true`, for exa
 `createVaultTicketStore(vault)` of `@mpfrontend/security-bff/session-store`) and a shared connection budget
 (`vault.limits.connections` of a Redis vault); otherwise it refuses with `PRODUCTION_PROFILE_REFUSED:` and
 the names `HTTPS_PUBLIC_ORIGIN_REQUIRED`, `SHARED_TICKET_STORE_REQUIRED` or
-`SHARED_CONNECTION_BUDGET_REQUIRED`. There is no process-memory default in this profile. The development
+`SHARED_CONNECTION_BUDGET_REQUIRED`. A ticket store over a durable vault (one that declares `security`, as
+`createVaultTicketStore` does) is also refused unless the vault is reached over TLS
+(`TICKET_STORE_TLS_REQUIRED`) and with authentication (`TICKET_STORE_AUTHENTICATION_REQUIRED`). There is
+no process-memory default in this profile. The development
 profile (`development: true`) is unchanged and still refused under `NODE_ENV=production`. Retained event
 replay is not part of either profile. See the core shared-runtime acceptance document.

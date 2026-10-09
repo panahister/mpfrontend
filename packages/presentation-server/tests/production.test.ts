@@ -30,3 +30,11 @@ test('the development profile is unchanged and still refused under NODE_ENV=prod
   try{assert.throws(()=>createPresentationRealtime(development),/DURABLE_REALTIME_PROFILE_REQUIRED/);}
   finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
 });
+
+test('a ticket store over a durable vault is refused unless the vault is reached over TLS and with authentication',()=>{
+  const over=(security:{durable:boolean;tls:boolean;authenticated:boolean})=>({...complete,production:{...complete.production,ticketStore:{...sharedStore,security}}});
+  assert.equal(refusal(over({durable:true,tls:false,authenticated:true})),'PRODUCTION_PROFILE_REFUSED:TICKET_STORE_TLS_REQUIRED');
+  assert.equal(refusal(over({durable:true,tls:true,authenticated:false})),'PRODUCTION_PROFILE_REFUSED:TICKET_STORE_AUTHENTICATION_REQUIRED');
+  assert.equal(refusal(over({durable:true,tls:false,authenticated:false})),'PRODUCTION_PROFILE_REFUSED:TICKET_STORE_TLS_REQUIRED,TICKET_STORE_AUTHENTICATION_REQUIRED');
+  assert.equal(refusal(over({durable:true,tls:true,authenticated:true})),'STARTED');
+});

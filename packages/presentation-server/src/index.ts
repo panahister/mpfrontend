@@ -6,8 +6,11 @@ export type {ConnectionBudget} from './connection-budget.js';
 
 export type SocketContext={subject:string;tenant:string|null;roles:string[];csrf:string};
 export type AdmissionTicket={cookieHash:string;revision:string;expires:number};
-/** consume must be atomic across all presentation replicas. */
-export type AdmissionTicketStore={readonly shared?:boolean;issue:(id:string,ticket:AdmissionTicket)=>Promise<void>;consume:(id:string)=>Promise<AdmissionTicket|undefined>};
+/**
+ * consume must be atomic across all presentation replicas. `security` describes the vault behind a store that
+ * keeps its tickets in one, as `createVaultTicketStore` of the Security BFF's session store sets it.
+ */
+export type AdmissionTicketStore={readonly shared?:boolean;readonly security?:Readonly<{durable:boolean;tls:boolean;authenticated:boolean}>;issue:(id:string,ticket:AdmissionTicket)=>Promise<void>;consume:(id:string)=>Promise<AdmissionTicket|undefined>};
 type CommonSocketConfig={publicOrigin:string;bffOrigin:string;resolve:(resource:string,context:SocketContext)=>string|undefined;pollMs?:number};
 /** Today's single-process development profile, refused when NODE_ENV is production. */
 export type DevelopmentSocketConfig=CommonSocketConfig&{development:true;production?:never;ticketStore?:AdmissionTicketStore;connectionBudget?:ConnectionBudget};
@@ -21,6 +24,10 @@ export function presentationProductionRefusals(config:ProductionSocketConfig):st
   let https=false;try{https=new URL(config.publicOrigin).protocol==='https:';}catch{https=false;}
   if(!https)refusals.push('HTTPS_PUBLIC_ORIGIN_REQUIRED');
   if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');
+  // Tickets in a durable vault travel and rest under the vault's own protection, which must be TLS and authentication.
+  const vault=config.production?.ticketStore?.security;
+  if(vault?.durable&&vault.tls!==true)refusals.push('TICKET_STORE_TLS_REQUIRED');
+  if(vault?.durable&&vault.authenticated!==true)refusals.push('TICKET_STORE_AUTHENTICATION_REQUIRED');
   if(config.production?.connectionBudget?.shared!==true)refusals.push('SHARED_CONNECTION_BUDGET_REQUIRED');
   return refusals;
 }

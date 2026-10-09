@@ -214,6 +214,8 @@ export async function createRedisSessionVault(config:RedisVaultConfig):Promise<S
 export function createVaultTicketStore<T extends {expires:number}>(vault:SessionVault){
   return Object.freeze({
     shared:vault.security?.durable===true,
+    // The presentation production profile refuses a durable vault without TLS or authentication.
+    ...(vault.security?{security:vault.security}:{}),
     async issue(id:string,ticket:T){await vault.create('transaction','ticket:'+id,ticket,ticket.expires);},
     async consume(id:string){return (await vault.consume<T>('transaction','ticket:'+id))?.value;},
   });
