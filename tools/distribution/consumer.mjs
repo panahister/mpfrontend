@@ -31,16 +31,24 @@ await writeFile(join(bootstrap,'package.json'),JSON.stringify({name:'independent
 const policy=parse(await readFile(join(root,'pnpm-workspace.yaml'),'utf8'));
 await writeFile(join(bootstrap,'pnpm-workspace.yaml'),stringify({...policy,packages:[],
   overrides:{...policy.overrides,...overrides}}));
-async function run(command,args,{expectedCode=0,cwd=workspace,capture=false}={}){
+// Runs a nested command. With capture, both of its streams are collected (and stderr is still shown as it arrives);
+// `run` resolves with the standard output, `runBoth` with both streams, so that an assertion about what a command
+// printed can look at the stream the message really came on.
+async function runBoth(command,args,{expectedCode=0,cwd=workspace,capture=false}={}){
   return await new Promise((resolve,reject)=>{
-    let output='';
-    const child=spawn(command,args,{cwd,stdio:['ignore',capture?'pipe':'inherit','inherit'],env:{...process.env,PATH:independentPath,
+    let stdout='',stderr='';
+    const child=spawn(command,args,{cwd,stdio:['ignore',capture?'pipe':'inherit',capture?'pipe':'inherit'],env:{...process.env,PATH:independentPath,
       NX_DAEMON:'false',NX_ISOLATE_PLUGINS:'false',NEXT_TELEMETRY_DISABLED:'1',
       pnpm_config_verify_deps_before_run:'false'}});
-    if(capture)child.stdout.on('data',chunk=>{output+=chunk;if(output.length>1048576){child.kill();reject(new Error('CONSUMER_CAPTURE_TOO_LARGE'));}});
-    child.on('error',reject);child.on('close',code=>code===expectedCode?resolve(output):reject(new Error('CONSUMER_COMMAND_FAILED:'+command+':'+code)));
+    const tooLarge=()=>{child.kill();reject(new Error('CONSUMER_CAPTURE_TOO_LARGE'));};
+    if(capture){
+      child.stdout.on('data',chunk=>{stdout+=chunk;if(stdout.length>1048576)tooLarge();});
+      child.stderr.on('data',chunk=>{stderr+=chunk;process.stderr.write(chunk);if(stderr.length>1048576)tooLarge();});
+    }
+    child.on('error',reject);child.on('close',code=>code===expectedCode?resolve({stdout,stderr}):reject(new Error('CONSUMER_COMMAND_FAILED:'+command+':'+code)));
   });
 }
+const run=async(command,args,options)=>(await runBoth(command,args,options)).stdout;
 console.log(JSON.stringify({stage:'independent-consumer',workspace}));
 // Resolve public third-party dependencies once; every MP Frontend package is still forced to a local archive.
 await run('pnpm',['install','--no-frozen-lockfile'],{cwd:bootstrap});
@@ -342,7 +350,9 @@ const probes={'apps/sample/src/boundary-probe.ts':"import { appId } from '../../
   'apps/sample/src/probe.css':'.probe {\n  display: flex;\n}\n',
   'apps/sample/src/physical-probe.css':'.physical-probe {\n  margin-left: 1rem;\n}\n'};
 for(const [path,content]of Object.entries(probes)){await mkdir(dirname(join(workspace,path)),{recursive:true});await writeFile(join(workspace,path),content);}
-const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+const lintRun=await runBoth('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+// ESLint prints its findings on standard output and a failure to read a configuration file on standard error: both are read.
+const lintFailure=lintRun.stdout+'\n'+lintRun.stderr;
 const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry','mpfrontend/no-literal-text','mpfrontend/logical-properties'];
 for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
 // The findings ESLint printed under one file: its report is the path, then one indented line per finding.
@@ -357,7 +367,7 @@ function findingsUnder(report,suffix){
 const physicalFinding=(file,value)=>findingsUnder(lintFailure,file).split('\n').some(line=>line.includes("Physical '"+value+"'")&&line.includes('mpfrontend/logical-properties'));
 assert.ok(physicalFinding('apps/sample/src/physical-probe.css','margin-left'),'LINT_NEGATIVE_CONTROL_MISSING:logical-properties-in-stylesheet');
 assert.ok(physicalFinding('apps/sample/src/physical-probe.tsx','ml-2'),'LINT_NEGATIVE_CONTROL_MISSING:logical-properties-in-class-name');
-assert.ok(!lintFailure.includes('Error reading "tsconfig.base.json"'),'the boundary rule finds the root TypeScript configuration');
+for(const [stream,text] of [['stdout',lintRun.stdout],['stderr',lintRun.stderr]])assert.ok(!text.includes('Error reading "tsconfig.base.json"'),'the boundary rule finds the root TypeScript configuration ('+stream+')');
 console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
 for(const path of Object.keys(probes))await rm(join(workspace,path));
 await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
@@ -372,7 +382,8 @@ await writeFile(join(otherAppCode,'project.json'),JSON.stringify({name:'other-ap
 await writeFile(join(otherAppCode,'src/index.ts'),"export const otherAppCode = 'other';\n");
 const crossAppProbe=join(workspace,'apps/sample/src/cross-app-probe.ts');
 await writeFile(crossAppProbe,"import { otherAppCode } from '@independent/other-app-code';\nexport const probe = otherAppCode;\n");
-const tagFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+const tagRun=await runBoth('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+const tagFailure=tagRun.stdout+'\n'+tagRun.stderr;
 assert.ok(tagFailure.includes('A project tagged with "type:app" can only depend on libs tagged with "type:package"'),'TAG_CONSTRAINT_NOT_EXERCISED');
 assert.ok(!tagFailure.includes('Projects cannot be imported by a relative or absolute path'),'the refusal comes from the tag constraint');
 const rootLint=join(workspace,'eslint.config.mjs'),rootLintSource=await readFile(rootLint,'utf8');

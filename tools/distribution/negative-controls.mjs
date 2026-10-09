@@ -100,6 +100,10 @@ const mutations=[
     before:"          await index(rotated,next);\n          await vault.create('session',rotated,next,current.value.absoluteExpires);\n",
     after:"          await vault.create('session',rotated,next,current.value.absoluteExpires);\n          await index(rotated,next);\n",
     expected:'a session whose id is rotated is indexed before it is stored'},
+  {name:'logical-properties-stylesheet-wiring',package:'workspace-config',test:'config.test.ts',file:'eslint.ts',
+    before:"        'mpfrontend/no-handwritten-css': ['error', {css: 'forbid'}],\n        'mpfrontend/logical-properties': physical,\n",
+    after:"        'mpfrontend/no-handwritten-css': ['error', {css: 'forbid'}],\n",
+    expected:'a physical side planted in a stylesheet fails the lint'},
   {name:'production-vault-authentication',package:'security-bff',test:'production.test.ts',file:'index.ts',
     before:"  if(!security?.authenticated)refusals.push('SESSION_VAULT_AUTHENTICATION_REQUIRED');\n",after:'',
     expected:'the production profile refuses each missing condition by name'},
@@ -137,12 +141,16 @@ try{
     }
     await writeFile(path,original.replace(mutation.before,mutation.after));
     let result;
-    try{result=await exec(process.execPath,['--import','tsx','--test',...(mutation.options??[]),join(directory,'tests',mutation.test)],{
+    try{result=await exec(process.execPath,['--import','tsx','--test','--test-reporter=spec',...(mutation.options??[]),join(directory,'tests',mutation.test)],{
       cwd:root,timeout:30000,maxBuffer:1048576,env:{...process.env,TSX_TSCONFIG_PATH:join(root,'tsconfig.base.json')}
     });}catch(error){result=error;}
     assert.ok(Number.isInteger(result.code)&&result.code!==0,'disabled guard must fail the real test, not timeout');
-    if(!String(result.stdout).includes(mutation.expected))throw new Error('NEGATIVE_CONTROL_SETUP_FAILURE:'+String(result.stdout).slice(-3000)+String(result.stderr).slice(-1000));
-    assert.match(String(result.stdout),/AssertionError|Expected values/,'failure must be an assertion, not a missing dependency');
+    // The spec reporter lists the failed tests, each with its error, after "failing tests:". The control counts only
+    // when the expected text is in that list: the name of a test that ran or passed beside another failure is also in
+    // the output, and would let a control pass without the guarded test failing.
+    const output=String(result.stdout),marker=output.indexOf('failing tests:'),failing=marker<0?'':output.slice(marker);
+    if(!failing.includes(mutation.expected))throw new Error('NEGATIVE_CONTROL_SETUP_FAILURE:'+output.slice(-3000)+String(result.stderr).slice(-1000));
+    assert.match(failing,/AssertionError|Expected values/,'failure must be an assertion, not a missing dependency');
     console.log(JSON.stringify({negativeControl:mutation.name,expectedAssertionFailure:true,workingSourceUntouched:true}));
   }
 }finally{

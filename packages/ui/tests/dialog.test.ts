@@ -87,7 +87,9 @@ test('focus wraps at both ends of the trap',()=>{
 });
 
 test('the code field takes digits only, of its length, from typing or a formatted paste, and never logs',async()=>{
-  const logs:unknown[]=[];const original=console.log;console.log=(...values:unknown[])=>{logs.push(values);};
+  // Every console method counts: log and info go to standard output, warn and error to standard error.
+  const logs:unknown[]=[];const methods=['log','info','debug','warn','error'] as const,original={log:console.log,info:console.info,debug:console.debug,warn:console.warn,error:console.error};
+  for(const name of methods)console[name]=(...values:unknown[])=>{logs.push([name,...values]);};
   try{
     assert.equal(codeDigits('12a3-45 6',6),'123456');
     // Decimal digits of other scripts, built from the code point of their zero, become ASCII digits.
@@ -107,9 +109,9 @@ test('the code field takes digits only, of its length, from typing or a formatte
       assert.equal(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent,'Wrong');
       assert.equal(host.querySelector('label')?.textContent?.startsWith('Code'),true,'the label names the field');
     }finally{await unmount();}
-    assert.deepEqual(logs,[]);
+    assert.deepEqual(logs,[],'the code field writes nothing to any console method');
     assert.throws(()=>OneTimeCodeField({label:'Code',value:'',onChange:()=>{},length:3}),/INVALID_CODE_LENGTH/);
-  }finally{console.log=original;}
+  }finally{Object.assign(console,original);}
 });
 
 test('confirm with code sends the code, clears it on failure and on close, and never stores it',async()=>{

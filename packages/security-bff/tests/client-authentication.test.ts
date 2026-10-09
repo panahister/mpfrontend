@@ -97,8 +97,9 @@ test('client_secret_basic: the secret travels only in the Authorization header o
 });
 
 test('a rejected client authentication returns a generic error and never the credential',async()=>{
-  const logs:string[]=[];const original={log:console.log,error:console.error,warn:console.warn};
-  for(const name of ['log','error','warn'] as const)console[name]=(...values:unknown[])=>{logs.push(values.map(String).join(' '));};
+  // Every console method counts: log, info and debug go to standard output, warn and error to standard error.
+  const logs:string[]=[];const original={log:console.log,info:console.info,debug:console.debug,error:console.error,warn:console.warn};
+  for(const name of ['log','info','debug','error','warn'] as const)console[name]=(...values:unknown[])=>{logs.push(values.map(String).join(' '));};
   const pem=signer.privateKey.export({type:'pkcs8',format:'pem'}).toString();
   try{
     for(const authentication of [{method:'client_secret_basic',secret},{method:'private_key_jwt',key:{keyId:'key-1',privateKey:signer.privateKey}}] as ClientAuthentication[]){
