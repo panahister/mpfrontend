@@ -259,6 +259,11 @@ await run('pnpm',['run','format']);
 await run('pnpm',['exec','nx','run','sample:ftg-generate','--skip-nx-cache']);
 await run('pnpm',['exec','nx','run','product:ftg-generate','--skip-nx-cache']);
 await run('pnpm',['check','--skip-nx-cache']);
+// The app's design-verify target: this workspace's design source is attached, so it revalidates the binding.
+const designVerify=await run('pnpm',['exec','nx','run','sample:design-verify','--skip-nx-cache'],{capture:true});
+const designStatus=JSON.parse(designVerify.split('\n').find(line=>line.startsWith('{"ok"'))??'{}');
+assert.equal(designStatus.ok,true);assert.equal(designStatus.source,'existing');assert.equal(designStatus.status,'attached');
+console.log(JSON.stringify({stage:'design-verify-target',ok:true,source:designStatus.source,status:designStatus.status}));
 // The app build compiles Tailwind v4 over the published UI and shell output: the structural class p-6 of
 // Card and the shell's content width are rules of the built CSS, and the app theme follows the neutral tokens.
 async function cssFiles(directory){

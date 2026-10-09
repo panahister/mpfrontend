@@ -22,6 +22,13 @@
         "command": "pnpm exec ftg check --config apps/__APP_NAME__/ftg.config.json --json"
       }
     },
+    "design-verify": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "pnpm exec mpfrontend design status --directory . --json"
+      }
+    },
     "catalog-check": {
       "executor": "nx:run-commands",
       "options": {

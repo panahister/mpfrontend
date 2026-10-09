@@ -61,7 +61,8 @@ and formats what it writes with the workspace's own Prettier configuration when 
 `mpfrontend create app --name <name> --directory apps/<name> [--dry-run]`
 
 - **Does:** creates a Next.js app with the quality targets (`format`, `format:check`, `lint`, `test`),
-  `ftg-generate`, `generated-check`, `build`, `typecheck`, `dev` and `start`; a catalog example made by the
+  `ftg-generate`, `generated-check`, `catalog-check`, `design-verify`, `build`, `typecheck`, `dev` and
+  `start`; a catalog example made by the
   feature and route generators (a list route `/catalog` and a detail route `/catalog/[position]`); a
   `preferences` feature; `.env.example` with variable names only; and `docs/overview.md` and
   `docs/api-contracts.md`.
@@ -191,6 +192,11 @@ and `mpfrontend design status --directory <workspace> [--json]`
   writes nothing.
 - **Refuses:** a changed source once attached, a path that leaves the workspace, a symlink and an
   missing or oversized binding.
+
+An app's `design-verify` target runs `mpfrontend design status --directory . --json` for its workspace in
+either mode: with the source `none` it passes and reports `"source":"none","status":"disabled"`; with an
+`existing` source it revalidates the attached binding and fails on a changed one. The design lifecycle's
+`design check` of an accepted baseline needs the binding path and runs in that lifecycle.
 
 ### Design lifecycle commands
 
