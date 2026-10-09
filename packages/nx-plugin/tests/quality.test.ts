@@ -29,6 +29,8 @@ test('init writes the quality profile, the check and a CI-neutral gate', () => {
   const manifest = JSON.parse(files['package.json']!);
   assert.equal(manifest.scripts.check, 'prettier --check . && nx run-many -t lint typecheck test build generated-check catalog-check');
   assert.equal(manifest.scripts['format:check'], 'prettier --check .');
+  // The module boundary rule reads the root tsconfig.base.json; without it, it prints a read error when it fires.
+  assert.equal(JSON.parse(files['tsconfig.base.json']!).extends, '@mpfrontend/workspace-config/tsconfig/base.json');
   assert.equal(manifest.scripts.format, 'prettier --write .');
   for (const dependency of ['@mpfrontend/workspace-config', 'eslint', 'prettier', 'tsx', 'nx', 'typescript']) {
     assert.ok(manifest.devDependencies[dependency], dependency + ' is pinned by init');

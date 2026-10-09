@@ -19,7 +19,8 @@ reads or writes Figma. The independently installed packed CLI now creates the ve
 the harness supplies only local unpublished-artifact overrides and an explicit synthetic API fixture.
 
 `workspaceFiles` writes the quality profile of a new workspace: root `eslint.config.mjs` and
-`prettier.config.mjs` that re-export `@mpfrontend/workspace-config`, a `.prettierignore` for tool-owned,
+`prettier.config.mjs` that re-export `@mpfrontend/workspace-config`, a root `tsconfig.base.json` that
+extends its base profile (the module boundary rule reads it), a `.prettierignore` for tool-owned,
 hash-bound and generated files, `nx.json` target defaults with caching for `build`, `typecheck`, `lint`,
 `test` and `format:check`, a `check` script (format check, then lint, typecheck, test, build and
 generated-check of every project), the CI-neutral `tools/ci/check.sh` and a GitHub Actions workflow that

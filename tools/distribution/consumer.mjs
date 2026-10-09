@@ -337,10 +337,30 @@ for(const [path,content]of Object.entries(probes)){await mkdir(dirname(join(work
 const lintFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
 const lintRules=['@nx/enforce-module-boundaries','mpfrontend/no-raw-color','mpfrontend/no-handwritten-css','mpfrontend/public-entry','mpfrontend/no-literal-text'];
 for(const rule of lintRules)assert.ok(lintFailure.includes(rule),'LINT_NEGATIVE_CONTROL_MISSING:'+rule);
+assert.ok(!lintFailure.includes('Error reading "tsconfig.base.json"'),'the boundary rule finds the root TypeScript configuration');
 console.log(JSON.stringify({stage:'lint-negative-controls',ok:true,observedFailures:lintRules}));
 for(const path of Object.keys(probes))await rm(join(workspace,path));
 await rm(join(workspace,'apps/sample/src/app/entry-probe'),{recursive:true});
 await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
+// The tag constraint itself, not only the relative-path rule: an app depends only on packages. Code of another app
+// in a library tagged type:app, imported by its package name, is refused by that constraint, and accepted once the
+// constraint lets type:app depend on any tag.
+const otherAppCode=join(workspace,'packages/other-app-code');
+await mkdir(join(otherAppCode,'src'),{recursive:true});
+await writeFile(join(otherAppCode,'package.json'),JSON.stringify({name:'@independent/other-app-code',version:'0.0.0',private:true,type:'module',exports:{'.':'./src/index.ts'}}));
+await writeFile(join(otherAppCode,'project.json'),JSON.stringify({name:'other-app-code',projectType:'library',tags:['type:app','scope:other','runtime:universal']}));
+await writeFile(join(otherAppCode,'src/index.ts'),"export const otherAppCode = 'other';\n");
+const crossAppProbe=join(workspace,'apps/sample/src/cross-app-probe.ts');
+await writeFile(crossAppProbe,"import { otherAppCode } from '@independent/other-app-code';\nexport const probe = otherAppCode;\n");
+const tagFailure=await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache'],{expectedCode:1,capture:true});
+assert.ok(tagFailure.includes('A project tagged with "type:app" can only depend on libs tagged with "type:package"'),'TAG_CONSTRAINT_NOT_EXERCISED');
+assert.ok(!tagFailure.includes('Projects cannot be imported by a relative or absolute path'),'the refusal comes from the tag constraint');
+const rootLint=join(workspace,'eslint.config.mjs'),rootLintSource=await readFile(rootLint,'utf8');
+await writeFile(rootLint,"import { workspaceConfig, defaultDepConstraints } from '@mpfrontend/workspace-config/eslint';\n\nexport default [\n  ...workspaceConfig({\n    depConstraints: defaultDepConstraints.map((constraint) =>\n      constraint.sourceTag === 'type:app' ? { sourceTag: 'type:app', onlyDependOnLibsWithTags: ['*'] } : constraint,\n    ),\n  }),\n];\n");
+await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
+await writeFile(rootLint,rootLintSource);await rm(crossAppProbe);await rm(otherAppCode,{recursive:true});
+await run('pnpm',['exec','nx','run','sample:lint','--skip-nx-cache']);
+console.log(JSON.stringify({stage:'boundary-tag-constraint',ok:true,refusedWithConstraint:'type:app may depend only on type:package',acceptedWithoutConstraint:true}));
 // Negative controls of the catalog check: a key that no code uses, a key that code asks for and the base lacks,
 // a registered locale without a catalog and a catalog without a key of the base each fail it. The fixture locale is registered for the control only, and
 // the app is then restored.

@@ -167,6 +167,8 @@ export function workspaceFiles(name:string,designSource:DesignSource='none'):Rec
     '.gitignore':'node_modules/\n.next/\n.nx/\ndist/\nruntime-assets/\n*.tsbuildinfo\n.env\n.env.*\n!.env.example\n.mpfrontend/skills-install.lock\n.ftg-write.lock\n',
     '.prettierignore':prettierIgnore,
     'eslint.config.mjs':eslintConfig,
+    // The module boundary rule reads the root tsconfig.base.json for path aliases; it extends the shared profile.
+    'tsconfig.base.json':json({extends:'@mpfrontend/workspace-config/tsconfig/base.json'}),
     'prettier.config.mjs':prettierConfig,
     '.github/workflows/check.yml':ciWorkflow,
     'tools/ci/check.sh':ciScript,

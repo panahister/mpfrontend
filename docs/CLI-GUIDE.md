@@ -34,7 +34,7 @@ flowchart LR
 `mpfrontend init --name <name> --directory <new-directory> [--design-source none|existing] [--dry-run] [--json]`
 
 - **Does:** creates a new Nx and pnpm workspace with the quality profile (`eslint.config.mjs`,
-  `prettier.config.mjs`, `.prettierignore`, the `check` script, `tools/ci/check.sh` and a GitHub Actions
+  `prettier.config.mjs`, `.prettierignore`, a root `tsconfig.base.json` that extends the shared profile, the `check` script, `tools/ci/check.sh` and a GitHub Actions
   workflow), `CODEOWNERS` with placeholder owners, `.agents/skills/README.md` for the workspace's own
   skills, `AGENTS.md`, `CLAUDE.md`, `README.md`, `contracts/README.md` and the design-source record.
 - **When:** once, to start a consumer repository.
