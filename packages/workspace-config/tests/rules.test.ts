@@ -6,6 +6,7 @@ import noRawColor from '../src/rules/no-raw-color.js';
 import noHandwrittenCss from '../src/rules/no-handwritten-css.js';
 import publicEntry from '../src/rules/public-entry.js';
 import noLiteralText from '../src/rules/no-literal-text.js';
+import logicalProperties from '../src/rules/logical-properties.js';
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -147,5 +148,38 @@ code.run('no-literal-text', noLiteralText, {
     {name: 'a template literal', code: "const text = `${t('page')} ${page}`;", errors: [{messageId: 'joinedTranslation'}]},
     {name: 'adjacent JSX', code: "const view = <span>{t('page')} {data.number} / {data.pageCount}</span>;", errors: [{messageId: 'joinedTranslation'}]},
     {name: 'a translator under another name', code: "const view = <span>{messages.say('page')} {n}</span>;", options: [{translators: ['say']}], errors: [{messageId: 'joinedTranslation'}]},
+  ],
+});
+
+const physical = (value: string, logical: string) => ({messageId: 'physical', data: {value, logical}});
+const reasoned = [{allow: [{value: 'left-1/2', reason: 'Centred with -translate-x-1/2, which does not depend on the direction'}]}];
+
+code.run('logical-properties in TS and TSX', logicalProperties, {
+  valid: [
+    {name: 'logical spacing, inset, border, radius and alignment', code: 'const a = <div className="ms-2 me-4 ps-3 pe-1 start-0 end-4 border-s border-e-2 rounded-s-md rounded-ee-lg text-start text-end float-start" />;'},
+    {name: 'words that only contain a side', code: "const a = { key: 'ArrowLeft', label: 'right-aligned', tone: 'border-red-500 rounded-lg border-lime-400' };"},
+    {name: 'a logical inline style', code: 'const a = <p style={{marginInlineStart: 4, paddingInlineEnd: 2, insetInlineStart: 0, textAlign: \'start\'}} />;'},
+    {name: 'a direction-independent physical value with its reason', code: 'const a = <span className="absolute left-1/2 -translate-x-1/2" />;', options: reasoned},
+    {name: 'a module path', code: "import x from './ml-2';"},
+  ],
+  invalid: [
+    {name: 'physical margin and padding', code: 'const a = <div className="ml-2 pr-4" />;', errors: [physical('ml-2', 'ms-* or me-*'), physical('pr-4', 'ps-* or pe-*')]},
+    {name: 'a physical inset behind variants', code: 'const a = <div className="md:hover:left-0 -right-[3px]" />;', errors: [physical('left-0', 'start-* or end-*'), physical('-right-[3px]', 'start-* or end-*')]},
+    {name: 'a physical border, radius and alignment in a template literal', code: 'const a = `border-l-2 rounded-tr-md text-right ${x}`;', errors: [physical('border-l-2', 'border-s or border-e'), physical('rounded-tr-md', 'rounded-s, rounded-e, rounded-ss, rounded-se, rounded-es or rounded-ee'), physical('text-right', 'text-start or text-end')]},
+    {name: 'a physical class in a class list', code: "const classes = ['mp-card', 'float-left'].join(' ');", errors: [physical('float-left', 'float-start or float-end')]},
+    {name: 'a physical inline style', code: 'const a = <p style={{marginLeft: 4, textAlign: \'right\'}} />;', errors: [physical('marginLeft', 'margin-inline-start'), physical('text-align: right', 'text-align: end')]},
+    {name: 'an allowance covers only its own value', code: 'const a = <span className="left-1/2 left-0" />;', options: reasoned, errors: [physical('left-0', 'start-* or end-*')]},
+  ],
+});
+
+styles.run('logical-properties in CSS', logicalProperties, {
+  valid: [
+    {name: 'logical properties', code: '.a { margin-inline-start: 1rem; padding-inline-end: 2px; inset-inline-start: 0; border-inline-start: 1px solid; text-align: start; }'},
+    {name: 'a logical utility in @apply', code: '.a { @apply ms-2 text-end; }'},
+  ],
+  invalid: [
+    {name: 'physical properties', code: '.a { margin-left: 1rem; right: 0; border-top-left-radius: 2px; }', errors: [physical('margin-left', 'margin-inline-start'), physical('right', 'inset-inline-end'), physical('border-top-left-radius', 'border-start-start-radius')]},
+    {name: 'a side keyword', code: '.a { text-align: left; float: right; }', errors: [physical('text-align: left', 'text-align: start'), physical('float: right', 'float: end')]},
+    {name: 'a physical utility in @apply', code: '.a { @apply pl-2; }', errors: [physical('pl-2', 'ps-* or pe-*')]},
   ],
 });

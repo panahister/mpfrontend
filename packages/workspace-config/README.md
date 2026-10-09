@@ -27,6 +27,7 @@ only its own additions after the shared part.
 | `@nx/enforce-module-boundaries` | An import that crosses the tag constraints: an app importing another app, a shared package importing an app, a universal project importing a runtime-specific one |
 | `mpfrontend/no-raw-color` | Hex values, `rgb()`, `rgba()`, `hsl()`, `hsla()` (and the other colour functions) and named colours in TS, TSX and CSS; Tailwind palette utilities such as `text-red-500`; Tailwind arbitrary colour values such as `bg-[#123456]` |
 | `mpfrontend/no-handwritten-css` | Any CSS file outside the theme layer and the global entry; class and id rules, keyframes, font faces and `@theme` in the global entry; inline `style` objects other than CSS custom properties; `<style>` elements |
+| `mpfrontend/logical-properties` | Physical left and right in TS, TSX and CSS: utilities such as `ml-2`, `pr-4`, `left-0`, `border-l`, `rounded-tr-md`, `text-right` and `float-left` (also behind variants), inline style keys such as `marginLeft`, CSS properties such as `margin-left`, `right` and `border-top-left-radius`, and `left` or `right` for `text-align`, `float` and `clear`. Logical forms (`ms-*`, `pe-*`, `start-*`, `border-s`, `text-end`, `margin-inline-start`) pass |
 | `@typescript-eslint/no-explicit-any` | `any` in hand-written code |
 
 CSS variables such as `var(--mp-surface-panel)`, `currentColor`, `transparent` and Tailwind arbitrary
@@ -49,9 +50,16 @@ export default [
       ...defaultDepConstraints,
       {sourceTag: 'scope:billing', onlyDependOnLibsWithTags: ['scope:billing', 'scope:shared']},
     ],
+    allowedPhysical: [
+      {value: 'left-1/2', reason: 'Centred with -translate-x-1/2, which does not depend on the direction'},
+    ],
   }),
 ];
 ```
+
+`allowedPhysical` lists the physical values a workspace keeps, each with the reason it does not depend on
+the text direction; an entry without a reason of at least ten characters is a configuration error. It is
+empty by default, and the sources and templates of MP Frontend need no entry (a test lints them all).
 
 The tags come from the generators: an app carries `type:app`, `scope:<app>` and `runtime:mixed`; a shared
 package carries `type:package`, `scope:shared` and a `runtime:*` tag. A rule can be extended or switched

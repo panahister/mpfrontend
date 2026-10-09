@@ -100,3 +100,39 @@ test('the TypeScript presets are complete JSON files that extend the shared base
   assert.equal(library.extends, './base.json');
   assert.equal(library.compilerOptions.declaration, true);
 });
+
+test('an allowed physical value needs its reason, and the profile passes the allowances to the rule', async () => {
+  const {Linter: Engine} = await import('eslint');
+  const config = (allowedPhysical: unknown) => workspaceConfig({allowedPhysical: allowedPhysical as never}).map(entry => ({...entry}));
+  const verify = (allowedPhysical: unknown) => new Engine({configType: 'flat'}).verify('export const a = "left-0";', [...config(allowedPhysical), withoutGraph], 'apps/sample/src/a.ts');
+  assert.deepEqual(verify([]).map(message => message.ruleId), ['mpfrontend/logical-properties']);
+  assert.deepEqual(verify([{value: 'left-0', reason: 'Pinned to the physical edge of a print layout'}]), []);
+  assert.throws(() => verify([{value: 'left-0'}]), /logical-properties/);
+  assert.throws(() => verify([{value: 'left-0', reason: ''}]), /logical-properties/);
+});
+
+test('the sources and templates of MP Frontend use logical properties only', async () => {
+  // Every UI source, every template and every stylesheet of the packages, read as the profile reads them.
+  const {readdir} = await import('node:fs/promises');
+  const {fileURLToPath} = await import('node:url');
+  const root = fileURLToPath(new URL('../../', import.meta.url));
+  const files: string[] = [];
+  const walk = async (directory: string) => {
+    for (const entry of await readdir(directory, {withFileTypes: true})) {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {if (!['node_modules', 'dist', 'tests', '.cache'].includes(entry.name)) await walk(path);}
+      else if (/\.(?:tsx?|css)(?:\.template)?$/.test(entry.name)) files.push(path);
+    }
+  };
+  for (const name of await readdir(root)) await walk(join(root, name));
+  const eslint = new ESLint({cwd: root, overrideConfigFile: true, overrideConfig: [...workspaceConfig(), withoutGraph,
+    {rules: {'@typescript-eslint/no-unused-vars': 'off', 'mpfrontend/no-raw-color': 'off', 'mpfrontend/no-handwritten-css': 'off', 'mpfrontend/public-entry': 'off', 'mpfrontend/no-literal-text': 'off'}}]});
+  const findings: string[] = [];
+  for (const path of files) {
+    const filePath = path.replace(/\.template$/, '').replace(/__[A-Za-z]+__/g, 'name');
+    for (const result of await eslint.lintText(await readFile(path, 'utf8'), {filePath}))
+      for (const message of result.messages) if (message.ruleId === 'mpfrontend/logical-properties' || message.fatal) findings.push(path.slice(root.length) + ': ' + message.message);
+  }
+  assert.ok(files.length > 50, 'read ' + files.length + ' files');
+  assert.deepEqual(findings, []);
+});

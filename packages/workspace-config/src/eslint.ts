@@ -6,9 +6,11 @@ import noHandwrittenCss from './rules/no-handwritten-css.js';
 import noRawColor from './rules/no-raw-color.js';
 import publicEntry from './rules/public-entry.js';
 import noLiteralText from './rules/no-literal-text.js';
+import logicalProperties,{type PhysicalAllowance} from './rules/logical-properties.js';
 
 export {globalEntryAtRules} from './rules/no-handwritten-css.js';
 export {visibleTextAttributes} from './rules/no-literal-text.js';
+export type {PhysicalAllowance} from './rules/logical-properties.js';
 
 /** One constraint of `@nx/enforce-module-boundaries`, keyed by the project tags the generators write. */
 export type DepConstraint = Readonly<{
@@ -57,12 +59,18 @@ export type WorkspaceConfigOptions = Readonly<{
   translators?: readonly string[];
   /** The documented allowlist of literal strings that are not user-visible text, as regular expressions. */
   allowedText?: readonly string[];
+  /**
+   * Physical left or right values that are allowed, each with its reason: a utility (`left-1/2`), a CSS
+   * property (`margin-left`) or an inline style key (`marginLeft`). Empty by default.
+   */
+  allowedPhysical?: readonly PhysicalAllowance[];
 }>;
 
 /** The MP Frontend rules, for consumers that compose their own configuration. */
 export const plugin: ESLint.Plugin = {
   meta: {name: '@mpfrontend/workspace-config'},
-  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss, 'public-entry': publicEntry, 'no-literal-text': noLiteralText},
+  rules: {'no-raw-color': noRawColor, 'no-handwritten-css': noHandwrittenCss, 'public-entry': publicEntry, 'no-literal-text': noLiteralText,
+    'logical-properties': logicalProperties},
 };
 
 /**
@@ -72,6 +80,7 @@ export const plugin: ESLint.Plugin = {
 export function workspaceConfig(options: WorkspaceConfigOptions = {}): Linter.Config[] {
   const themeFiles = [...(options.themeFiles ?? defaultThemeFiles)];
   const globalStyleEntries = [...(options.globalStyleEntries ?? defaultGlobalStyleEntries)];
+  const physical = ['error', {allow: (options.allowedPhysical ?? []).map(entry => ({...entry}))}] as Linter.RuleEntry;
   const typescript = (tseslint.configs.recommended as unknown as Linter.Config[])
     .map(config => ({...config, files: config.files ?? [...codeFiles]}));
   return [
@@ -94,6 +103,7 @@ export function workspaceConfig(options: WorkspaceConfigOptions = {}): Linter.Co
         'mpfrontend/no-handwritten-css': ['error', {inlineStyle: 'custom-properties'}],
         'mpfrontend/public-entry': 'error',
         'mpfrontend/no-literal-text': ['error', {translators: [...(options.translators ?? ['t'])], allow: [...(options.allowedText ?? [])]}],
+        'mpfrontend/logical-properties': physical,
       },
     },
     {
@@ -111,6 +121,7 @@ export function workspaceConfig(options: WorkspaceConfigOptions = {}): Linter.Co
       rules: {
         'mpfrontend/no-raw-color': 'error',
         'mpfrontend/no-handwritten-css': ['error', {css: 'forbid'}],
+        'mpfrontend/logical-properties': physical,
       },
     },
     {

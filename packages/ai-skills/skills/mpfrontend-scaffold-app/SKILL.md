@@ -54,7 +54,8 @@ runs it. Create app gives the app `format`, `format:check`, `lint` and `test` ta
 `eslint.config.mjs` that spreads the workspace profile. Run `pnpm check --skip-nx-cache` on the new
 workspace; it runs the format check, lint, typecheck, test, build, generated-check and catalog-check. A
 lint failure on
-module boundaries, raw colours or hand-written CSS is fixed in the code, never by switching a rule off.
+module boundaries, raw colours, hand-written CSS or a physical left or right is fixed in the code, never by
+switching a rule off.
 
 Inspect exports and imports: the new app must consume published/packed core packages and its own
 authored code, not the platform source checkout or a sample-only Nx target. Preserve authored

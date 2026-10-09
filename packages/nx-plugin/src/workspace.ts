@@ -141,8 +141,9 @@ configuration is changed.
 
 Run \`pnpm check\` before a change is reviewed. It runs the format check, then lint, typecheck, test, build,
 generated-check and catalog-check of every project. Lint fails on an import across app boundaries, on a raw
-colour outside the theme files, on hand-written CSS outside the theme layer and the global style entry, and
-on literal user-visible text or translated text joined to other text. Every visible text is a catalog
+colour outside the theme files, on hand-written CSS outside the theme layer and the global style entry, on a
+physical left or right where a logical start or end belongs, and on literal user-visible text or translated
+text joined to other text. Every visible text is a catalog
 message; the catalog check fails on a key missing in a locale, an unused key, a key that code uses and the
 base does not define, or differing parameters.
 Fix the code; do not weaken a rule to pass the check.

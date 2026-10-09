@@ -86,7 +86,8 @@ Prettier and tsx, and its root `eslint.config.mjs` and `prettier.config.mjs` re-
 project; `tools/ci/check.sh` runs a frozen install and the uncached check in any CI, and
 `.github/workflows/check.yml` runs that script on GitHub Actions. Every app that `mpfrontend create app`
 writes has `format`, `format:check`, `lint` and `test` targets. Lint enforces module boundaries, refuses
-raw colours outside the theme files and refuses hand-written CSS outside the theme layer; see
+raw colours outside the theme files, hand-written CSS outside the theme layer and physical left and right
+where a logical start or end belongs; see
 [Frontend engineering conventions](FRONTEND-CONVENTIONS.md#quality-profile).
 
 Then create the app and its structure with the generators:

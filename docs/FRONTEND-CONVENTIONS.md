@@ -222,6 +222,7 @@ project. `tools/ci/check.sh` runs a frozen install and the uncached check in any
 | Module boundaries | An app importing another app; a shared package importing an app; a dependency that crosses the `type:*`, `scope:*`, or `runtime:*` tag constraints |
 | No raw colour | Hex, `rgb()`, `rgba()`, `hsl()`, `hsla()`, and named colours in TS, TSX, and CSS, and Tailwind palette or arbitrary colour utilities such as `bg-[#123456]`, outside the theme files |
 | No hand-written CSS | A stylesheet outside the theme layer and the one global entry; class or id rules in the global entry; inline style objects other than CSS custom properties |
+| Logical properties | Physical left and right in class names (`ml-2`, `left-0`, `border-l`, `text-right`), inline styles (`marginLeft`) and CSS (`margin-left`, `text-align: left`), unless the workspace allows the value with a reason; use start and end forms |
 
 Colours come from design tokens (`var(--mp-*)`) and the theme file; layout comes from framework
 components and utility classes. Every app is framed by `@mpfrontend/app-layout` (skip link, header,
