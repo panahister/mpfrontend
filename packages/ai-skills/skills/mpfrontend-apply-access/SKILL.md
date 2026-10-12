@@ -5,7 +5,7 @@ description: Apply an approved capability and field/action visibility matrix to 
 
 # Apply approved access decisions
 
-Requires the reviewed MP Frontend CLI `0.1.0-dev.18` cohort and `@mpfrontend/access-core`. Read the
+Requires the reviewed MP Frontend CLI `0.1.0-dev.19` cohort and `@mpfrontend/access-core`. Read the
 approved capability catalog, persona/tenant matrix and consumer instructions. Do not create roles,
 resources, permissions or grants and do not infer authority from a sample identity.
 

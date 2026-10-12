@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-10-09.
+Updated: 2026-10-12.
 
 MP Frontend is a verified public proof of concept. This document separates what the current source proves
 from the work required for a stable package and production deployment.
@@ -11,33 +11,46 @@ Every count in this section was recomputed from uncached runs with Node 24.19.0 
 (`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
 `pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis` and
 `pnpm public:verify`), on the tree of the commit that records it. A commit cannot name itself: the commit
-before this one is `d593b86`, and the public verification line was run again on the tree that includes this
+before this one is `397a29a`, and the public verification line was run again on the tree that includes this
 document.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0-dev.18` | 33/33 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.17` | 22/22 |
-| `@mpfrontend/ftg-core` | `0.1.0-dev.5` | 8/8 source tests, and the consumer gate |
-| `@mpfrontend/ai-skills` | `0.1.0-dev.11` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/ftg-cli` | `0.1.0-dev.19` | 33/33 |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.18` | 24/24 |
+| `@mpfrontend/ftg-core` | `0.1.0-dev.6` | 8/8 source tests, and the consumer gate |
+| `@mpfrontend/ai-skills` | `0.1.0-dev.12` | 8/8 plus 18/18 procedure format validation |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 109/109 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
-| `@mpfrontend/presentation-server` | `0.1.0-dev.3` | 21/21 |
-| `@mpfrontend/security-bff` | `0.1.0-dev.6` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
-| `@mpfrontend/realtime-core` | `0.1.0-dev.5` | 11/11 source tests, 5/5 installed consumer assertions |
-| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 332 source tests |
+| `@mpfrontend/presentation-server` | `0.1.0-dev.4` | 21/21 |
+| `@mpfrontend/security-bff` | `0.1.0-dev.7` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/realtime-core` | `0.1.0-dev.6` | 11/11 source tests, 5/5 installed consumer assertions |
+| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 334 source tests |
 | Local package cohort | fourteen archives | 14/14 pack and manifest verification |
 | Distribution negative controls | forty-nine controls | 49/49 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=53 files=307` |
+| Public repository verification | one script over the working tree | `documents=55 files=310` |
+
+A package's version moves when anything it packs changes, so that one file name never stands for two
+different archives. Packing is deterministic: the same tree packs to the same bytes. The archives a consumer
+vendored before the hardening round were packed from an older tree and differ from those of `main` in every
+package, the five without a source change after `e3c9474` included (they lacked the `LICENSE` file). Every
+package a consumer could hold therefore moved by one: `access-core` `0.1.0-dev.2`, `ai-skills`
+`0.1.0-dev.12`, `ftg-cli` `0.1.0-dev.19`, `ftg-core` `0.1.0-dev.6`, `i18n` `0.1.0-dev.1`, `nx-plugin`
+`0.1.0-dev.18`, `presentation-server` `0.1.0-dev.4`, `primitives` `0.1.0-dev.1`, `realtime-core`
+`0.1.0-dev.6`, `security-bff` `0.1.0-dev.7`, `tokens` `0.1.0-dev.1` and `ui` `0.1.0-dev.5`. `app-layout` and
+`workspace-config` are new, were never packed for a consumer, and stay at `0.1.0-dev.0`. The OpenAPI
+generator stamp (`GENERATOR_VERSION`, `0.1.0-dev.6`) is not a package version and did not move, because the
+generator code did not change. `CHANGELOG.md` lists the change of each package, and
+`docs/releases/2026-10-12-package-cohort.md` lists the SHA-256 of each archive.
 
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
 the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
 `.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
-would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 306
+would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 309
 tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
-file, so a fresh clone of the same commit prints `files=306`.
+file, so a fresh clone of the same commit prints `files=309`.
 
-Fresh independent consumer `mpfrontend-packed-consumer-fIUgFB` (the run on `d593b86`) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-YXQcUt` (the run on the tree of this commit) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators

@@ -5,7 +5,7 @@ description: Review an MP Frontend declared design candidate or accepted baselin
 
 # Review declared design drift
 
-Requires the reviewed CLI dev.18 cohort. Read consumer instructions, installed CLI `DESIGN-SYNC.md`,
+Requires the reviewed CLI dev.19 cohort. Read consumer instructions, installed CLI `DESIGN-SYNC.md`,
 accepted source/binding and any supplied candidate's provenance. A review request is read-only:
 do not import, persist a plan, apply tokens, edit Figma, run a live write or accept a baseline.
 If the candidate is not imported, an explicit import implementation request is a prerequisite.

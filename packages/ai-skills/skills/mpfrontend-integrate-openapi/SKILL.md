@@ -5,7 +5,7 @@ description: Integrate approved local OpenAPI 3.1 responses or explicitly select
 
 # Integrate an explicit API contract
 
-Requires MP Frontend CLI `0.1.0-dev.18`. Read the consumer instructions and the named API owner's
+Requires MP Frontend CLI `0.1.0-dev.19`. Read the consumer instructions and the named API owner's
 contract before edits. An implementation request permits scoped integration; a review alone does not.
 
 Establish the public presentation boundary: browser paths, server operation bindings, auth/roles,
