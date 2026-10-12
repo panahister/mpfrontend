@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/access-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "entries": {
     ".": {
       "AccessCapture": "export type AccessCapture = Readonly<{ signal: AbortSignal; assertCurrent: () => void; }>;",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/ftg-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "entries": {
     ".": {
       "checkListProtocol": "export declare function checkListProtocol(document: OpenApiDocument, protocol: ListProtocol): string[];",

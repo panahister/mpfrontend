@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/i18n",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "entries": {
     ".": {
       "ArgumentList": "export type ArgumentList<S extends string> = keyof MessageArguments<S> extends never ? [ ] : [ values: MessageArguments<S> ];",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/realtime-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "entries": {
     ".": {
       "ConnectionState": "export type ConnectionState = 'idle' | 'connecting' | 'authenticating' | 'live' | 'backoff' | 'resyncing' | 'closed';",
