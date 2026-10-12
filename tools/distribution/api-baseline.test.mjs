@@ -66,4 +66,8 @@ test('the baseline file names every package of the cohort at one published versi
   assert.equal(project.targets['api-check'].cache,false,'a cached pass would be a build that did not compare');
   assert.match(project.targets['api-check'].options.command,/api-report\.mjs check/);
   assert.match(JSON.parse(await readFile(join(root,'package.json'),'utf8')).scripts.check,/\bapi-check\b/);
+  // The check of a pull request runs it too: the build that CI runs is the build that compares with the published API.
+  const ci=await readFile(join(root,'.github/workflows/ci.yml'),'utf8');
+  assert.match(ci,/nx run-many -t [^\n]*\bapi-check\b[^\n]*--skip-nx-cache/);
+  assert.match(await readFile(join(root,'.github/workflows/release.yml'),'utf8'),/pnpm check --skip-nx-cache/);
 });

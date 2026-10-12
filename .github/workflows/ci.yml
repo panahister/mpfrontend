@@ -48,7 +48,7 @@ jobs:
       - name: Dependency vulnerability gate
         run: pnpm audit --audit-level=moderate
       - name: Uncached core verification
-        run: pnpm exec nx run-many -t lint typecheck test build --skip-nx-cache
+        run: pnpm exec nx run-many -t lint typecheck test build api-check --skip-nx-cache
       - name: Portable packed-package gate
         run: pnpm pack:local
       - name: Fresh independent Nx consumer
