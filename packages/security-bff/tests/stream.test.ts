@@ -236,6 +236,10 @@ test('a streamed upload reaches the upstream as it arrives, unchanged, and the B
       }
     }finally{clearInterval(sampler);globalThis.fetch=originalFetch;}
     assert.ok(written<total,'the client stalls while the upstream reads nothing ('+written+' of '+total+' bytes written)');
+    // The bound below means something only if the instrument sees the relay's reads: what the upstream took was pulled
+    // from the request first, so a relay that read it another way (on('data'), pipe, read()) would show none pulled.
+    const seen=h.pulled.get(h.inbound[index]!)??0;
+    assert.ok(taken>0&&seen>=taken,'the instrument saw the bytes the upstream took ('+seen+' pulled, '+taken+' taken)');
     assert.ok(largest<=256*KB,'the BFF buffered at most 256 KiB of the body (largest '+largest+' bytes)');
     // A chunk is pulled only when the upstream request asks for one, so between chunks the relay holds none; two
     // chunks of Node's 64 KiB reads are the bound, and a queue of four chunks already exceeds it.
@@ -245,6 +249,7 @@ test('a streamed upload reaches the upstream as it arrives, unchanged, and the B
     second.client.end();
     assert.equal((await second.response).status,201);
     assert.equal(delivered,total);
+    assert.equal(h.pulled.get(h.inbound[index]!),total,'the instrument saw the whole body');
   }finally{await h.close();}
 });
 

@@ -182,6 +182,12 @@ const mutations=[
   {name:'stream-relay-moderate-queue',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'},{highWaterMark:0}):undefined;',after:'},{highWaterMark:4}):undefined;',
     expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
+  // The bound above reads what the relay pulled through the request's async iterator; a relay that reads another way
+  // (here read() on the readable event) would leave the instrument at zero, so the test asserts that it saw the bytes.
+  {name:'stream-relay-reads-past-the-instrument',package:'security-bff',test:'stream.test.ts',file:'index.ts',
+    before:'const chunks=req[Symbol.asyncIterator]() as AsyncIterator<Buffer>;',
+    after:"const chunks=(async function*(){const {once}=await import('node:events');for(;;){const piece=req.read() as Buffer|null;if(piece!==null){yield piece;continue;}if(req.readableEnded||req.destroyed)return;await Promise.race([once(req,'readable'),once(req,'end'),once(req,'close')]);}})() as AsyncIterator<Buffer>;",
+    expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
   // An answer that a browser would run as a document is served only as an attachment or inside a sandbox.
   {name:'stream-inline-script-answer',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'if(!empty&&type!==undefined&&scriptCapable(type)&&',after:'if(false&&!empty&&type!==undefined&&scriptCapable(type)&&',
