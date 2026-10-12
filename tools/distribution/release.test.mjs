@@ -1,10 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,cp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
-import {join} from 'node:path';
+import {join,isAbsolute} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,
+import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,
   integrityOf,recordMarkdown,unreleasedChanges,sumsText,selfTest} from './release.mjs';
 import {apiReport,compareReports,policyProblems} from './api-report.mjs';
 
@@ -71,6 +71,16 @@ test('a version is never published twice: the same bytes are skipped, other byte
   const {plan,problems}=await publishPlan(record,async name=>states[name]);
   assert.deepEqual(plan.map(entry=>entry.name+':'+entry.action),['@mpfrontend/a:publish','@mpfrontend/b:skip']);
   assert.deepEqual(problems,['VERSION_HOLDS_OTHER_BYTES:@mpfrontend/c@1.0.0']);
+});
+
+test('an archive is given to npm publish by an absolute path, which npm cannot read as a GitHub repository',()=>{
+  // npm reads "release/a.tgz" as the shorthand of the GitHub repository "release/a.tgz"; the first publication failed on it.
+  const readsAsFile=spec=>isAbsolute(spec)||spec.startsWith('./');
+  assert.equal(readsAsFile(join('release','a.tgz')),false,'the control: the path the first publication gave npm');
+  const args=publishArguments('release','mpfrontend-a-1.0.0.tgz','latest');
+  assert.equal(readsAsFile(args[1]),true);
+  assert.ok(args[1].endsWith('/release/mpfrontend-a-1.0.0.tgz'));
+  assert.deepEqual([args[0],...args.slice(2)],['publish','--access','public','--provenance','--tag','latest']);
 });
 
 test('a package is published after the framework packages it depends on',async()=>{

@@ -4,7 +4,7 @@
 import {readFile,readdir,mkdtemp,cp,writeFile,rm,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
-import {join} from 'node:path';
+import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 
@@ -129,6 +129,14 @@ export function recordMarkdown(record,changes){
     '```text',sumsText(record).trimEnd(),'```','','## Changes','',changes,''].join('\n');
 }
 
+/**
+ * The arguments of `npm publish` for one archive. npm reads a path that does not start with "./" or "/" as the
+ * shorthand "<user>/<repository>" of a GitHub repository and asks git for it, so the archive is given by an absolute path.
+ */
+export function publishArguments(directory,file,tag){
+  return ['publish',resolve(directory,file),'--access','public','--provenance','--tag',tag];
+}
+
 /** The order of publication: a package after the framework packages it depends on. */
 export function publishOrder(packages){
   const names=new Set(packages.map(entry=>entry.name)),done=new Set(),order=[];
@@ -231,7 +239,7 @@ async function main(args){
       const entry=plan.find(item=>item.name===name);
       if(!entry)fail(['RECORD_MISSING:'+name]);
       if(entry.action==='skip'){console.log(JSON.stringify({package:name,version:entry.version,published:'already, the same bytes'}));continue;}
-      await run('npm',['publish',join(directory,entry.file),'--access','public','--provenance','--tag',tag]);
+      await run('npm',publishArguments(directory,entry.file,tag));
       console.log(JSON.stringify({package:name,version:entry.version,published:true,tag}));
     }
   }else throw new Error('USAGE: release.mjs guard|self-test|record|publish');
