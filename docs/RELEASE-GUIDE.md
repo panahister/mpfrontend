@@ -5,8 +5,8 @@ under one version, by the release workflow `.github/workflows/release.yml`. This
 prepared, rehearsed and published, what the owner does on npmjs.com and GitHub, and how a release is checked and
 corrected. [README "Versioning"](../README.md#versioning) states the version and compatibility policy.
 
-No version is published yet. The first release is `0.1.0`: one stable cohort version that ranks above every
-`0.1.0-dev.N` archive packed before it.
+`0.1.0` is the first release: one stable cohort version that ranks above every `0.1.0-dev.N` archive packed before it.
+It was published on 2026-10-12; its record is [releases/0.1.0.md](releases/0.1.0.md).
 
 ## What the workflow does
 

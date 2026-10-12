@@ -35,7 +35,7 @@ product ownership, or human review to generators or AI agents.
 > [!IMPORTANT]
 > MP Frontend is currently a verified **public source proof of concept**. Its sixteen packages share one
 > version under the [Versioning](#versioning) policy and are released to the public npm registry by a release
-> workflow; no version is published yet. The supported
+> workflow; `0.1.0` is published ([release record](docs/releases/0.1.0.md)). The supported
 > evaluation path is this source repository plus the immutable, hash-checked cohort in the
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
 > [Maturity and scope](#maturity-and-scope) before choosing it for production.
@@ -645,11 +645,10 @@ formal accessibility acceptance, and independent security review remain separate
 <details>
 <summary><strong>Can I install the packages from npm?</strong></summary>
 
-Once a release is published, yes: the cohort goes to the public npm registry under `@mpfrontend` with
-provenance, and a generated workspace binds the scope to it. No version is published yet; until then the
-public evaluation path uses this source and the vendored,
-hash-checked package cohort in the Tiffin reference. Do not trust an arbitrary registry package using
-these names.
+Yes, from `0.1.0`: the cohort is on the public npm registry under `@mpfrontend`, published with provenance, and a
+generated workspace binds the scope to it. [`docs/releases/0.1.0.md`](docs/releases/0.1.0.md) lists the SHA-256 and the
+integrity of each archive. The Tiffin reference still uses its own vendored, hash-checked package cohort. Do not trust an
+arbitrary registry package using these names.
 </details>
 
 <details>
