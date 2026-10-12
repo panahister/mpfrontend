@@ -23,11 +23,17 @@ function typesOf(target){
   }
   return undefined;
 }
+/**
+ * The entry point that is for the cohort's own packages: it is outside the compatibility guarantee, so the report does not
+ * hold it and no template, generator or application may import it (README "Versioning").
+ */
+export const INTERNAL_ENTRY='./internal';
 /** The report of one package directory (its package.json and its built declarations). */
 export function apiReport(directory,manifest){
   const entries={},roots=[];
   const exportsField=manifest.exports??{'.':{types:manifest.types}};
   for(const [subpath,target] of Object.entries(exportsField).sort(([a],[b])=>a.localeCompare(b))){
+    if(subpath===INTERNAL_ENTRY)continue;
     const found=typesOf(target);
     if(found?.types){roots.push([subpath,join(directory,found.types)]);}
     else entries[subpath]={file:typeof target==='string'?target:JSON.stringify(target)};

@@ -14,9 +14,13 @@ notes of `1.0.0`. The version the tree declares meanwhile is a working version a
 | `@mpfrontend/security-bff` | since `0.1.0` | A streamed answer that a browser would run as a document (HTML, XHTML, SVG, XML or script) is refused whole with a 502 unless the upstream sent an attachment disposition or a Content-Security-Policy with the sandbox directive. Before, the startup check only proved that the route could pass both headers, and an answer without them was served inline |
 | `@mpfrontend/access-react` | since `0.1.0` | The server entry throws `ACCESS_SERVER_ENTRY_IN_BROWSER` when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot run it in a browser |
 | `@mpfrontend/nx-plugin` | since `0.1.0` | A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the framework packages at the cohort version |
-| `@mpfrontend/ai-skills` | since `0.1.0` | The procedures require the CLI of the cohort |
+| `@mpfrontend/ai-skills` | since `0.1.0` | The procedures require the CLI of the cohort. `SKILLS_VERSION` and `SKILLS_CLI_VERSION` are typed `string`: their literal type moved the API with every version. `installSkills`, `checkSkills`, `skillCatalog` and `SkillsError`, which only the CLI uses, move to `@mpfrontend/ai-skills/internal` |
 | `@mpfrontend/ftg-cli` | since `0.1.0` | Its design-sync document names the new version |
-| The other eleven packages | since `0.1.0` | Version only |
+| `@mpfrontend/primitives` | since `0.1.0` | `buttonState`, `fieldState` and `isControlUnavailable`, which only `ui` uses, move to `@mpfrontend/primitives/internal`; the two state types stay |
+| `@mpfrontend/ftg-core` | since `0.1.0` | `normalizeRequests`, `normalizeResources` and `resolveSchema`, which only the CLI uses, move to `@mpfrontend/ftg-core/internal` |
+| The other nine packages | since `0.1.0` | Version only |
+
+An entry point named `internal` is outside the compatibility guarantee: the API report does not hold it, README "Versioning" says so, and a test and the packed-consumer check fail if a template, a generator or a generated file imports one. These moves are changes against `0.1.0`, which is why the notes of `1.0.0` list them. Every build now compares the API with the archives of the last published version.
 
 ## 0.1.0 (2026-10-12)
 

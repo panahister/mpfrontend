@@ -1,4 +1,4 @@
-import {resolveSchema,type JsonSchema,type OpenApiDocument} from './index.js';
+import {resolveSchema,type JsonSchema,type OpenApiDocument} from './model.js';
 
 /**
  * How one backend list operation encodes paging, sorting and filtering, and where its answer holds the rows and the

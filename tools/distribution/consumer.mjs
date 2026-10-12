@@ -563,9 +563,21 @@ assert.equal((await import(join(foundation,'dist/index.js'))).fixtureFoundation,
 const appManifest=await readFile(join(workspace,'apps/sample/package.json'),'utf8');
 assert.ok(!appManifest.includes(root));
 assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swagger-ui-bundle.js'),'utf8')).length>1000);
+// No file that a generator wrote imports an entry that is outside the compatibility guarantee.
+async function generatedFiles(directory){
+  const result=[];
+  for(const entry of await readdir(directory,{withFileTypes:true})){
+    if(['node_modules','.nx','.next','dist','.pnpm-store','.cache','runtime-assets'].includes(entry.name))continue;
+    const path=join(directory,entry.name);
+    if(entry.isDirectory())result.push(...await generatedFiles(path));else result.push(path);
+  }
+  return result;
+}
+for(const path of await generatedFiles(workspace))
+  if(/@mpfrontend\/[a-z0-9-]+\/internal\b/.test(await readFile(path,'utf8')))throw new Error('GENERATED_CODE_IMPORTS_INTERNAL:'+path.slice(workspace.length));
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
-  checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
+  checks:['actual-executable-cohort-version','no-internal-import-in-generated-files','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
     ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','access-first-paint/granted-only/server-loader-not-in-browser-bundle','list-url-state/declared-parameters-only/invalid-to-default','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
 // path printed first, for diagnosis. No other file is deleted.

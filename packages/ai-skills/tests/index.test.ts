@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,readFile,writeFile,readdir,rm,symlink} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {installSkills,checkSkills,skillCatalog} from '../src/index.js';
+import {installSkills,checkSkills,skillCatalog} from '../src/skills.js';
 
 test('approved catalog exposes all eighteen finite workflows',()=>{
   const catalog=skillCatalog();assert.equal(catalog.skills.length,18);

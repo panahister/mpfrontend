@@ -1,6 +1,6 @@
 import {createRequire} from 'node:module';
 import type {OpenApiDocument,JsonSchema,ResourceSelection,RequestModel} from '@mpfrontend/ftg-core';
-import {resolveSchema} from '@mpfrontend/ftg-core';
+import {resolveSchema} from '@mpfrontend/ftg-core/internal';
 import type {Ajv2020} from 'ajv/dist/2020.js';
 
 const require=createRequire(import.meta.url);

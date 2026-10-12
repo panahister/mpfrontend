@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buttonState,fieldState,isControlUnavailable} from '../src/index.js';
+import {buttonState,fieldState,isControlUnavailable} from '../src/internal.js';
 
 test('button state resolves restrictive states in a deterministic order',()=>{
   assert.equal(buttonState({disabled:true,loading:true,restricted:true}),'restricted');

@@ -1,6 +1,6 @@
 'use client';
 import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type ReactNode, type Key } from 'react';
-import {buttonState,fieldState,isControlUnavailable} from '@mpfrontend/primitives';
+import {buttonState,fieldState,isControlUnavailable} from '@mpfrontend/primitives/internal';
 import type {AccessReader} from '@mpfrontend/access-core';
 
 export type DisplayField = Readonly<{key:string;type:string;required:boolean;editable:boolean;nullable:boolean}>;

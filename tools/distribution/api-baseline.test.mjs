@@ -85,3 +85,46 @@ test('README "Versioning" states the compatibility policy that the checks enforc
     ['every build compares with the published API',/Every build compares the built declarations/],
   ])assert.match(section,pattern,claim);
 });
+
+/** The places where an `@mpfrontend/<package>/internal` import appears in a text. */
+const internalImports=text=>text.match(/@mpfrontend\/[a-z0-9-]+\/internal\b/g)??[];
+async function sourceFiles(directory){
+  const files=[];
+  for(const entry of await readdir(directory,{withFileTypes:true})){
+    if(['node_modules','dist','.next','.nx'].includes(entry.name))continue;
+    const path=join(directory,entry.name);
+    if(entry.isDirectory())files.push(...await sourceFiles(path));else files.push(path);
+  }
+  return files;
+}
+
+test('no template and no generator writes an import of an internal entry, which is outside the compatibility guarantee',async()=>{
+  // The control: what the scan must find.
+  assert.deepEqual(internalImports("import {x} from '@mpfrontend/ui/internal';\nimport {y} from '@mpfrontend/ui';"),['@mpfrontend/ui/internal']);
+  assert.deepEqual(internalImports('import {y} from "@mpfrontend/internals-are-not-a-package";'),[]);
+  // The templates and the code that writes code: nx-plugin, and ftg-core's generator, name no internal entry at all.
+  for(const directory of ['packages/nx-plugin/templates','packages/nx-plugin/src','packages/ftg-core/src'])
+    for(const path of await sourceFiles(join(root,directory)))
+      assert.deepEqual(internalImports(await readFile(path,'utf8')),[],path.slice(root.length));
+  // The CLI imports internal entries in its own code, as real import statements, and writes none into what it generates.
+  for(const path of (await sourceFiles(join(root,'packages/ftg-cli/src'))).filter(file=>/\.tsx?$/.test(file))){
+    const text=await readFile(path,'utf8'),imports=text.split('\n').filter(line=>/^import .* from '@mpfrontend\/[a-z0-9-]+\/internal';?$/.test(line));
+    assert.equal(internalImports(text).length,imports.length,'only import statements of the CLI itself name an internal entry: '+path.slice(root.length));
+  }
+});
+
+test('an internal entry is outside the report: it holds none of its exports, and the compatibility guarantee is said to leave it out',async()=>{
+  const bytes=await archive('@mpfrontend/y','1.0.0','export declare const a: string;\n');
+  const directory=await mkdtemp(join(tmpdir(),'mpfrontend-internal-test-'));
+  try{
+    await mkdir(join(directory,'dist'),{recursive:true});
+    await writeFile(join(directory,'dist/index.d.ts'),'export declare const a: string;\n');
+    await writeFile(join(directory,'dist/internal.d.ts'),'export declare const b: string;\n');
+    const manifest={name:'@mpfrontend/y',version:'1.0.0',exports:{'.':{types:'./dist/index.d.ts'},'./internal':{types:'./dist/internal.d.ts'}}};
+    const report=apiReport(directory,manifest);
+    assert.deepEqual(Object.keys(report.entries),['.']);assert.deepEqual(Object.keys(report.entries['.']),['a']);
+  }finally{await rm(directory,{recursive:true,force:true});}
+  assert.ok(bytes.length>0);
+  const readme=await readFile(join(root,'README.md'),'utf8');
+  assert.match(readme,/entry point named `internal`[^.]*outside\s+the\s+compatibility\s+guarantee/);
+});
