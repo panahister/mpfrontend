@@ -16,6 +16,21 @@ for (let index = 0; index < size; index++) file[index] = index % 256;
 const digest = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 const context = { params: Promise.resolve({ path: ['files', 'report'] }) };
 
+/** The promise's value, or a failure after `ms`: a streaming gate fails the test instead of hanging the run. */
+async function within<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new assert.AssertionError({ message })), ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** A fake BFF on a loopback port, so that the relay is tested without a backend. */
 async function fakeBff(handle: (req: IncomingMessage, res: ServerResponse) => Promise<void>) {
   const server = createServer((req, res) => {
@@ -33,7 +48,7 @@ async function fakeBff(handle: (req: IncomingMessage, res: ServerResponse) => Pr
   };
 }
 
-test('a file of several megabytes goes to the BFF and back through the relay, as streams', async () => {
+test('a file of several megabytes goes to the BFF and back through the relay, as streams', { timeout: 60000 }, async () => {
   let seen: IncomingHttpHeaders = {};
   const received: Buffer[] = [];
   let reportArrival = () => {};
@@ -70,7 +85,8 @@ test('a file of several megabytes goes to the BFF and back through the relay, as
     const body = new ReadableStream<Uint8Array>(
       {
         async pull(controller) {
-          if (offset === MB) await arrived;
+          if (offset === MB)
+            await within(arrived, 10000, 'the BFF received no byte before the relay had the whole file');
           if (offset >= size) {
             controller.close();
             return;
@@ -95,9 +111,10 @@ test('a file of several megabytes goes to the BFF and back through the relay, as
         authorization: 'Bearer not-forwarded',
       },
     };
-    const uploaded = await handle(
-      new Request('http://localhost/api/transfer/files/report', upload as RequestInit),
-      context,
+    const uploaded = await within(
+      handle(new Request('http://localhost/api/transfer/files/report', upload as RequestInit), context),
+      30000,
+      'the upload did not finish',
     );
     assert.equal(uploaded.status, 201);
     assert.equal(digest(Buffer.concat(received)), digest(file));
@@ -105,14 +122,19 @@ test('a file of several megabytes goes to the BFF and back through the relay, as
     assert.equal(seen['x-csrf-token'], 'token');
     assert.equal(seen.authorization, undefined);
     assert.deepEqual(uploaded.headers.getSetCookie(), []);
-    const downloaded = await handle(
-      new Request('http://localhost/api/transfer/files/report', {
-        headers: { cookie: 'app_session=opaque' },
-      }),
-      context,
+    const downloaded = await within(
+      handle(
+        new Request('http://localhost/api/transfer/files/report', {
+          headers: { cookie: 'app_session=opaque' },
+        }),
+        context,
+      ),
+      10000,
+      'the download did not start',
     );
     assert.equal(downloaded.status, 200);
-    assert.equal(digest(new Uint8Array(await downloaded.arrayBuffer())), digest(file));
+    const bytes = await within(downloaded.arrayBuffer(), 30000, 'the download did not finish');
+    assert.equal(digest(new Uint8Array(bytes)), digest(file));
     assert.equal(downloaded.headers.get('content-length'), String(size));
     assert.equal(downloaded.headers.get('x-internal'), null);
   } finally {

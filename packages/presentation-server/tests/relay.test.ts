@@ -23,7 +23,8 @@ async function fakeBff(handler:(req:IncomingMessage,res:ServerResponse)=>void|Pr
   return {origin:'http://127.0.0.1:'+(server.address() as {port:number}).port,close:()=>new Promise<void>(resolve=>{server.closeAllConnections();server.close(()=>resolve());})};
 }
 
-test('an upload of several megabytes streams to the BFF, which sees only what it checks and the content headers', async () => {
+// Each streaming gate waits within a bound: a relay that held a whole body fails the test instead of hanging the run.
+test('an upload of several megabytes streams to the BFF, which sees only what it checks and the content headers',{timeout:60000}, async () => {
   const size=8*MB,body=pattern(size),firstByte=signal();
   const received:Buffer[]=[];
   let seen:IncomingHttpHeaders={},url='',producedBeforeFirstByte=0,produced=0;
@@ -40,7 +41,7 @@ test('an upload of several megabytes streams to the BFF, which sees only what it
     // the whole body would never let the BFF see a byte, and the upload would not finish.
     let offset=0;
     const stream=new ReadableStream<Uint8Array>({async pull(controller){
-      if(offset===MB)await firstByte.promise;
+      if(offset===MB)await within(firstByte.promise,10000,'the BFF received no byte before the relay had the whole body');
       if(offset>=size){controller.close();return;}
       const chunk=body.subarray(offset,offset+65536);offset+=chunk.length;produced=offset;controller.enqueue(new Uint8Array(chunk));
     }},{highWaterMark:0});
@@ -48,7 +49,7 @@ test('an upload of several megabytes streams to the BFF, which sees only what it
       cookie:'tracker=1; test_session=opaque-session; brand=neutral',origin:'http://app.test','x-csrf-token':'csrf-1','idempotency-key':'upload-12345678',
       'accept-language':'en','content-type':'application/octet-stream','content-length':String(size),
       authorization:'Bearer from-the-browser','x-forwarded-for':'203.0.113.9','x-custom':'not forwarded'}} as RequestInit);
-    const response=await relay(request,['files','report']);
+    const response=await within(relay(request,['files','report']),30000,'the upload did not finish');
     assert.equal(response.status,201);
     assert.deepEqual(await response.json(),{received:size});
     assert.equal(digest(Buffer.concat(received)),digest(body),'the bytes arrive unchanged');
@@ -65,22 +66,22 @@ test('an upload of several megabytes streams to the BFF, which sees only what it
   }finally{await bff.close();}
 });
 
-test('a download of several megabytes streams back with its content headers only', async () => {
+test('a download of several megabytes streams back with its content headers only',{timeout:60000}, async () => {
   const size=8*MB+13,body=pattern(size),clientHasBytes=signal();
   const bff=await fakeBff(async(_req,res)=>{
     res.writeHead(200,{'content-type':'application/octet-stream','content-length':String(size),'content-disposition':'attachment; filename="report.bin"',
       'x-internal':'upstream detail','set-cookie':'tracker=1; Path=/','x-content-type-options':'nosniff','cache-control':'no-store'});
     res.write(body.subarray(0,65536));
     // The rest is sent only once the client holds the first bytes: the relay passes the answer as it arrives.
-    await clientHasBytes.promise;
+    await within(clientHasBytes.promise,10000,'the client received no byte before the relay had the whole answer');
     res.end(body.subarray(65536));
   });
   try{
     const relay=createRelay({bffOrigin:bff.origin,basePath:'/web/transfer',sessionCookie:'test_session'});
-    const response=await relay(new Request('http://app.test/api/transfer/files/report',{headers:{cookie:'test_session=opaque-session'}}),['files','report']);
+    const response=await within(relay(new Request('http://app.test/api/transfer/files/report',{headers:{cookie:'test_session=opaque-session'}}),['files','report']),10000,'the answer did not start');
     assert.equal(response.status,200);
     const reader=response.body!.getReader(),chunks:Uint8Array[]=[];
-    for(;;){const {done,value}=await reader.read();if(done)break;chunks.push(value);clientHasBytes.resolve();}
+    await within((async()=>{for(;;){const {done,value}=await reader.read();if(done)break;chunks.push(value);clientHasBytes.resolve();}})(),30000,'the download did not finish');
     assert.equal(digest(Buffer.concat(chunks)),digest(body));
     assert.equal(response.headers.get('content-length'),String(size));
     assert.equal(response.headers.get('content-type'),'application/octet-stream');
@@ -90,7 +91,7 @@ test('a download of several megabytes streams back with its content headers only
   }finally{await bff.close();}
 });
 
-test('a client that goes away ends the call to the BFF', async () => {
+test('a client that goes away ends the call to the BFF',{timeout:60000}, async () => {
   const ended=signal();let completed=false;
   const bff=await fakeBff(async(req,res)=>{
     req.on('close',()=>{if(!req.complete)ended.resolve();});
