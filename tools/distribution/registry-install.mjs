@@ -19,7 +19,7 @@ import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {parse} from 'yaml';
 import {independentToolchain} from './toolchain.mjs';
-import {integrityOf} from './release.mjs';
+import {integrityOf,parseVersion} from './release.mjs';
 import {apiReport,publishedReport,policyProblems} from './api-report.mjs';
 
 const exec=promisify(execFile);
@@ -173,7 +173,8 @@ async function local(){
     const current=apiReport(join(root,'packages/tokens'),JSON.parse(await readFile(join(root,'packages/tokens/package.json'),'utf8')));
     assert.deepEqual(policyProblems(published,current),[]);
     const removed={...current,version:newer,entries:{...current.entries,'.':Object.fromEntries(Object.entries(current.entries['.']).slice(1))}};
-    assert.match(policyProblems(published,removed).join(),/API_BREAK_NEEDS_MINOR/);
+    // The policy of a major version of 0 asks a new minor version for a break; from 1.0.0 it asks a new major version.
+    assert.match(policyProblems(published,removed).join(),parseVersion(published.version).major===0?/API_BREAK_NEEDS_MINOR/:/API_BREAK_NEEDS_MAJOR/);
     assert.match(policyProblems(published,{...removed,version}).join(),/API_CHANGED_WITHOUT_NEW_VERSION/);
     console.log(JSON.stringify({stage:'registry-api-baseline',ok:true,published:published.version,breakWithPatchRefused:true}));
   }finally{
