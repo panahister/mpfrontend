@@ -489,10 +489,18 @@ application template write that exact version, never a range, and a test fails o
 - Versions are semantic. While the major version is 0, a minor version may break, and its release notes say how
   to move; a patch never breaks. From 1.0.0 on, only a major version breaks.
 - The public API is the exports of each package's entry points (the `exports` of its `package.json`): their names
-  and declarations. `packages/<name>/api-report.json` records it. Every check compares the built declarations
-  with it, and a release compares them with the last published version: a change needs a new version, and a
-  break a new minor version while the major version is 0.
-- A deprecated export stays for at least one minor version before it goes.
+  and declarations. Anything a package does not export, a file reached by a deep import, and a package that is not
+  one of the sixteen are not public, and may change in any version. `packages/<name>/api-report.json` records the
+  API. Every build compares the built declarations with it and with the last published version, whose archives
+  `tools/distribution/api-baseline.json` names with the integrity of their bytes: a change needs a new version, a
+  build that cannot fetch the published archives fails, and nothing is skipped.
+- From 1.0.0 a breaking change (a removed or renamed export, a changed declaration, a changed documented behavior)
+  waits for the next major version. A minor version only adds, and a patch changes no export.
+- An export is marked deprecated for at least one minor version before it goes, with the version that removes it and
+  what to use instead; it goes only in a major version.
+- After a new major version, the previous major version receives security fixes and fixes of defects that lose data
+  or break security for 12 months from the release of the new one, and never past the end of support of the Node
+  version it targets (`engines` of the root `package.json`, Node 24 for the first major version).
 - A published version is never published again with other bytes and never unpublished: a corrected build takes
   the next version, and a bad version is deprecated with a message.
 - Releases go to the public npm registry under `@mpfrontend`, from main, by `.github/workflows/release.yml`, with

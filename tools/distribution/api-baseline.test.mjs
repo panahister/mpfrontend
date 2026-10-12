@@ -71,3 +71,17 @@ test('the baseline file names every package of the cohort at one published versi
   assert.match(ci,/nx run-many -t [^\n]*\bapi-check\b[^\n]*--skip-nx-cache/);
   assert.match(await readFile(join(root,'.github/workflows/release.yml'),'utf8'),/pnpm check --skip-nx-cache/);
 });
+
+test('README "Versioning" states the compatibility policy that the checks enforce',async()=>{
+  const readme=await readFile(join(root,'README.md'),'utf8'),section=readme.slice(readme.indexOf('\n## Versioning\n'),readme.indexOf('\n## Verify the repository'));
+  assert.ok(section.length>500,'the section exists');
+  for(const [claim,pattern] of [
+    ['what is public API',/public API is the exports of each package's entry points/],
+    ['what is not public API',/not public, and may change in any version/],
+    ['a breaking change waits for the next major version',/breaking change[^.]*waits for the next major version/],
+    ['an export is deprecated for at least one minor version',/deprecated for at least one minor version before it goes/],
+    ['the previous major gets fixes for 12 months',/previous major version receives security fixes and fixes of defects that lose data\s+or break security for 12 months/],
+    ['never past the end of support of its Node version',/never past the end of support of the Node\s+version it targets/],
+    ['every build compares with the published API',/Every build compares the built declarations/],
+  ])assert.match(section,pattern,claim);
+});
