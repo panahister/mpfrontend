@@ -1,0 +1,31 @@
+'use client';
+import { useState, type ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { AccessProvider } from '@mpfrontend/access-react';
+import { QueryScope } from '@mpfrontend/data-react';
+
+const reloadAccess = async (signal: AbortSignal): Promise<unknown> =>
+  (await fetch('/api/access', { signal, cache: 'no-store' })).json();
+
+/**
+ * The client providers of the app: its own query client, the URL state adapter and the access snapshot. Server data
+ * is cached under the access scope only, and a write is never retried automatically.
+ */
+export function Providers({ snapshot, children }: { snapshot: unknown; children: ReactNode }) {
+  const [client] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { staleTime: 30000 }, mutations: { retry: false } },
+      }),
+  );
+  return (
+    <QueryClientProvider client={client}>
+      <NuqsAdapter>
+        <AccessProvider snapshot={snapshot} reload={reloadAccess}>
+          <QueryScope>{children}</QueryScope>
+        </AccessProvider>
+      </NuqsAdapter>
+    </QueryClientProvider>
+  );
+}

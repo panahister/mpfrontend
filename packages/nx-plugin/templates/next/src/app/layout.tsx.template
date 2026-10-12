@@ -3,7 +3,9 @@ import { cookies } from 'next/headers';
 import { AppFrame, AppHeader, Navigation } from '@mpfrontend/app-layout';
 import { PreferenceControls, readPreferences } from '../features/preferences';
 import { appId, localeRegistry } from '../config/app';
+import { visitorAccess } from '../config/access';
 import { appMessages } from '../i18n';
+import { Providers } from './providers';
 import './globals.css';
 
 export async function generateMetadata() {
@@ -31,18 +33,20 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       data-mode={preferences.mode}
     >
       <body>
-        <AppFrame
-          skipLinkLabel={t('skipToContent')}
-          header={
-            <AppHeader
-              brand={<a href="/catalog">{appId}</a>}
-              navigation={<Navigation label={t('navigation')} items={items} />}
-              actions={<PreferenceControls initial={preferences} />}
-            />
-          }
-        >
-          {children}
-        </AppFrame>
+        <Providers snapshot={visitorAccess()}>
+          <AppFrame
+            skipLinkLabel={t('skipToContent')}
+            header={
+              <AppHeader
+                brand={<a href="/catalog">{appId}</a>}
+                navigation={<Navigation label={t('navigation')} items={items} />}
+                actions={<PreferenceControls initial={preferences} />}
+              />
+            }
+          >
+            {children}
+          </AppFrame>
+        </Providers>
       </body>
     </html>
   );

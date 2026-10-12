@@ -1,0 +1,24 @@
+import { read__Resource__ } from '../../../api/server/__resource__';
+import { localeRegistry } from '../../../config/app';
+import { __RESOURCE_CONSTANT___URL_STATE } from '../../../entities/__resource__';
+
+/**
+ * The app's own read route of the resource: the browser reads the list here, never the backend. The query is read
+ * with the list's URL state, so an invalid value is its default and only declared parameters reach the BFF.
+ */
+export async function GET(request: Request) {
+  try {
+    return Response.json(
+      await read__Resource__(
+        __RESOURCE_CONSTANT___URL_STATE.read(new URL(request.url).searchParams),
+        localeRegistry.negotiate(request.headers.get('Accept-Language')),
+      ),
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  } catch {
+    return Response.json(
+      { code: '__RESOURCE_CONSTANT___UNAVAILABLE' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+}

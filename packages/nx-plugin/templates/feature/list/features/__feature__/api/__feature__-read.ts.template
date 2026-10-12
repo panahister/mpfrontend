@@ -1,0 +1,12 @@
+import type { __Resource__Page } from '../../../entities/__resource__';
+import { parseRead } from '__FEATURE_TO_OUTPUT__/read-models.gen';
+
+/** Reads one page in the browser through the app's own route, never the backend directly, and validates it. */
+export async function read__Feature__Page(search: string, signal: AbortSignal): Promise<__Resource__Page> {
+  const response = await fetch('/api/__resource__' + search, {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) throw new Error('__RESOURCE_CONSTANT___UNAVAILABLE');
+  return parseRead('__resource__', await response.json());
+}

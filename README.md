@@ -33,7 +33,7 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is currently a verified **public source proof of concept**. Its fifteen packages are not
+> MP Frontend is currently a verified **public source proof of concept**. Its sixteen packages are not
 > published to a package registry, and no stable public API guarantee is declared yet. The supported
 > evaluation path is this source repository plus the immutable, hash-checked cohort in the
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
@@ -283,7 +283,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Fifteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
+| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
 
 ## OpenAPI contract generation
 
@@ -455,13 +455,13 @@ security review remain deployment gates. Read [Security BFF](packages/security-b
 
 ## Package catalog
 
-The workspace contains fifteen domain-neutral packages:
+The workspace contains sixteen domain-neutral packages:
 
 | Package | Runtime | Responsibility |
 |---|---|---|
 | [`@mpfrontend/ftg-cli`](packages/ftg-cli) | Tooling | Workspace lifecycle, design-source commands, contract generation, verification, and skills installation |
 | [`@mpfrontend/nx-plugin`](packages/nx-plugin) | Tooling | Repeatable Nx workspace/application generators and project wiring |
-| [`@mpfrontend/ftg-core`](packages/ftg-core) | Universal | Finite OpenAPI normalization and request/response metadata |
+| [`@mpfrontend/ftg-core`](packages/ftg-core) | Universal | Finite OpenAPI normalization, request/response metadata, and list protocols checked against the contract |
 | [`@mpfrontend/ai-skills`](packages/ai-skills) | Tooling | Eighteen repository-scoped Codex and Claude Code engineering procedures |
 | [`@mpfrontend/workspace-config`](packages/workspace-config) | Tooling | Shared ESLint, Prettier and TypeScript profile with module-boundary, raw-colour and hand-written-CSS rules |
 | [`@mpfrontend/primitives`](packages/primitives) | Universal | Pure product-neutral interaction and accessibility state contracts |
@@ -470,6 +470,7 @@ The workspace contains fifteen domain-neutral packages:
 | [`@mpfrontend/access-core`](packages/access-core) | Universal | Presentation capabilities, field/record visibility, snapshot validation, page manifest, and authority fences |
 | [`@mpfrontend/access-react`](packages/access-react) | Client, with a server-only entry | Access provider, hooks, guard, link and navigation over a server-resolved snapshot, and a server-only loader |
 | [`@mpfrontend/ui`](packages/ui) | Client | Token-driven React composition plus Tailwind v4 integration |
+| [`@mpfrontend/data-react`](packages/data-react) | Client, with a universal shared entry | Server data keyed by the access scope over TanStack Query, and typed URL state over nuqs |
 | [`@mpfrontend/app-layout`](packages/app-layout) | Universal | Server-safe, direction-aware application frame: skip link, header, navigation slot, and page frame |
 | [`@mpfrontend/presentation-server`](packages/presentation-server) | Server | Authenticated API mediation and bounded realtime presentation transport |
 | [`@mpfrontend/security-bff`](packages/security-bff) | Server | OIDC lifecycle, opaque sessions, encrypted Redis records, refresh coordination, and revocation |
@@ -523,14 +524,14 @@ The published source checkpoint currently records:
 
 | Evidence | Observed result |
 |---|---:|
-| Complete Nx workspace | 61/61 uncached lint, typecheck, test, and build targets |
-| Package cohort | 15/15 archives, manifests, digests, and export checks |
-| Distribution negative controls | 74/74 expected failures observed |
+| Complete Nx workspace | 65/65 uncached lint, typecheck, test, and build targets |
+| Package cohort | 16/16 archives, manifests, digests, and export checks |
+| Distribution negative controls | 86/86 expected failures observed |
 | AI procedure format validation | 18/18 procedures |
 | Installed independent-consumer security assertions | 12/12 |
 | Installed independent-consumer realtime assertions | 5/5 |
 | Tiffin reference gate | 19/19 lint, typecheck, test, build, generated-contract, and design checks |
-| Current public CI | [GitHub Actions run 37697781045](https://github.com/panahister/mpfrontend/actions/runs/37697781045) passed |
+| Current public CI | [The CI workflow and its runs](https://github.com/panahister/mpfrontend/actions/workflows/ci.yml) |
 
 These counts are scoped engineering evidence, not a readiness percentage. The exact package versions,
 fixture boundaries, and remaining gates are maintained in
@@ -676,7 +677,7 @@ grant credentials, approve a design, publish a release, or guarantee identical d
 <summary><strong>Can I use only one package?</strong></summary>
 
 The packages are intentionally modular and have explicit runtime roles. However, the current public
-distribution evidence validates one locked fifteen-package cohort, and no registry API stability contract
+distribution evidence validates one locked sixteen-package cohort, and no registry API stability contract
 exists yet. Evaluate isolated adoption against the package's documented boundary and your own tests.
 </details>
 

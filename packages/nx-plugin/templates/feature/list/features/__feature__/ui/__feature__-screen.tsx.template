@@ -1,26 +1,29 @@
 import { cookies } from 'next/headers';
 import { preferenceCookie, visitorLocale } from '../../../config/app';
+import { __RESOURCE_CONSTANT___URL_STATE } from '../../../entities/__resource__';
 import { load__Feature__Page } from '../api/__feature__';
 import { fields } from '../model/__feature__-fields';
-import { listQuery, type SearchParams } from '../model/__feature__-query';
 import { __Feature__List } from './__feature__-list';
 
 export type __Feature__ScreenProps = Readonly<{
   params?: Promise<Readonly<Record<string, string>>>;
-  searchParams?: Promise<SearchParams>;
+  searchParams?: Promise<Readonly<Record<string, string | string[] | undefined>>>;
   basePath: string;
 }>;
 
-/** The list screen. The query comes from the URL and the data from the server boundary. */
+/**
+ * The list screen. The server reads the URL state the way the browser does and renders the first page; the browser
+ * then reads each further page through the app's own route.
+ */
 export async function __Feature__Screen({ searchParams, basePath }: __Feature__ScreenProps) {
-  const query = listQuery((await searchParams) ?? {});
+  const state = __RESOURCE_CONSTANT___URL_STATE.read((await searchParams) ?? {});
   const language = visitorLocale((await cookies()).get(preferenceCookie.name)?.value);
-  const page = await load__Feature__Page(query, language).catch(() => undefined);
+  const page = await load__Feature__Page(state, language).catch(() => null);
   return (
     <__Feature__List
-      page={page}
+      initialPage={page}
+      initialSearch={__RESOURCE_CONSTANT___URL_STATE.serialize(state)}
       fields={fields}
-      query={query}
       language={language}
       basePath={basePath}
     />

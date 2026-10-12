@@ -90,7 +90,10 @@ const submissionBody={type:'object',additionalProperties:false,required:['name',
 const cancellationBody={oneOf:[{type:'null'},{type:'object',additionalProperties:false,required:['note'],properties:{note:{type:['string','null']}}}]};
 const submissionResult={description:'Synthetic acceptance',content:{'application/json':{schema:{type:'object',additionalProperties:false,required:['id'],properties:{id:{type:'string',format:'uuid',readOnly:true}}}}}};
 const contractFixture={openapi:'3.1.0',info:{title:'Synthetic generator acceptance fixture',version:'1.0.0'},paths:{
-  '/catalog':{get:{operationId:'listCatalog',responses:{'200':response}}},
+  // The list operation declares the query parameters that the template's list protocol sends, and no other.
+  '/catalog':{get:{operationId:'listCatalog',parameters:[{name:'page',in:'query',schema:{type:'integer',minimum:1}},
+    {name:'size',in:'query',schema:{type:'integer',minimum:1,maximum:100}},{name:'search',in:'query',schema:{type:'string',maxLength:100}}],
+    responses:{'200':response}}},
   '/fixture/submission':{
     post:{operationId:'submitFixture',requestBody:{required:true,content:{'application/json':{schema:submissionBody}}},responses:{'202':submissionResult}},
     delete:{operationId:'removeFixture',responses:{'200':submissionResult}}
@@ -147,7 +150,7 @@ for(const args of [['feature','--app','apps/sample','--name','order-review'],['r
   assert.deepEqual(result.files,preview.files);assert.equal(result.formatted,true);created.push(...result.files);
   await run('pnpm',['exec','mpfrontend','create',...args,'--json'],{expectedCode:2});
 }
-assert.deepEqual(JSON.parse(await run('pnpm',['exec','mpfrontend','create','feature','--app','apps/sample','--name','archive-two','--resource','catalog','--json'],{capture:true})).kept.length,4);
+assert.deepEqual(JSON.parse(await run('pnpm',['exec','mpfrontend','create','feature','--app','apps/sample','--name','archive-two','--resource','catalog','--json'],{capture:true})).kept.length,7);
 assert.ok((await filesUnder(join(workspace,'apps/sample/src'))).filter(path=>basename(dirname(path))==='messages').every(path=>basename(path)==='en.ts'),'GENERATED_CATALOG_NOT_ENGLISH');
 await rm(join(workspace,'apps/sample/src/features/archive-two'),{recursive:true});
 // The Nx generators are the same generators; a dry run writes nothing.
@@ -174,8 +177,6 @@ await assert.rejects(lstat(join(foundation,'dist')),{code:'ENOENT'});
 const fixtureManifestPath=join(workspace,'apps/sample/package.json');
 const fixtureManifest=JSON.parse(await readFile(fixtureManifestPath,'utf8'));
 fixtureManifest.dependencies['@independent/foundation']='workspace:*';
-// The access bindings, from their packed archive like every framework package.
-fixtureManifest.dependencies['@mpfrontend/access-react']=inventory.packages.find(p=>p.name==='@mpfrontend/access-react').version;
 await writeFile(fixtureManifestPath,JSON.stringify(fixtureManifest,null,2));
 const configPath=join(workspace,'apps/sample/ftg.config.json');
 const config=JSON.parse(await readFile(configPath,'utf8'));
@@ -391,10 +392,16 @@ const transferSize=8*1024*1024,transferFile=Buffer.alloc(transferSize);
 for(let index=0;index<transferSize;index++)transferFile[index]=index%256;
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const within=(promise,ms,code)=>{let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(code)),ms);})]).finally(()=>clearTimeout(timer));};
-const bffReceived=[];let bffSeen={},reportArrival,clientHasBytes;
+const bffReceived=[],catalogQueries=[];let bffSeen={},reportArrival,clientHasBytes;
 const arrival=new Promise(resolve=>{reportArrival=resolve;}),clientHolds=new Promise(resolve=>{clientHasBytes=resolve;});
 const fakeBff=createHttpServer(async(req,res)=>{
   try{
+    // The list read: the query the BFF receives is recorded, and one page answers it.
+    if(req.method==='GET'&&req.url.startsWith('/sample/catalog?')){
+      catalogQueries.push(req.url.slice('/sample/catalog?'.length));
+      res.writeHead(200,{'content-type':'application/json'});
+      res.end(JSON.stringify({items:[{name:'Packed list row'}],number:2,size:12,total:13,pageCount:2,hasMore:false}));return;
+    }
     if(!req.url.startsWith('/sample/transfer/')){res.writeHead(404,{'content-type':'application/json'});res.end('{}');return;}
     if(req.method==='GET'){
       res.writeHead(200,{'content-type':'application/octet-stream','content-length':String(transferSize),'x-internal':'not passed','set-cookie':'tracker=1'});
@@ -410,6 +417,15 @@ await new Promise(resolve=>fakeBff.listen(0,'127.0.0.1',resolve));
 try{
   await served(join(workspace,'apps/sample'),async(page,appOrigin)=>{
     await page();
+    // The list route reads its URL state on the server the way the browser does: an invalid size is the default and
+    // a key the state does not declare is not read; the BFF receives only the parameters the operation declares.
+    const listed=await (await fetch(appOrigin+'/catalog?page=2&search=blue&size=1000&tenant=ctx-1')).text();
+    assert.match(listed,/Packed list row/);assert.match(listed,/aria-label="Pages"/);
+    assert.equal(catalogQueries.at(-1),'page=2&size=12&search=blue');
+    const routed=await fetch(appOrigin+'/api/catalog?page=0&search=red&scope=visitor');
+    assert.equal(routed.status,200);assert.equal((await routed.json()).items[0].name,'Packed list row');
+    assert.equal(catalogQueries.at(-1),'page=1&size=12&search=red');
+    console.log(JSON.stringify({stage:'served-list-url-state',ok:true,serverFirstPage:'rendered',bffQuery:'declared-parameters-only',invalidValue:'default'}));
     const uploaded=await within(new Promise((resolve,reject)=>{
       const client=httpRequest(appOrigin+'/api/transfer/files/report',{method:'PUT',headers:{cookie:'theme=dark; app_session=opaque',origin:appOrigin,
         'x-csrf-token':'token','content-type':'application/octet-stream','content-length':String(transferSize),authorization:'Bearer not-forwarded'}});
@@ -550,7 +566,7 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','access-first-paint/granted-only/server-loader-not-in-browser-bundle','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','access-first-paint/granted-only/server-loader-not-in-browser-bundle','list-url-state/declared-parameters-only/invalid-to-default','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
 // path printed first, for diagnosis. No other file is deleted.
 await rm(temporary,{recursive:true,force:true});

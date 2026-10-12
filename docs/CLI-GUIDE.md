@@ -98,16 +98,18 @@ and formats what it writes with the workspace's own Prettier configuration when 
   `--resource` it is a screen feature: a view that emits intent, a hook that holds the workflow state, a
   model of its transitions, a cancellable and time-bounded request boundary and a helper; its request is
   unbound until the app binds it to a generated contract adapter. With `--resource` it is a list feature
-  over a read that the app's `ftg.config.json` selects: a URL-driven list and detail, the shared entity
-  in `src/entities/<resource>/` and the server boundary in `src/api/server/<resource>.ts`.
+  over a read that the app's `ftg.config.json` selects: a list whose page and filters are URL state and
+  whose pages are read under the access scope, a detail screen, the shared entity in
+  `src/entities/<resource>/` with the list protocol of the operation and its contract test, the server
+  boundary in `src/api/server/<resource>.ts` and the app's read route `src/app/api/<resource>/route.ts`.
 - **When:** for each new user workflow of an app.
-- **Writes:** the feature directory; the entity and the server boundary only when they do not exist yet.
-  An existing entity or boundary is kept and listed under `kept`.
+- **Writes:** the feature directory; the entity, the server boundary and the read route only when they do not
+  exist yet. An existing one is kept and listed under `kept`.
 - **Refuses:** an existing feature directory; an invalid name; an unknown app; an app whose
   `src/config/app.ts` has no locale registry with an explicit `defaultLocale`
   (`APP_PREREQUISITE_MISSING:src/config/app.ts locale registry`); an app without `@mpfrontend/app-layout`;
-  a resource that `ftg.config.json` does not select; a list feature in an app without `src/config/app.ts`
-  and `src/config/server.ts`.
+  a resource that `ftg.config.json` does not select or selects without an `operationId`; a list feature in an
+  app without `src/config/app.ts` and `src/config/server.ts`.
 
 Code outside the feature imports only its `index.ts`; the lint rule `mpfrontend/public-entry` refuses a
 deeper import, and the same rule applies to `src/entities/<entity>/`.

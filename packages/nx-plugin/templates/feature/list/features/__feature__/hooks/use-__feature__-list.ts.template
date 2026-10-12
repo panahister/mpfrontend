@@ -1,0 +1,22 @@
+'use client';
+import { useScopedQuery, useTableUrlState } from '@mpfrontend/data-react';
+import { __RESOURCE_CONSTANT___URL_STATE, type __Resource__Page } from '../../../entities/__resource__';
+import { read__Feature__Page } from '../api/__feature__-read';
+
+/**
+ * The list state of the URL and the page it selects. The page is read under the access scope through the app's own
+ * route; the server's first page is used while the URL still asks for it. `null` means the server could not read it.
+ */
+export function use__Feature__List(initial: Readonly<{ search: string; page: __Resource__Page | null }>) {
+  const table = useTableUrlState(__RESOURCE_CONSTANT___URL_STATE);
+  const search = __RESOURCE_CONSTANT___URL_STATE.serialize(table);
+  const first = search === initial.search;
+  const query = useScopedQuery({
+    operation: '__resource__.list',
+    params: search,
+    read: read__Feature__Page,
+    ...(first && initial.page ? { initialData: initial.page } : {}),
+  });
+  const unavailable = query.isError || (first && initial.page === null && query.data === undefined);
+  return { table, page: query.data, unavailable };
+}

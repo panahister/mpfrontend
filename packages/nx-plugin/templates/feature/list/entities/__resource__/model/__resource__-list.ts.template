@@ -1,0 +1,24 @@
+import type { ListProtocol } from '@mpfrontend/ftg-core';
+import { listUrlState } from '@mpfrontend/data-react/shared';
+
+/**
+ * How the list operation of the resource pages and filters, as data: the parameters a request sends and where the
+ * answer holds the rows and the total. The test beside it checks it against the captured contract, so a request
+ * sends only parameters the operation declares. Add a sort or a filter here only when the contract declares it.
+ */
+export const __RESOURCE_CONSTANT___LIST: ListProtocol = {
+  operationId: '__OPERATION_ID__',
+  page: { param: 'page', encoding: 'number', first: 1 },
+  size: { param: 'size', max: 100 },
+  filters: { search: { param: 'search', maxLength: 100 } },
+  rows: ['items'],
+  total: ['total'],
+};
+
+/** The page size when the URL names none. */
+export const __RESOURCE_CONSTANT___PAGE_SIZE = 12;
+
+/** The list state that the URL owns, read the same way on the server and in the browser. It never holds the scope. */
+export const __RESOURCE_CONSTANT___URL_STATE = listUrlState(__RESOURCE_CONSTANT___LIST, {
+  size: __RESOURCE_CONSTANT___PAGE_SIZE,
+});

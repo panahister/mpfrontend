@@ -1,32 +1,19 @@
 import 'server-only';
+import { listSearchParams, type ListState } from '@mpfrontend/ftg-core';
 import { bffOrigin, appId } from '../../config/server';
 import { localeRegistry } from '../../config/app';
-import type { __Resource__Page } from '../../entities/__resource__';
+import { __RESOURCE_CONSTANT___LIST, type __Resource__Page } from '../../entities/__resource__';
 import { parseRead } from '__SERVER_TO_OUTPUT__/read-models.gen';
 
-/** The trusted server boundary of the resource: validated query in, validated response out. */
-export function queryParameters(input: URLSearchParams): URLSearchParams {
-  const output = new URLSearchParams();
-  for (const key of ['page', 'size']) {
-    const raw = input.get(key) ?? (key === 'page' ? '1' : '12');
-    if (!/^\d+$/.test(raw)) throw new Error('INVALID_QUERY');
-    const value = Number(raw);
-    if (value < 1 || value > (key === 'size' ? 100 : 100000)) throw new Error('INVALID_QUERY');
-    output.set(key, String(value));
-  }
-  const search = input.get('search');
-  if (search) {
-    if (search.length > 100) throw new Error('INVALID_QUERY');
-    output.set('search', search);
-  }
-  return output;
-}
-
+/**
+ * The trusted server boundary of the resource: a list state in, only the parameters that the list protocol declares
+ * sent to the BFF, a validated response out.
+ */
 export async function read__Resource__(
-  query = new URLSearchParams(),
+  state: ListState,
   language: string = localeRegistry.defaultLocale,
 ): Promise<__Resource__Page> {
-  const path = '/' + appId + '/__resource__?' + queryParameters(query);
+  const path = '/' + appId + '/__resource__?' + listSearchParams(__RESOURCE_CONSTANT___LIST, state);
   const response = await fetch(bffOrigin + path, {
     cache: 'no-store',
     headers: { 'Accept-Language': language },

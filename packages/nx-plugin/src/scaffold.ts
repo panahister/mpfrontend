@@ -60,7 +60,7 @@ export const messages = createMessages({
   return files;
 }
 const listMessages=(name:string)=>({
-  title:humanize(name),search:'Search',apply:'Apply',unavailable:'The data is not available. Try again.',empty:'No records found.',
+  title:humanize(name),search:'Search',apply:'Apply',unavailable:'The data is not available. Try again.',empty:'No records found.',loading:'Loading.',
   detail:'Details',back:'Back',pagination:'Pages',pageOf:'Page {page, number} of {count, number}',previous:'Previous',next:'Next',
   yes:'Yes',no:'No',
 });
@@ -75,18 +75,20 @@ export type FeatureKind='screen'|'list';
  * hook, a model, a request boundary and a helper. With a resource of the app's `ftg.config.json` it is a
  * `list` feature: a URL-driven list and detail over that generated read, its entity and its server boundary.
  */
-export async function featureFiles(name:string,options:{resource?:string;generatedOutput?:string;locales?:AppLocales}={}):Promise<Record<string,string>>{
+export async function featureFiles(name:string,options:{resource?:string;operationId?:string;generatedOutput?:string;locales?:AppLocales}={}):Promise<Record<string,string>>{
   if(!NAME_PATTERN.test(name))throw new Error('INVALID_FEATURE_NAME');
   const locales=options.locales??TEMPLATE_LOCALES;
   const model='features/'+name+'/model';
   if(options.resource===undefined)return prefix('src',{...await templateFiles('feature/screen',{__feature__:name,__Feature__:pascal(name)}),...messageFiles(model,screenMessages(name),locales,3)});
   if(!NAME_PATTERN.test(options.resource))throw new Error('INVALID_RESOURCE_NAME');
   const output=safeRelative(options.generatedOutput??'','INVALID_GENERATED_OUTPUT');
+  // The list protocol names the operation of the resource; it is checked against the captured contract.
+  if(!options.operationId||!/^[A-Za-z_][A-Za-z0-9_.-]{0,99}$/.test(options.operationId))throw new Error('INVALID_OPERATION_ID');
   return prefix('src',{...await templateFiles('feature/list',{
     __FEATURE_TO_OUTPUT__:importPath('src/features/'+name+'/model',output),
     __ENTITY_TO_OUTPUT__:importPath('src/entities/'+options.resource+'/model',output),
     __SERVER_TO_OUTPUT__:importPath('src/api/server',output),
-    __RESOURCE_CONSTANT__:constant(options.resource),
+    __RESOURCE_CONSTANT__:constant(options.resource),__OPERATION_ID__:options.operationId,
     __feature__:name,__Feature__:pascal(name),__resource__:options.resource,__Resource__:pascal(options.resource),
   }),...messageFiles(model,listMessages(name),locales,3)});
 }
@@ -101,15 +103,18 @@ export async function planFeature(reader:WorkspaceReader,request:FeatureRequest)
   // Feature screens render inside the shared page frame.
   const manifest=JSON.parse(await reader.read(app+'/package.json')??'{}') as {dependencies?:Record<string,string>};
   if(!manifest.dependencies?.['@mpfrontend/app-layout'])throw new Error('APP_PREREQUISITE_MISSING:@mpfrontend/app-layout');
-  let generatedOutput:string|undefined;
+  let generatedOutput:string|undefined,operationId:string|undefined;
   if(request.resource!==undefined){
     for(const required of ['src/config/app.ts','src/config/server.ts'])if(!await reader.exists(app+'/'+required))throw new Error('APP_PREREQUISITE_MISSING:'+required);
-    const config=JSON.parse(await reader.read(app+'/ftg.config.json')??'null') as {output?:unknown;resources?:Array<{name?:unknown}>}|null;
+    const config=JSON.parse(await reader.read(app+'/ftg.config.json')??'null') as {output?:unknown;resources?:Array<{name?:unknown;operationId?:unknown}>}|null;
     if(!config||typeof config.output!=='string'||!Array.isArray(config.resources))throw new Error('APP_PREREQUISITE_MISSING:ftg.config.json');
-    if(!config.resources.some(resource=>resource.name===request.resource))throw new Error('UNKNOWN_RESOURCE');
+    const selected=config.resources.find(resource=>resource.name===request.resource);
+    if(!selected)throw new Error('UNKNOWN_RESOURCE');
+    if(typeof selected.operationId!=='string')throw new Error('APP_PREREQUISITE_MISSING:ftg.config.json operationId');
+    operationId=selected.operationId;
     generatedOutput=posix.normalize(config.output);
   }
-  const all=prefix(app,await featureFiles(request.name,{locales,...(request.resource!==undefined?{resource:request.resource}:{}),...(generatedOutput?{generatedOutput}:{})}));
+  const all=prefix(app,await featureFiles(request.name,{locales,...(request.resource!==undefined?{resource:request.resource}:{}),...(operationId?{operationId}:{}),...(generatedOutput?{generatedOutput}:{})}));
   const files:Record<string,string>={},kept:string[]=[];
   for(const [path,content] of Object.entries(all)){
     // The entity and the server boundary of a resource are shared; an existing one is authored and kept.

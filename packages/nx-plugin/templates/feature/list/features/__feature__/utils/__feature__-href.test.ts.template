@@ -1,9 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detailHref, listHref } from './__feature__-href';
+import { detailHref } from './__feature__-href';
 
-test('list and detail links carry the whole screen state in the URL', () => {
-  assert.equal(listHref('/list', { page: 1, search: '' }), '/list');
-  assert.equal(listHref('/list', { page: 2, search: 'a b' }), '/list?page=2&search=a+b');
+test('a detail link carries the list position in the URL', () => {
   assert.equal(detailHref('/list', 14), '/list/14');
 });

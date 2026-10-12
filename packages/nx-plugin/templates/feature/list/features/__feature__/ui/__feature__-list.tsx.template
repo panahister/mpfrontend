@@ -1,53 +1,37 @@
 'use client';
 import { PageFrame } from '@mpfrontend/app-layout';
-import { Button, Card, Field, ResourceTable, type DisplayField } from '@mpfrontend/ui';
+import { Card, ResourceTable, type DisplayField } from '@mpfrontend/ui';
 import { formatValue } from '@mpfrontend/i18n';
 import { localeRegistry } from '../../../config/app';
 import { itemPosition, type __Resource__Page } from '../../../entities/__resource__';
-import { use__Feature__Search } from '../hooks/use-__feature__-search';
+import { use__Feature__List } from '../hooks/use-__feature__-list';
 import { messages } from '../model/messages';
-import { PAGE_SIZE, type ListQuery } from '../model/__feature__-query';
 import { labels } from '../model/overrides';
-import { detailHref, listHref } from '../utils/__feature__-href';
+import { detailHref } from '../utils/__feature__-href';
 
 type Props = Readonly<{
-  page: __Resource__Page | undefined;
+  initialPage: __Resource__Page | null;
+  initialSearch: string;
   fields: readonly DisplayField[];
-  query: ListQuery;
   language: string;
   basePath: string;
 }>;
 
-/** The list view: it renders the page it is given and emits navigation and search intent. */
-export function __Feature__List({ page, fields, query, language, basePath }: Props) {
+/** The list view: it renders the page that the URL state selects and emits paging and filter intent. */
+export function __Feature__List({ initialPage, initialSearch, fields, language, basePath }: Props) {
   const t = messages.translator(language);
-  const search = use__Feature__Search(basePath, query.search);
+  const { table, page, unavailable } = use__Feature__List({ search: initialSearch, page: initialPage });
   return (
     <PageFrame title={t('title')}>
-      <form
-        role="search"
-        action={basePath}
-        method="get"
-        onSubmit={search.submit}
-        className="flex flex-wrap items-end gap-4"
-      >
-        <Field
-          label={t('search')}
-          name="search"
-          value={search.draft}
-          onChange={(event) => search.setDraft(event.target.value)}
-        />
-        <Button type="submit" tone="secondary">
-          {t('apply')}
-        </Button>
-      </form>
-      {page === undefined ? (
+      {unavailable ? (
         <p
           role="alert"
           className="border-s-4 border-[color:var(--mp-status-warning)] bg-[color:var(--mp-status-warningsurface)] p-4"
         >
           {t('unavailable')}
         </p>
+      ) : page === undefined ? (
+        <p role="status">{t('loading')}</p>
       ) : (
         <Card>
           <ResourceTable
@@ -57,28 +41,33 @@ export function __Feature__List({ page, fields, query, language, basePath }: Pro
             format={(value) =>
               formatValue(value, language, localeRegistry, { true: t('yes'), false: t('no') })
             }
-            labels={{ ...labels, detail: t('detail') }}
+            labels={{ ...labels, detail: t('detail'), search: t('search') }}
             detail={(row) => (
               <a
                 href={detailHref(
                   basePath,
-                  itemPosition(page.number, PAGE_SIZE, page.items.indexOf(row as never)),
+                  itemPosition(page.number, table.size, page.items.indexOf(row as never)),
                 )}
               >
                 {t('detail')}
               </a>
             )}
+            control={{
+              mode: 'server',
+              ...table,
+              total: page.total,
+              filterable: ['search'],
+              text: {
+                pagination: t('pagination'),
+                previous: t('previous'),
+                next: t('next'),
+                page: (number, count) => t('pageOf', { page: number, count: count ?? number }),
+                apply: t('apply'),
+                filters: t('search'),
+              },
+            }}
           />
           {page.items.length === 0 && <p>{t('empty')}</p>}
-          <nav aria-label={t('pagination')} className="mt-4 flex flex-wrap items-center gap-4">
-            {page.number > 1 && (
-              <a href={listHref(basePath, { ...query, page: page.number - 1 })}>{t('previous')}</a>
-            )}
-            <span>{t('pageOf', { page: page.number, count: page.pageCount })}</span>
-            {page.hasMore && (
-              <a href={listHref(basePath, { ...query, page: page.number + 1 })}>{t('next')}</a>
-            )}
-          </nav>
         </Card>
       )}
     </PageFrame>

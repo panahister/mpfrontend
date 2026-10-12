@@ -1,0 +1,21 @@
+import 'server-only';
+import type { PageAccess } from '@mpfrontend/access-core';
+
+/** How long the provider uses a visitor snapshot before it closes it and asks again. */
+const VISITOR_LIFETIME = 15 * 60 * 1000;
+
+/**
+ * The access snapshot of a visitor who has not signed in: it names the scope of the data the app reads for them and
+ * grants no capability and no field. A product that signs people in loads each person's snapshot instead, with
+ * `createAccessLoader` of `@mpfrontend/access-react/server` from its own access endpoint through the BFF; its
+ * context reference and revision change when the person, the tenant or the grants change.
+ */
+export function visitorAccess(now = Date.now()): PageAccess {
+  return {
+    contextRef: 'visitor',
+    revision: 'visitor-1',
+    expiresAt: now + VISITOR_LIFETIME,
+    capabilities: {},
+    fields: {},
+  };
+}

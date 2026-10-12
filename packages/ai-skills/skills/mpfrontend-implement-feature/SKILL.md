@@ -38,7 +38,12 @@ media type or size that the BFF's approved stream policy does not declare.
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
 shapes. Every new route gets one entry in the app's page manifest (`definePageManifest`) with the capability its
 page and menu entry need and its elements and fields, and the manifest test (`assertPageManifest` with
-`appRoutes`) stays green. Present access from the server's snapshot with `@mpfrontend/access-react`
+`appRoutes`) stays green. Read and write server data in client components only through `@mpfrontend/data-react` (`useScopedQuery`,
+`useScopedMutation`, under the app's `QueryScope`), through the app's own routes or the BFF; never retry a write
+automatically and never add a global client store. Keep page, sort, filter and similar screen state in the URL with
+`listUrlState` and `useTableUrlState`, never the scope or a personal value. A list over a backend declares its
+paging, sorting and filtering as a `ListProtocol` checked against the contract. Present access from the server's
+snapshot with `@mpfrontend/access-react`
 (`AccessProvider`, `AccessGuard`, `AccessLink`, `useCapability`, `useFieldState`) as `mpfrontend-apply-access`
 describes; never from a role name. Publish protected asynchronous results through `@mpfrontend/access-core`
 `AuthorityFence` (`useAccessCapture()` inside a provider) and keep backend/BFF authorization authoritative. Compose `@mpfrontend/ui` primitives through the

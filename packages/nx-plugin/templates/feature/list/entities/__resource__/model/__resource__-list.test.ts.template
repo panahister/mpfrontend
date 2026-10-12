@@ -1,0 +1,23 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { checkListProtocol, type OpenApiDocument } from '@mpfrontend/ftg-core';
+import { __RESOURCE_CONSTANT___LIST, __RESOURCE_CONSTANT___URL_STATE } from './__resource__-list';
+
+test('the list protocol sends only parameters that the captured contract declares', async () => {
+  const app = new URL('../../../../', import.meta.url);
+  const config = JSON.parse(await readFile(new URL('ftg.config.json', app), 'utf8')) as { openapi: string };
+  const contract = JSON.parse(await readFile(new URL(config.openapi, app), 'utf8')) as OpenApiDocument;
+  assert.deepEqual(checkListProtocol(contract, __RESOURCE_CONSTANT___LIST), []);
+});
+
+test('the URL state restores a linked list and falls back to its defaults for an invalid value', () => {
+  const state = __RESOURCE_CONSTANT___URL_STATE.read('page=3&search=term');
+  assert.equal(state.page, 3);
+  assert.equal(state.filters?.search, 'term');
+  assert.equal(__RESOURCE_CONSTANT___URL_STATE.serialize(state), '?page=3&search=term');
+  assert.deepEqual(
+    __RESOURCE_CONSTANT___URL_STATE.read('page=0&size=1000&search=' + 'x'.repeat(101)),
+    __RESOURCE_CONSTANT___URL_STATE.defaults,
+  );
+});

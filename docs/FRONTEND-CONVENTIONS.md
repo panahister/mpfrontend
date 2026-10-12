@@ -156,6 +156,42 @@ uses logical properties (start and end), never left and right.
   boundaries.
 - Treat external data as `unknown` until the generated or approved handwritten boundary validates it.
 
+### Server data in client components
+
+A client component reads and writes server data through `@mpfrontend/data-react`, over TanStack Query; the app
+owns its `QueryClient`, and `QueryScope` sits inside the `AccessProvider`. There is no other client store of server
+data, and no global client store.
+
+- **Keys.** `useScopedQuery` keys every read by its scope (the context reference and revision of the access
+  snapshot in use), its operation and its parameters. Without a valid snapshot a read does not run.
+- **A change of scope.** When the context or the revision changes, in-flight reads are aborted, the data of the old
+  scope and every unscoped entry are removed from the cache, and a late answer is dropped (`AuthorityFence`). Data
+  read for one person, context or revision never shows under another.
+- **Reads** go through the app's own routes (`src/app/api/...`) or the BFF, never to a backend directly, and pass the
+  `AbortSignal` on.
+- **Writes.** `useScopedMutation` invalidates the reads it names in the current scope after it succeeds. A write is
+  never retried automatically, after a refusal or any other failure.
+
+### URL state
+
+Paging, sorting and filtering of a list are URL state, so a link or a refresh restores the screen and back and
+forward move through it. `listUrlState` of `@mpfrontend/data-react/shared` defines typed keys (`page`, `size`,
+`sort` and one per declared filter) with defaults and limits, over nuqs parsers. The server reads them for the first
+render (`read`) the same way the browser does (`useTableUrlState`); an invalid value falls back to its default, and a
+sort or a filter on a column the person may not view is dropped and removed from the URL on load. Each change is a
+new history entry, and a new size, sort or filter starts at the first page. The scope, a token, a secret or a
+personal value never enters the URL; a filter on personal data is sent in a request body, not in URL state.
+
+### Backend paging, sorting and filtering
+
+How each backend operation pages, sorts and filters (its parameter names and encodings, and where the answer holds
+the rows and the total) is declared as data: a `ListProtocol` of `@mpfrontend/ftg-core` in the entity of the
+resource. A test runs `checkListProtocol` against the captured contract, which refuses a parameter the operation does
+not declare, a type or limit it does not accept and a required parameter that is not sent; `listSearchParams` sends
+only the declared parameters. `ResourceTable` takes a declared `mode`: `server` shows the rows the server returned and
+never sorts, filters or pages them itself; `client` does all three over the rows it is given. There is no automatic
+switch between them.
+
 ## Access in the UI
 
 The consumer's server decides what each person may see and do. It resolves its own rules (for example, a menu
@@ -299,6 +335,8 @@ ambiguous. It must not choose a business rule merely because one implementation 
 | Nx, [Enforce Module Boundaries](https://nx.dev/features/enforce-module-boundaries) | Dependency direction and tag-enforced repository boundaries |
 | Feature-Sliced Design, [Public API](https://feature-sliced.design/docs/reference/public-api) | One public entry per feature or entity, with deeper imports refused |
 | ESLint, [Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files), and [Prettier](https://prettier.io/docs/) | One shared flat configuration and formatter profile that each project extends |
+| TanStack, [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/overview) | Server state is a cache owned by the app and keyed by what it depends on, apart from client state |
+| nuqs, [Type-safe search params state](https://nuqs.dev/docs) | Typed URL state with defaults, read the same way on the server and in the browser |
 | OWASP, [A01:2021 Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | Access is enforced in trusted server code; the UI's snapshot only presents the server's decision, and whatever it does not grant is denied |
 | Testing Library, [Guiding Principles](https://testing-library.com/docs/guiding-principles) | Tests emphasize observable behavior over implementation detail |
 | Unicode, [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) | Messages with named parameters, plural and select rules per locale, placed by each translation |

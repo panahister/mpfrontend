@@ -50,3 +50,13 @@ submitted values; a field that may not be edited is disabled; a save passes `onS
 may be edited, compared with `original` (`dirtyPatch`), and a changed field that may not be edited throws
 `FORBIDDEN_FIELD` instead of being sent. Without `access` both components behave as before. A hidden field is a
 presentation; the server still refuses a field the person may not write.
+
+## Paging, sorting and filtering
+
+`ResourceTable` takes `control`, a declared `mode` with controlled `page`, `size`, `sort` and `filters` and their
+change events, with the visible text of its controls from the consumer's catalog. In `server` mode it shows the rows
+the server returned and never sorts, filters or pages them itself; in `client` mode it filters, sorts and pages the
+rows it is given. The mode is never switched by the data. Sortable headers carry `aria-sort`; filters submit
+together; the pagination is a labelled navigation. A sort or a filter on a column the person may not view is
+ignored. `useTableUrlState` of `@mpfrontend/data-react` binds the controlled values to the URL. Without `control`,
+the table renders exactly as before.

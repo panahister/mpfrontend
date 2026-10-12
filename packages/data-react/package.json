@@ -1,0 +1,36 @@
+{
+  "name": "@mpfrontend/data-react",
+  "version": "0.1.0-dev.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./shared": {
+      "types": "./dist/shared.d.ts",
+      "import": "./dist/shared.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@mpfrontend/access-react": "workspace:*",
+    "@mpfrontend/ftg-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "20.14.5",
+    "@tanstack/react-query": "5.104.0",
+    "happy-dom": "20.14.5",
+    "nuqs": "2.10.1"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.104.0",
+    "nuqs": "^2.10.1",
+    "react": "^19.3.0"
+  }
+}

@@ -5,3 +5,8 @@ export {
   type __Resource__Item,
   type __Resource__Page,
 } from './model/__resource__';
+export {
+  __RESOURCE_CONSTANT___LIST,
+  __RESOURCE_CONSTANT___PAGE_SIZE,
+  __RESOURCE_CONSTANT___URL_STATE,
+} from './model/__resource__-list';

@@ -6,11 +6,16 @@ describe the structure that `mpfrontend create app` wrote.
 ## Routes
 
 - `/` opens the catalog list (`src/app/page.tsx`).
-- `/catalog` is the catalog list screen; its page and its search are URL state, so the screen can be
-  linked and refreshed (`src/app/catalog/page.tsx`).
+- `/catalog` is the catalog list screen; its page, size and search are URL state, read the same way on the
+  server for the first render and in the browser, so the screen can be linked and refreshed and back and
+  forward move through it (`src/app/catalog/page.tsx`). The browser reads further pages through the app's
+  own route `/api/catalog` (`src/app/api/catalog/route.ts`), under the access scope.
 - `/catalog/[position]` is the detail screen of one item, a child route of the list
   (`src/app/catalog/[position]/page.tsx`).
 - `/components` shows the framework components (`src/app/components/page.tsx`).
+- `/api/access` answers the access snapshot of the visitor again when the window regains focus
+  (`src/app/api/access/route.ts`); `src/config/access.ts` defines it, and `src/app/providers.tsx` holds the app's
+  query client, its URL state adapter and its access provider.
 - `/api/transfer/...` relays the BFF's streamed routes for uploads and downloads
   (`src/app/api/transfer/[...path]/route.ts`); see [api-contracts.md](api-contracts.md).
 

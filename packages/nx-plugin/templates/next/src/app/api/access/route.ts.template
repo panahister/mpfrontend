@@ -1,0 +1,6 @@
+import { visitorAccess } from '../../../config/access';
+
+/** The access snapshot again, for the provider when the window regains focus. */
+export function GET() {
+  return Response.json(visitorAccess(), { headers: { 'Cache-Control': 'no-store' } });
+}

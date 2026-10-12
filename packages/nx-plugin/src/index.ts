@@ -17,7 +17,7 @@ export async function applicationFiles(name:string):Promise<Record<string,string
   if(!/^[a-z][a-z0-9-]{1,48}$/.test(name))throw new Error('INVALID_APP_NAME');
   // The template's own files come last; its example feature is used exactly as generated.
   return {
-    ...await featureFiles('catalog',{resource:'catalog',generatedOutput:'src/api/generated/catalog'}),
+    ...await featureFiles('catalog',{resource:'catalog',operationId:'listCatalog',generatedOutput:'src/api/generated/catalog'}),
     ...routeFiles('catalog','catalog','CatalogScreen'),
     ...routeFiles('catalog/[position]','catalog','CatalogDetailScreen'),
     ...await templateFiles('next',{__APP_NAME__:name}),

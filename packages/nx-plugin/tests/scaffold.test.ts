@@ -44,7 +44,7 @@ async function files(root: string, directory = ''): Promise<string[]> {
 
 test('the template catalog example is the output of the feature and route generators', async () => {
   const app = await applicationFiles('web');
-  const feature = await featureFiles('catalog', {resource: 'catalog', generatedOutput: 'src/api/generated/catalog'});
+  const feature = await featureFiles('catalog', {resource: 'catalog', operationId: 'listCatalog', generatedOutput: 'src/api/generated/catalog'});
   // The template uses its example feature exactly as generated.
   for (const [path, content] of Object.entries(feature)) assert.equal(app[path], content, path);
   // The template ships English only: one catalog per set, and a registry with English alone.
@@ -63,6 +63,18 @@ test('the template catalog example is the output of the feature and route genera
   // The view renders and emits intent; fetching and persistence are outside it.
   const list = feature['src/features/catalog/ui/catalog-list.tsx']!;
   assert.doesNotMatch(list, /\bfetch\(|document\.cookie|useState/);
+  // The list route uses both conventions: URL state read the same way on the server and in the browser, and
+  // server data read under the access scope through the app's own route, with only declared parameters sent.
+  assert.match(list, /mode: 'server'/);
+  assert.match(feature['src/features/catalog/hooks/use-catalog-list.ts']!, /useScopedQuery[\s\S]*useTableUrlState|useTableUrlState[\s\S]*useScopedQuery/);
+  assert.match(feature['src/features/catalog/ui/catalog-screen.tsx']!, /CATALOG_URL_STATE\.read\(/);
+  assert.match(feature['src/features/catalog/api/catalog-read.ts']!, /fetch\('\/api\/catalog' \+ search/);
+  assert.match(feature['src/app/api/catalog/route.ts']!, /CATALOG_URL_STATE\.read\(/);
+  assert.match(feature['src/api/server/catalog.ts']!, /listSearchParams\(CATALOG_LIST, state\)/);
+  assert.match(feature['src/entities/catalog/model/catalog-list.ts']!, /operationId: 'listCatalog'/);
+  assert.match(app['src/app/layout.tsx']!, /<Providers snapshot=\{visitorAccess\(\)\}>/);
+  assert.match(app['src/app/providers.tsx']!, /<QueryScope>/);
+  assert.doesNotMatch(app['src/config/access.ts']!, /capabilities: \{ *[a-z'"]/, 'the visitor snapshot grants nothing');
   assert.match(app['src/features/preferences/api/preference-cookie.ts']!, /document\.cookie/);
 });
 
@@ -155,8 +167,10 @@ test('a list feature binds a selected read of ftg.config.json and keeps an exist
     await assert.rejects(createFeature({app: 'apps/web', name: 'archive', resource: 'unknown', root}), /UNKNOWN_RESOURCE/);
     const created = await createFeature({app: 'apps/web', name: 'archive', resource: 'catalog', root});
     assert.equal(created.kind, 'list');
-    assert.deepEqual(created.kept, ['apps/web/src/api/server/catalog.ts', 'apps/web/src/entities/catalog/index.ts',
-      'apps/web/src/entities/catalog/model/catalog.test.ts', 'apps/web/src/entities/catalog/model/catalog.ts']);
+    assert.deepEqual(created.kept, ['apps/web/src/api/server/catalog.ts', 'apps/web/src/app/api/catalog/route.ts',
+      'apps/web/src/entities/catalog/index.ts', 'apps/web/src/entities/catalog/model/catalog-list.test.ts',
+      'apps/web/src/entities/catalog/model/catalog-list.ts', 'apps/web/src/entities/catalog/model/catalog.test.ts',
+      'apps/web/src/entities/catalog/model/catalog.ts']);
     assert.ok(created.files.every(path => path.startsWith('apps/web/src/features/archive/')));
     assert.match(await readFile(join(root, 'apps/web/src/features/archive/model/archive-fields.ts'), 'utf8'),
       /from '\.\.\/\.\.\/\.\.\/api\/generated\/catalog\/resources\.gen'/);

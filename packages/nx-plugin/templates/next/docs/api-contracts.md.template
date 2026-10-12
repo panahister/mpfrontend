@@ -4,15 +4,19 @@
   immutable OpenAPI input of this workspace.
 - Selection: `ftg.config.json` selects the operations this app uses. The `ftg-generate` target writes
   `src/api/generated/catalog/`, and the `generated-check` target refuses drift.
-- Server boundary: `src/api/server/catalog.ts` validates the query, calls the BFF and validates the
-  response with the generated reader before a feature sees it.
+- Server boundary: `src/api/server/catalog.ts` sends the BFF only the parameters of the list protocol in
+  `src/entities/catalog/model/catalog-list.ts` and validates the response with the generated reader before a
+  feature sees it. The test beside the protocol checks it against the captured contract: a parameter that
+  `listCatalog` does not declare fails it.
 - Transfers: `src/app/api/transfer/[...path]/route.ts` relays the BFF's streamed routes under
   `/__APP_NAME__/transfer/` (uploads and downloads, as streams) through `src/api/server/transfer.ts`. It
   forwards only the session cookie named by `BFF_SESSION_COOKIE`, Origin, the CSRF token, the
   idempotency key, Accept-Language and the content headers; the BFF's routes decide which paths, media
   types and sizes exist.
-- Example read: the template reads `listCatalog`, a paged response with `items`, `number`, `pageCount`
-  and `hasMore`. Replace it with an approved contract of this product.
+- Example read: the template reads `listCatalog`, which declares the query parameters `page`, `size` and
+  `search` and answers a paged response with `items`, `number`, `total`, `pageCount` and `hasMore`. Replace it
+  with an approved contract of this product, and its list protocol with the way that contract pages, sorts and
+  filters.
 
 Record each further operation here when `ftg.config.json` selects it: its operation id, the screens that
 use it and what the app assumes about it.

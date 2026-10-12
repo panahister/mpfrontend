@@ -123,11 +123,16 @@ keys, credentials, raw design files, and redistribution rights are outside this 
 
 - `primitives`, `tokens`, `i18n`, `access-core`, and `ftg-core` are low-level, domain-neutral libraries.
   `access-core` holds the access snapshot, its run-time validation, field state and the page manifest.
+- `ftg-core` also holds the list protocol: how a backend operation pages, sorts and filters, checked against the
+  captured contract.
+- `data-react` holds the conventions for server data and URL state in client components: reads keyed by the access
+  scope over TanStack Query, and typed URL state over nuqs that the server reads the same way.
 - `access-react` binds an access snapshot to React: a provider, hooks, a guard and a link for the client, and a
   server-only loader entry that a browser bundle cannot include. It decides no rule and reads no role name or token
   claim; the consumer's server resolves its rules into the snapshot.
 - `ui` composes primitives and semantic styling but does not own a product theme. Its table and form take field
-  access from an access reader.
+  access from an access reader, and its table takes a declared client or server mode with controlled paging,
+  sorting and filtering.
 - `presentation-server`, `security-bff`, and `realtime-core` own server/runtime boundaries.
 - `ftg-cli` and `nx-plugin` operate on repositories; runtime packages do not depend on them.
 - `ai-skills` describes bounded procedures and invokes supported tooling; it does not become an alternate
