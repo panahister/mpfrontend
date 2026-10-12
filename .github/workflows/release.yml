@@ -4,9 +4,9 @@
 # environment "npm", after the packages were built, checked, packed and verified. Nothing else starts it: no push,
 # no tag, no schedule. Without the publish input it is a rehearsal: it does everything except publish.
 #
-# No npm token is stored in this repository or in this file. Once npm trusts this workflow for a package (trusted
-# publishing), each run proves its identity with a short-lived OpenID Connect token. Before that, the first
-# publication uses a granular token held only as the secret NPM_TOKEN of the environment "npm", removed afterwards.
+# No npm token is stored in this repository or in this file, and none is passed to a step. Each package trusts this
+# workflow (trusted publishing), so each run proves its identity with a short-lived OpenID Connect token. The first
+# publication of 0.1.0 used a granular token held only as a secret of the environment "npm", removed afterwards.
 #
 # One version names the whole cohort, and a published version is never built again: a corrected build takes the next
 # version, and a bad version is deprecated, never unpublished.
@@ -107,10 +107,11 @@ jobs:
       - name: The files are the files that were verified
         working-directory: release
         run: shasum -a 256 -c SHA256SUMS.txt
+      # npm's page on trusted publishing: npm CLI 11.5.1 or later, Node 22.14.0 or later, a GitHub-hosted runner.
+      - name: The npm and the Node of this job can publish by trusted publishing
+        run: node tools/distribution/release.mjs toolchain
       # Main only; an archive that is already on the registry with the same bytes is skipped (a run that stopped half
-      # way), other bytes under the version are refused; a prerelease takes the dist-tag next, never latest.
+      # way), other bytes under the version are refused; a prerelease takes the dist-tag next, never latest. No npm
+      # token is passed: npm proves the identity of this job with its OpenID Connect token.
       - name: Publish with provenance
         run: node tools/distribution/release.mjs publish --dir release --ref "$GITHUB_REF"
-        env:
-          # Empty once npm trusts this workflow: npm then uses the OpenID Connect token of the job.
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

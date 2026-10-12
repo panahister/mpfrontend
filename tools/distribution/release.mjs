@@ -3,7 +3,8 @@
 // workflow runs that command only on main, in the npm environment, after the owner approves the job.
 import {readFile,readdir,mkdtemp,cp,writeFile,rm,mkdir} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {spawn} from 'node:child_process';
+import {spawn,execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import {join,resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -111,13 +112,18 @@ export async function releaseRecord(root,version,commit){
   return {schemaVersion:1,version,commit,packages:packages.sort((a,b)=>a.name.localeCompare(b.name))};
 }
 export const sumsText=record=>record.packages.map(entry=>entry.sha256+'  '+entry.file).join('\n')+'\n';
-/** The changes of the release: the Unreleased section of CHANGELOG.md. */
-export function unreleasedChanges(changelog){
-  const start=changelog.indexOf('\n## Unreleased\n');
-  if(start<0)return '';
-  const rest=changelog.slice(start+'\n## Unreleased\n'.length),end=rest.indexOf('\n## ');
-  return (end<0?rest:rest.slice(0,end)).trim();
+/** The body of the section of CHANGELOG.md whose heading starts with `## <title>`, or undefined. */
+function section(changelog,title){
+  const heading=changelog.split('\n').findIndex(line=>line===('## '+title)||line.startsWith('## '+title+' '));
+  if(heading<0)return undefined;
+  const rest=changelog.split('\n').slice(heading+1),end=rest.findIndex(line=>line.startsWith('## '));
+  return (end<0?rest:rest.slice(0,end)).join('\n').trim();
 }
+/** The changes of the release: the section `## <version>` of CHANGELOG.md, else its Unreleased section. */
+export function releaseChanges(changelog,version){
+  return section(changelog,version)??section(changelog,'Unreleased')??'';
+}
+export const unreleasedChanges=changelog=>releaseChanges(changelog,'Unreleased');
 export function recordMarkdown(record,changes){
   return ['# Release '+record.version,'',
     'Sixteen archives published to the public npm registry under `@mpfrontend`, built from commit `'+record.commit+'` on main by',
@@ -135,6 +141,31 @@ export function recordMarkdown(record,changes){
  */
 export function publishArguments(directory,file,tag){
   return ['publish',resolve(directory,file),'--access','public','--provenance','--tag',tag];
+}
+
+const atLeast=(version,minimum)=>{
+  const have=version.split('.').map(Number),need=minimum.split('.').map(Number);
+  for(let index=0;index<3;index++)if((have[index]??0)!==need[index])return (have[index]??0)>need[index];
+  return true;
+};
+/** What npm's page on trusted publishing requires of the job: npm CLI 11.5.1 or later and Node 22.14.0 or later. */
+export function trustedPublishingProblems(npm,node){
+  const problems=[];
+  if(!atLeast(npm,'11.5.1'))problems.push('NPM_TOO_OLD:'+npm+' (trusted publishing needs 11.5.1 or later)');
+  if(!atLeast(node,'22.14.0'))problems.push('NODE_TOO_OLD:'+node+' (trusted publishing needs 22.14.0 or later)');
+  return problems;
+}
+/**
+ * The workflow publishes with the OpenID Connect token of its job and holds no npm token: an empty token that the
+ * environment passes could be used by npm instead of that identity. It also keeps the grant and the environment
+ * that trusted publishing names.
+ */
+export function workflowTokenProblems(workflow){
+  const code=workflow.split('\n').filter(line=>!/^\s*#/.test(line)).join('\n'),problems=[];
+  if(/NODE_AUTH_TOKEN|NPM_TOKEN|_authToken/.test(code))problems.push('WORKFLOW_HOLDS_A_TOKEN');
+  if(!/^\s+id-token: write\b/m.test(code))problems.push('WORKFLOW_WITHOUT_OIDC_GRANT');
+  if(!/^\s+environment: npm\s*$/m.test(code))problems.push('WORKFLOW_WITHOUT_ENVIRONMENT');
+  return problems;
 }
 
 /** The order of publication: a package after the framework packages it depends on. */
@@ -190,6 +221,9 @@ export async function selfTest(root=defaultRoot){
   }finally{await rm(copy,{recursive:true,force:true});}
   if(!(await unpublishedProblems(['@mpfrontend/ui'],declared,async()=>({integrity:'sha512-x'}))).length)failures.push('registry guard: a published version');
   if(!(await unpublishedProblems(['@mpfrontend/ui'],declared,async()=>{throw new Error('offline');})).length)failures.push('registry guard: an unreachable registry');
+  if(!trustedPublishingProblems('11.5.0','24.19.0').length||!trustedPublishingProblems('11.6.0','22.13.9').length||trustedPublishingProblems('11.5.1','22.14.0').length)failures.push('toolchain guard');
+  if(!workflowTokenProblems('env:\n  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}\n').length)failures.push('token guard: a token in the workflow');
+  if(workflowTokenProblems(await readFile(join(root,'.github/workflows/release.yml'),'utf8')).length)failures.push('token guard refuses the workflow itself');
   const record={packages:[{name:'@mpfrontend/ui',version:declared,integrity:'sha512-a'}]};
   if(!(await publishPlan(record,async()=>({integrity:'sha512-b'}))).problems.length)failures.push('publish guard: other bytes under the version');
   return failures;
@@ -206,7 +240,8 @@ async function main(args){
   if(command==='guard'){
     const version=option(args,'version'),ref=option(args,'ref');
     if(!version||!ref)throw new Error('USAGE: guard --version <v> --ref <git ref> [--publish]');
-    const problems=[...(args.includes('--publish')?branchProblems(ref):[]),...await cohortProblems(root,version)];
+    const problems=[...(args.includes('--publish')?branchProblems(ref):[]),...await cohortProblems(root,version),
+      ...workflowTokenProblems(await readFile(join(root,'.github/workflows/release.yml'),'utf8'))];
     const {packages}=await readCohort(root);
     problems.push(...await unpublishedProblems(packages.map(entry=>entry.name),version,(name,v)=>registryVersion(name,v)));
     fail(problems);
@@ -215,6 +250,11 @@ async function main(args){
     const failures=await selfTest(root);
     if(failures.length){console.error('GUARD_SELF_TEST_FAILED: '+failures.join(', '));process.exit(1);}
     console.log(JSON.stringify({ok:true,selfTest:'every guard refused its seeded input'}));
+  }else if(command==='toolchain'){
+    // The job that publishes by trusted publishing: the npm and the Node it runs, against npm's stated minimums.
+    const npm=(await promisify(execFile)('npm',['--version'])).stdout.trim();
+    fail(trustedPublishingProblems(npm,process.versions.node));
+    console.log(JSON.stringify({ok:true,npm,node:process.versions.node}));
   }else if(command==='record'){
     const version=option(args,'version'),commit=option(args,'commit'),out=option(args,'out');
     if(!version||!/^[0-9a-f]{40}$/.test(commit??'')||!out)throw new Error('USAGE: record --version <v> --commit <sha> --out <dir>');
@@ -223,7 +263,7 @@ async function main(args){
     for(const entry of record.packages)await cp(join(root,'artifacts/packages',entry.file),join(out,entry.file));
     await writeFile(join(out,'release.json'),JSON.stringify(record,null,2)+'\n');
     await writeFile(join(out,'SHA256SUMS.txt'),sumsText(record));
-    await writeFile(join(out,version+'.md'),recordMarkdown(record,unreleasedChanges(await readFile(join(root,'CHANGELOG.md'),'utf8'))));
+    await writeFile(join(out,version+'.md'),recordMarkdown(record,releaseChanges(await readFile(join(root,'CHANGELOG.md'),'utf8'),version)));
     console.log(JSON.stringify({ok:true,version,commit,archives:record.packages.length}));
   }else if(command==='publish'){
     const directory=option(args,'dir'),ref=option(args,'ref');
@@ -242,6 +282,6 @@ async function main(args){
       await run('npm',publishArguments(directory,entry.file,tag));
       console.log(JSON.stringify({package:name,version:entry.version,published:true,tag}));
     }
-  }else throw new Error('USAGE: release.mjs guard|self-test|record|publish');
+  }else throw new Error('USAGE: release.mjs guard|self-test|toolchain|record|publish');
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])await main(process.argv.slice(2));

@@ -4,8 +4,8 @@ import {mkdtemp,mkdir,cp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
 import {join,isAbsolute} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,
-  integrityOf,recordMarkdown,unreleasedChanges,sumsText,selfTest} from './release.mjs';
+import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,trustedPublishingProblems,workflowTokenProblems,
+  integrityOf,recordMarkdown,unreleasedChanges,releaseChanges,sumsText,selfTest} from './release.mjs';
 import {apiReport,compareReports,policyProblems} from './api-report.mjs';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -98,9 +98,36 @@ test('the release record lists every archive with its SHA-256 and the integrity 
   assert.equal(sumsText(record),'f'.repeat(64)+'  mpfrontend-ui-0.1.0.tgz\n');
   const changes=unreleasedChanges('# Changelog\n\n## Unreleased\n\n| a | b |\n\n## 2026-10-12\n\nolder\n');
   assert.equal(changes,'| a | b |');
+  // The record reads the section of the version when the changelog has one, and the Unreleased section otherwise.
+  const both='# Changelog\n\n## Unreleased\n\nnext\n\n## 0.1.1 (2026-10-20)\n\nthe release\n\n## 0.1.0\n\nolder\n';
+  assert.equal(releaseChanges(both,'0.1.1'),'the release');
+  assert.equal(releaseChanges(both,'0.1.2'),'next','a version without a section falls back to Unreleased');
+  assert.equal(releaseChanges('# Changelog\n\n## 0.1.10\n\nother\n','0.1.1'),'','a longer version number is not the version');
   const markdown=recordMarkdown(record,changes);
   for(const part of ['# Release 0.1.0','`'+'a'.repeat(40)+'`','| `@mpfrontend/ui` | `0.1.0` | `mpfrontend-ui-0.1.0.tgz` | `'+'f'.repeat(64)+'` | `sha512-x` |','## Changes\n\n| a | b |'])
     assert.ok(markdown.includes(part),part);
+});
+
+test('the workflow publishes by trusted publishing: no npm token reaches a step, and the job keeps its grant and environment',async()=>{
+  const workflow=await readFile(join(root,'.github/workflows/release.yml'),'utf8');
+  assert.deepEqual(workflowTokenProblems(workflow),[]);
+  // The controls: the step env of the first publication, an empty token passed by the environment, and a lost grant.
+  const withToken=workflow.replace('run: node tools/distribution/release.mjs publish --dir release --ref "$GITHUB_REF"',
+    'run: node tools/distribution/release.mjs publish --dir release --ref "$GITHUB_REF"\n        env:\n          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}');
+  assert.notEqual(withToken,workflow);
+  assert.deepEqual(workflowTokenProblems(withToken),['WORKFLOW_HOLDS_A_TOKEN']);
+  assert.deepEqual(workflowTokenProblems(workflow.replace('id-token: write','id-token: none')),['WORKFLOW_WITHOUT_OIDC_GRANT']);
+  assert.deepEqual(workflowTokenProblems(workflow.replace('environment: npm','environment: other')),['WORKFLOW_WITHOUT_ENVIRONMENT']);
+  assert.deepEqual(workflowTokenProblems(workflow.replace('# No npm token is stored','# NODE_AUTH_TOKEN is not stored')),[],'a comment is not a token');
+});
+
+test('npm CLI 11.5.1 and Node 22.14.0 are the least that publish by trusted publishing',()=>{
+  assert.deepEqual(trustedPublishingProblems('11.5.1','22.14.0'),[]);
+  assert.deepEqual(trustedPublishingProblems('11.17.0','24.19.0'),[]);
+  assert.equal(trustedPublishingProblems('11.5.0','24.19.0').length,1);
+  assert.equal(trustedPublishingProblems('10.9.2','24.19.0').length,1);
+  assert.equal(trustedPublishingProblems('11.6.0','22.13.1').length,1);
+  assert.equal(trustedPublishingProblems('9.0.0','20.0.0').length,2);
 });
 
 test('every guard of the workflow refuses its seeded input in the self-test it runs',async()=>{
