@@ -57,6 +57,15 @@ test('a browser bundle resolves the server entry to a module that refuses to loa
   assert.doesNotMatch(await readFile(new URL('../src/server.ts',import.meta.url),'utf8'),/from 'react'|use client/);
 });
 
+test('the server entry refuses to load where a document exists, whatever resolved it',async()=>{
+  const scope=globalThis as {document?:unknown};
+  assert.equal(scope.document,undefined,'the tests run on a server');
+  scope.document={};
+  try{await assert.rejects(import('../src/server.js?with-a-document'),/ACCESS_SERVER_ENTRY_IN_BROWSER/);}
+  finally{delete scope.document;}
+  assert.equal(typeof (await import('../src/server.js?without-a-document')).createAccessLoader,'function','and loads again without one');
+});
+
 test('the route list of an app folder skips route groups, private folders and parallel slots',async()=>{
   const app=await mkdtemp(join(tmpdir(),'mpfrontend-access-routes-'));
   try{

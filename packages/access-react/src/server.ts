@@ -1,5 +1,10 @@
 import {parsePageAccess,pickPageAccess,type AccessKeys,type AccessRefusal,type PageAccess} from '@mpfrontend/access-core';
 
+// A bundler that does not read the "browser" export condition still reaches this module: where a document exists it
+// refuses as well, so the loader never runs in a browser, whatever resolved the entry.
+if(typeof (globalThis as {document?:unknown}).document!=='undefined')
+  throw new Error('ACCESS_SERVER_ENTRY_IN_BROWSER: import @mpfrontend/access-react/server only from server code');
+
 /** The snapshot this request may use, or why it may use none. Only `ok` grants anything. */
 export type AccessResult=Readonly<{ok:true;access:PageAccess}>|Readonly<{ok:false;reason:AccessRefusal|'UNAVAILABLE'}>;
 export type AccessLoaderOptions<Request extends object>=Readonly<{

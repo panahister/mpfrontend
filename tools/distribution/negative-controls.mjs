@@ -192,6 +192,10 @@ const mutations=[
   {name:'stream-inline-script-answer',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'if(!empty&&type!==undefined&&scriptCapable(type)&&',after:'if(false&&!empty&&type!==undefined&&scriptCapable(type)&&',
     expected:'served only as an attachment or inside a sandbox',options:['--test-name-pattern=served only as an attachment']},
+  // A bundler that ignores the browser export condition reaches the server entry itself, which refuses where a document exists.
+  {name:'access-server-entry-in-a-document',package:'access-react',test:'server.test.ts',file:'server.ts',
+    before:"if(typeof (globalThis as {document?:unknown}).document!=='undefined')",after:'if(false)',
+    expected:'refuses to load where a document exists'},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},

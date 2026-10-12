@@ -22,8 +22,9 @@ A malformed, expired or mismatched snapshot, a failed load and a slow one grant 
 `clientSnapshot(result, keys)` keeps only the keys a provider's components need (`pageKeys` and `navigationKeys`
 of the page manifest), never identity or token data, and is `null` when nothing is granted.
 
-The entry is never part of a browser bundle: its `browser` export condition resolves to a module that throws
-`ACCESS_SERVER_ENTRY_IN_BROWSER`.
+The entry is kept out of a browser bundle by its `browser` export condition, which resolves to a module that throws
+`ACCESS_SERVER_ENTRY_IN_BROWSER`. That holds for a bundler that reads export conditions; a bundler that does not reaches the
+server entry itself, which throws the same error when a `document` exists.
 
 ## Client entry: `@mpfrontend/access-react`
 
