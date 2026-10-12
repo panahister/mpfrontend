@@ -36,7 +36,8 @@ flowchart LR
 - **Does:** creates a new Nx and pnpm workspace with the quality profile (`eslint.config.mjs`,
   `prettier.config.mjs`, `.prettierignore`, a root `tsconfig.base.json` that extends the shared profile, the `check` script, `tools/ci/check.sh` and a GitHub Actions
   workflow), `CODEOWNERS` with placeholder owners, `.agents/skills/README.md` for the workspace's own
-  skills, `AGENTS.md`, `CLAUDE.md`, `README.md`, `contracts/README.md` and the design-source record.
+  skills, `AGENTS.md`, `CLAUDE.md`, `README.md`, `contracts/README.md`, the design-source record and an `.npmrc`
+  that binds the `@mpfrontend` scope to the public npm registry and saves exact versions.
 - **When:** once, to start a consumer repository.
 - **Writes:** only inside the new directory.
 - **Refuses:** an existing destination, including an empty directory or a symlink; a name outside

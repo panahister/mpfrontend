@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/access-core",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "AccessCheck": "export type AccessCheck = Readonly<{ ok: true; access: PageAccess; }> | Readonly<{ ok: false; reason: AccessRefusal; }>;",
+      "AccessExpectation": "export type AccessExpectation = Readonly<{ now?: number; contextRef?: string; keys?: AccessKeys; }>;",
+      "AccessKeys": "export type AccessKeys = Readonly<{ capabilities: readonly string[]; fields: readonly string[]; }>;",
+      "accessReader": "export declare function accessReader(snapshot: PageAccess | undefined, now?: () => number): AccessReader;",
+      "AccessReader": "export type AccessReader = Readonly<{ snapshot: PageAccess | undefined; can: (capability: string) => boolean; field: (key: string) => FieldAccess; fieldState: (key: string, state?: ControlState) => FieldPresentation; patch: (original: Readonly<Record<string, unknown>>, draft: Readonly<Record<string, unknown>>) => Record<string, unknown>; }>;",
+      "AccessRefusal": "export type AccessRefusal = 'MALFORMED' | 'EXPIRED' | 'CONTEXT_MISMATCH' | 'UNKNOWN_KEY';",
+      "assertPageManifest": "export declare function assertPageManifest(manifest: PageManifest, input?: Readonly<{ routes?: Iterable<string>; ids?: Iterable<string>; }>): void;",
+      "AuthorityFence": "export declare class AuthorityFence { private identity; private controller; update(identity: string | null): void; capture(expectedIdentity: string): Readonly<{ signal: AbortSignal; assertCurrent: () => void; }>; }",
+      "buildNavigation": "export declare function buildNavigation(manifest: PageManifest, access: PageAccess | undefined, now?: number): NavigationEntry[];",
+      "can": "export declare function can(access: PageAccess | undefined, capability: string, now?: number): boolean;",
+      "checkPageManifest": "export declare function checkPageManifest(manifest: PageManifest, input?: Readonly<{ routes?: Iterable<string>; ids?: Iterable<string>; }>): ManifestProblem[];",
+      "ControlState": "export type ControlState = Readonly<{ disabled?: boolean; busy?: boolean; }>;",
+      "definePageManifest": "export declare function definePageManifest<const M extends PageManifest>(manifest: M): M;",
+      "DENIED": "export declare const DENIED: FieldAccess;",
+      "dirtyPatch": "export declare function dirtyPatch(original: Readonly<Record<string, unknown>>, draft: Readonly<Record<string, unknown>>, access: PageAccess, now?: number): Record<string, unknown>;",
+      "elementCapability": "export declare function elementCapability(element: ManifestElement): string;",
+      "fieldAccess": "export declare function fieldAccess(access: PageAccess | undefined, key: string, now?: number): FieldAccess;",
+      "FieldAccess": "export type FieldAccess = Readonly<{ view: boolean; edit: boolean; }>;",
+      "FieldPresentation": "export type FieldPresentation = 'hidden' | 'disabled' | 'enabled';",
+      "fieldState": "export declare function fieldState(access: PageAccess | undefined, key: string, state?: ControlState, now?: number): FieldPresentation;",
+      "ManifestElement": "export type ManifestElement = Readonly<{ id: string; capability?: string; }>;",
+      "ManifestGroup": "export type ManifestGroup = Readonly<{ id: string; menu: string; children: readonly string[]; }>;",
+      "manifestKeys": "export declare function manifestKeys(manifest: PageManifest): AccessKeys;",
+      "ManifestPage": "export type ManifestPage = Readonly<{ id: string; route: string; page: string; menu?: string; elements?: readonly ManifestElement[]; fields?: readonly string[]; }>;",
+      "ManifestProblem": "export type ManifestProblem = Readonly<{ code: 'DUPLICATE_ID' | 'UNREGISTERED_ID' | 'UNLISTED_ROUTE' | 'UNKNOWN_CHILD' | 'NO_MENU' | 'NAVIGATION_CYCLE'; id: string; }>;",
+      "NavigationEntry": "export type NavigationEntry = Readonly<{ kind: 'page'; id: string; route: string; }> | Readonly<{ kind: 'group'; id: string; children: readonly NavigationEntry[]; }>;",
+      "navigationKeys": "export declare function navigationKeys(manifest: PageManifest): AccessKeys;",
+      "PageAccess": "export type PageAccess = Readonly<{ contextRef: string; revision: string; expiresAt: number; capabilities: Readonly<Record<string, boolean>>; fields: Readonly<Record<string, FieldAccess>>; }>;",
+      "pageKeys": "export declare function pageKeys(manifest: PageManifest, pageId: string): AccessKeys;",
+      "PageManifest": "export type PageManifest = Readonly<{ pages: readonly ManifestPage[]; groups?: readonly ManifestGroup[]; navigation?: readonly string[]; }>;",
+      "parsePageAccess": "export declare function parsePageAccess(value: unknown, expected?: AccessExpectation): AccessCheck;",
+      "pickPageAccess": "export declare function pickPageAccess(access: PageAccess, keys: AccessKeys): PageAccess;",
+      "projectFields": "export declare function projectFields(data: Readonly<Record<string, unknown>>, access: PageAccess, now?: number): Record<string, unknown>;"
+    }
+  }
+}

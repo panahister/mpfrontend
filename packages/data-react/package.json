@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/data-react",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/data-react"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,6 +24,10 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@mpfrontend/access-react": "workspace:*",
     "@mpfrontend/ftg-core": "workspace:*"

@@ -143,7 +143,7 @@ export type AccessLinkProps<C extends ElementType>=Readonly<{capability:string;a
  * A link that exists only when its capability is granted. When denied it renders no anchor, no href, no prefetch
  * and no focus target: nothing, or the fallback this link asks for. `as` renders the router's own link component.
  */
-export function AccessLink<C extends ElementType='a'>({capability,as,fallback,...props}:AccessLinkProps<C>){
+export function AccessLink<C extends ElementType='a'>({capability,as,fallback,...props}:AccessLinkProps<C>):ReactNode{
   const granted=useCapability(capability);
   if(!granted)return fallback??null;
   return createElement(as??'a',props);

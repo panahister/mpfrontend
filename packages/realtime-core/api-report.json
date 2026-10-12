@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/realtime-core",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "ConnectionState": "export type ConnectionState = 'idle' | 'connecting' | 'authenticating' | 'live' | 'backoff' | 'resyncing' | 'closed';",
+      "Invalidation": "export type Invalidation = Readonly<{ v: 1; type: 'invalidate'; eventId: string; contextRef: string; accessRevision: string; resource: string; cursor: string; }>;",
+      "RealtimeContext": "export declare class RealtimeContext { readonly contextRef: string; readonly accessRevision: string; readonly dedupeLimit: number; state: ConnectionState; private seen; private generation; checkpoint: string | undefined; constructor(contextRef: string, accessRevision: string, dedupeLimit?: number); begin(): number; admit(): void; disconnect(): void; accept(frame: Invalidation): boolean; snapshotCompleted(cursor: string, generation: number): boolean; invalidateAuthority(): void; }",
+      "reconnectDelay": "export declare function reconnectDelay(attempt: number, random?: () => number): number;",
+      "SnapshotRecovery": "export declare class SnapshotRecovery { private readonly options; private pending; private running; private closed; private controller; private readonly resources; constructor(resources: readonly string[], options: { snapshot: (resources: readonly string[], signal: AbortSignal) => Promise<void>; state: (state: 'resyncing' | 'live') => void; failure: (error: unknown) => void; timeoutMs?: number; }); recover(): void; invalidate(resource: string): void; close(): void; private start; private drain; }"
+    },
+    "./react": {
+      "RealtimeOptions": "export type RealtimeOptions = { session: RealtimeSession | null; resources: readonly string[]; onSnapshot: (resources: readonly string[], signal: AbortSignal) => Promise<void>; onInvalidate?: (resource: string) => void; onRevoked?: () => void; onUnavailable?: (fault: RealtimeUnavailable) => void; };",
+      "RealtimeSession": "export type RealtimeSession = { subject: string; tenant: string | null; roles: readonly string[]; csrf: string; };",
+      "RealtimeUnavailable": "export type RealtimeUnavailable = Readonly<{ phase: 'ticket' | 'transport' | 'snapshot'; status?: number; }>;",
+      "useRealtime": "export declare function useRealtime(options: RealtimeOptions): ConnectionState;"
+    }
+  }
+}

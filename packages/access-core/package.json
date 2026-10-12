@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/access-core",
-  "version": "0.1.0-dev.3",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/access-core"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,5 +20,9 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {}
 }

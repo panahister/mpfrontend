@@ -1,0 +1,116 @@
+# Publishes the MP Frontend cohort to the public npm registry under @mpfrontend (docs/RELEASE-GUIDE.md).
+#
+# A maintainer starts it by hand with the version, and a maintainer approves the job that publishes, in the
+# environment "npm", after the packages were built, checked, packed and verified. Nothing else starts it: no push,
+# no tag, no schedule. Without the publish input it is a rehearsal: it does everything except publish.
+#
+# No npm token is stored in this repository or in this file. Once npm trusts this workflow for a package (trusted
+# publishing), each run proves its identity with a short-lived OpenID Connect token. Before that, the first
+# publication uses a granular token held only as the secret NPM_TOKEN of the environment "npm", removed afterwards.
+#
+# One version names the whole cohort, and a published version is never built again: a corrected build takes the next
+# version, and a bad version is deprecated, never unpublished.
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The cohort version to publish: the version that package.json declares for every package."
+        required: true
+        type: string
+      publish:
+        description: "Publish to registry.npmjs.org. Without it this is a rehearsal: build, check, pack and verify."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version }}
+  NX_DAEMON: "false"
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  pack-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.19.0"
+          package-manager-cache: false
+      - name: Install the selected package manager
+        run: npm install --global pnpm@11.25.0
+      # Each guard first proves that it refuses a seeded bad input: a wrong branch, a version already published, a pin
+      # that differs from the cohort, other bytes under a published version.
+      - name: Prove the guards refuse bad input
+        run: node tools/distribution/release.mjs self-test
+      # Before anything is built: main only when publishing, the version is the declared cohort version with every pin
+      # equal to it, and the registry holds no package of the cohort at this version.
+      - name: The version is the cohort's and is not on the registry yet
+        run: node tools/distribution/release.mjs guard --version "$VERSION" --ref "$GITHUB_REF" ${{ inputs.publish && '--publish' || '' }}
+      - name: Frozen dependency installation
+        run: pnpm install --frozen-lockfile
+      - name: Uncached complete check
+        run: pnpm check --skip-nx-cache
+      - name: The API follows the version policy against the last published version
+        run: node tools/distribution/api-report.mjs registry
+      - name: Pack the archives
+        run: pnpm pack:local
+      - name: Fresh independent consumer of the archives
+        run: pnpm exec nx run distribution:consumer-check
+      - name: Negative controls fail as expected
+        run: pnpm exec nx run distribution:negative-controls --skip-nx-cache
+      - name: Shared session store
+        run: pnpm exec nx run security-bff:test-redis --skip-nx-cache
+      - name: Install from local registries, scope binding and exact pins
+        run: pnpm exec nx run distribution:registry-install
+      - name: Public repository boundary
+        run: pnpm public:verify
+      - name: Record the archives and the commit they were built from
+        run: node tools/distribution/release.mjs record --version "$VERSION" --commit "$GITHUB_SHA" --out "artifacts/release/$VERSION"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ inputs.version }}
+          path: artifacts/release/${{ inputs.version }}
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: inputs.publish
+    needs: pack-and-verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The owner approves here. Until then nothing below runs.
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # lets this job, and only this job, prove to npm which workflow it is, and sign provenance
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.19.0"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-${{ inputs.version }}
+          path: release
+      - name: The files are the files that were verified
+        working-directory: release
+        run: shasum -a 256 -c SHA256SUMS.txt
+      # Main only; an archive that is already on the registry with the same bytes is skipped (a run that stopped half
+      # way), other bytes under the version are refused; a prerelease takes the dist-tag next, never latest.
+      - name: Publish with provenance
+        run: node tools/distribution/release.mjs publish --dir release --ref "$GITHUB_REF"
+        env:
+          # Empty once npm trusts this workflow: npm then uses the OpenID Connect token of the job.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

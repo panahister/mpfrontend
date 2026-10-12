@@ -1,10 +1,34 @@
 {
-  "name":"@mpfrontend/presentation-server",
-  "version":"0.1.0-dev.4",
-  "type":"module",
-  "main":"./dist/index.js",
-  "types":"./dist/index.d.ts",
-  "exports":{".":{"types":"./dist/index.d.ts","import":"./dist/index.js"},"./relay":{"types":"./dist/relay.d.ts","import":"./dist/relay.js"}},
-  "files":["dist","README.md"],
-  "dependencies":{"ws":"8.22.0"}
+  "name": "@mpfrontend/presentation-server",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/presentation-server"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./relay": {
+      "types": "./dist/relay.d.ts",
+      "import": "./dist/relay.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "dependencies": {
+    "ws": "8.22.0"
+  }
 }

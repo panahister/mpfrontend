@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/primitives",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "buttonState": "export declare function buttonState(input: Readonly<{ disabled?: boolean; loading?: boolean; restricted?: boolean; }>): ButtonState;",
+      "ButtonState": "export type ButtonState = 'default' | 'disabled' | 'loading' | 'restricted';",
+      "fieldState": "export declare function fieldState(input: Readonly<{ disabled?: boolean; readOnly?: boolean; invalid?: boolean; }>): FieldState;",
+      "FieldState": "export type FieldState = 'default' | 'disabled' | 'readonly' | 'error';",
+      "isControlUnavailable": "export declare function isControlUnavailable(state: ButtonState): boolean;"
+    }
+  }
+}

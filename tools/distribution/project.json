@@ -6,7 +6,24 @@
   "targets": {
     "test": {
       "executor": "nx:run-commands",
-      "options": {"command": "node --test tools/distribution/toolchain.test.mjs"}
+      "options": {"command": "node --test tools/distribution/toolchain.test.mjs tools/distribution/release.test.mjs"}
+    },
+    "api-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["^build"],
+      "options": {"command": "node tools/distribution/api-report.mjs check"}
+    },
+    "api-update": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["^build"],
+      "options": {"command": "node tools/distribution/api-report.mjs update"}
+    },
+    "registry-install": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["pack-check"],
+      "options": {"command": "node tools/distribution/registry-install.mjs"}
     },
     "negative-controls": {
       "executor": "nx:run-commands",

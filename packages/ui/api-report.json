@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/ui",
+  "version": "0.1.0",
+  "entries": {
+    "./styles.css": {
+      "file": "./src/styles.css"
+    },
+    "./tailwind.css": {
+      "file": "./src/tailwind.css"
+    },
+    ".": {
+      "Button": "export declare function Button({ tone, loading, loadingLabel, restricted, leadingIcon, trailingIcon, children, disabled, ...props }: ButtonProps): import(\"react\").JSX.Element;",
+      "ButtonProps": "export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'primary' | 'secondary' | 'ghost' | 'danger'; loading?: boolean; loadingLabel?: ReactNode; restricted?: boolean; leadingIcon?: ReactNode; trailingIcon?: ReactNode; };",
+      "Card": "export declare function Card({ children }: { children: ReactNode; }): import(\"react\").JSX.Element;",
+      "codeDigits": "export declare function codeDigits(input: string, length: number): string;",
+      "ConfirmWithCode": "export declare function ConfirmWithCode({ open, title, description, length, labels, onConfirm, onClose }: ConfirmWithCodeProps): import(\"react\").JSX.Element;",
+      "ConfirmWithCodeProps": "export type ConfirmWithCodeProps = { open: boolean; title: ReactNode; description?: ReactNode; length?: number; labels: Readonly<{ code: string; confirm: string; cancel: string; close: string; failed: string; sending?: string; }>; onConfirm: (code: string, signal: AbortSignal) => Promise<void>; onClose: () => void; };",
+      "descendantIds": "export declare function descendantIds<T>(node: TreeNode<T>): string[];",
+      "Dialog": "export declare function Dialog({ open, title, onClose, closeLabel, children, description }: DialogProps): import(\"react\").JSX.Element;",
+      "DialogProps": "export type DialogProps = { open: boolean; title: ReactNode; onClose: () => void; closeLabel: string; children: ReactNode; description?: ReactNode; };",
+      "DisplayField": "export type DisplayField = Readonly<{ key: string; type: string; required: boolean; editable: boolean; nullable: boolean; }>;",
+      "Field": "export declare function Field({ label, helper, error, ...props }: FieldProps): import(\"react\").JSX.Element;",
+      "FieldProps": "export type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string; helper?: string; error?: string; };",
+      "nextFocus": "export declare function nextFocus<T>(elements: readonly T[], current: T | null, backwards: boolean): T | undefined;",
+      "OneTimeCodeField": "export declare function OneTimeCodeField({ label, value, onChange, length, helper, error, disabled, name }: OneTimeCodeFieldProps): import(\"react\").JSX.Element;",
+      "OneTimeCodeFieldProps": "export type OneTimeCodeFieldProps = { label: string; value: string; onChange: (value: string) => void; length?: number; helper?: string; error?: string; disabled?: boolean; name?: string; };",
+      "ResourceForm": "export declare function ResourceForm({ fields, values, onChange, onSubmit, labels, saveLabel, disabled, access, original, helpers, errors }: { fields: readonly DisplayField[]; values: Readonly<Record<string, unknown>>; onChange: (key: string, value: unknown) => void; onSubmit: (patch?: Record<string, unknown>) => void; labels?: Readonly<Record<string, string>>; saveLabel: string; disabled?: boolean; access?: AccessReader; original?: Readonly<Record<string, unknown>>; helpers?: Readonly<Record<string, string>>; errors?: Readonly<Record<string, string>>; }): import(\"react\").JSX.Element;",
+      "ResourceTable": "export declare function ResourceTable({ fields, rows, caption, format, labels, detail, rowKey, access, control }: { fields: readonly DisplayField[]; rows: readonly Record<string, unknown>[]; caption: string; format: (value: unknown) => string; labels?: Readonly<Record<string, string>>; detail?: (row: Record<string, unknown>) => ReactNode; rowKey?: (row: Record<string, unknown>, index: number) => Key; access?: AccessReader; control?: TableControl; }): import(\"react\").JSX.Element;",
+      "Select": "export declare function Select({ label, children, icon, ...props }: SelectProps): import(\"react\").JSX.Element;",
+      "SelectProps": "export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & { label: string; icon?: ReactNode; };",
+      "TableControl": "export type TableControl = Readonly<{ mode: 'client' | 'server'; page: number; size: number; sort?: TableSort | undefined; filters?: Readonly<Record<string, string>>; total?: number | undefined; hasMore?: boolean; sortable?: readonly string[]; filterable?: readonly string[]; sizes?: readonly number[]; onPageChange: (page: number) => void; onSizeChange?: (size: number) => void; onSortChange?: (sort: TableSort | undefined) => void; onFiltersChange?: (filters: Readonly<Record<string, string>>) => void; text: TableText; }>;",
+      "TableSort": "export type TableSort = Readonly<{ field: string; direction: 'asc' | 'desc'; }>;",
+      "TableText": "export type TableText = Readonly<{ pagination: string; previous: string; next: string; page: (page: number, count: number | undefined) => string; size?: string; apply?: string; filters?: string; }>;",
+      "Tree": "export declare function Tree<T, S extends string = string>({ label, nodes, expanded, onExpandedChange, states, stateLabels, onActivate, columns, labelHeader, rowHeight, height, direction }: TreeProps<T, S>): import(\"react\").JSX.Element;",
+      "TreeColumn": "export type TreeColumn<T = unknown> = Readonly<{ key: string; header: ReactNode; cell: (node: TreeNode<T>) => ReactNode; }>;",
+      "treeKey": "export declare function treeKey<T>(rows: readonly TreeRow<T>[], current: string | undefined, key: string, direction: 'ltr' | 'rtl'): TreeMove | undefined;",
+      "TreeMove": "export type TreeMove = Readonly<{ focus?: string; expand?: string; collapse?: string; activate?: string; }>;",
+      "TreeNode": "export type TreeNode<T = unknown> = Readonly<{ id: string; label: string; children?: readonly TreeNode<T>[]; data?: T; }>;",
+      "TreeProps": "export type TreeProps<T, S extends string> = { label: string; nodes: readonly TreeNode<T>[]; expanded: ReadonlySet<string>; onExpandedChange: (next: ReadonlySet<string>) => void; states?: Readonly<Record<string, S | undefined>>; stateLabels?: Readonly<Record<S, string>>; onActivate?: (node: TreeNode<T>) => void; columns?: readonly TreeColumn<T>[]; labelHeader?: ReactNode; rowHeight?: number; height?: number; direction?: 'ltr' | 'rtl'; };",
+      "TreeRow": "export type TreeRow<T = unknown> = Readonly<{ node: TreeNode<T>; level: number; setSize: number; position: number; parentId?: string; expandable: boolean; expanded: boolean; }>;",
+      "visibleRows": "export declare function visibleRows<T>(nodes: readonly TreeNode<T>[], expanded: ReadonlySet<string>): TreeRow<T>[];"
+    }
+  }
+}

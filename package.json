@@ -1,17 +1,18 @@
 {
   "name": "mpfrontend-workspace",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
-    "check": "node tools/verify-public-repository.mjs && nx run-many -t lint typecheck test build",
+    "check": "node tools/verify-public-repository.mjs && nx run-many -t lint typecheck test build api-check",
     "public:verify": "node tools/verify-public-repository.mjs",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
-    "pack:local": "nx run distribution:pack-check"
+    "pack:local": "nx run distribution:pack-check",
+    "api:update": "nx run distribution:api-update --skip-nx-cache"
   },
   "devDependencies": {
     "nx": "23.2.1",

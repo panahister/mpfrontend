@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/tokens",
+  "version": "0.1.0",
+  "entries": {
+    "./styles.css": {
+      "file": "./src/styles.css"
+    },
+    ".": {
+      "appearance": "export declare function appearance(mode: Mode, systemDark: boolean): 'light' | 'dark';",
+      "Mode": "export type Mode = 'light' | 'dark' | 'system';",
+      "validBrand": "export declare function validBrand<const T extends string>(value: unknown, allowed: readonly T[], fallback: T): T;",
+      "validMode": "export declare function validMode(value: unknown): Mode;"
+    }
+  }
+}

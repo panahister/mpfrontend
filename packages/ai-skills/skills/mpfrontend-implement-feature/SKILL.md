@@ -5,7 +5,7 @@ description: Implement one approved MP Frontend feature slice across an existing
 
 # Implement an approved feature slice
 
-Requires the reviewed MP Frontend CLI `0.1.0-dev.20` cohort. Read repository instructions, the approved
+Requires the reviewed MP Frontend CLI `0.1.0` cohort. Read repository instructions, the approved
 story and acceptance criteria before editing. Stop when the API contract, permission, tenant rule,
 business transition or DLS behavior is absent or contradictory; never invent it to complete a screen.
 

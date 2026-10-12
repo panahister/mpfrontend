@@ -15,7 +15,7 @@ export type {QueryScope as QueryKeyScope,ListUrlOptions,ListUrlState,ViewCheck} 
  * of another scope, and every query without a scope, is cancelled and removed, so its data never shows again. Place
  * it inside the app's QueryClientProvider and the AccessProvider.
  */
-export function QueryScope({children}:Readonly<{children?:ReactNode}>){
+export function QueryScope({children}:Readonly<{children?:ReactNode}>):ReactNode{
   const client=useQueryClient(),scope=useAccessScope();
   const key=scope?scope.contextRef+'\n'+scope.revision:'';
   useEffect(()=>{

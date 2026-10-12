@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/access-react",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "AccessCapture": "export type AccessCapture = Readonly<{ signal: AbortSignal; assertCurrent: () => void; }>;",
+      "AccessGuard": "export declare function AccessGuard(props: AccessGuardProps): ReactNode;",
+      "AccessGuardProps": "export type AccessGuardProps = Readonly<{ capability: string; children?: ReactNode; fallback?: ReactNode; whenDenied?: never; }> | Readonly<{ capability: string; whenDenied: 'disabled'; children: (state: Readonly<{ disabled: boolean; }>) => ReactNode; fallback?: never; }>;",
+      "AccessLink": "export declare function AccessLink<C extends ElementType = 'a'>({ capability, as, fallback, ...props }: AccessLinkProps<C>): ReactNode;",
+      "AccessLinkProps": "export type AccessLinkProps<C extends ElementType> = Readonly<{ capability: string; as?: C; fallback?: ReactNode; }> & Omit<ComponentPropsWithoutRef<C>, 'capability' | 'as' | 'fallback'>;",
+      "AccessProvider": "export declare function AccessProvider({ snapshot, reload, keys, contextRef, now, children }: AccessProviderProps): import(\"react\").FunctionComponentElement<import(\"react\").ProviderProps<Readonly<{ reader: AccessReader; status: AccessStatus; scope: AccessScope | undefined; capture: () => AccessCapture; now: () => number; }>>>;",
+      "AccessProviderProps": "export type AccessProviderProps = Readonly<{ snapshot: unknown; reload?: (signal: AbortSignal) => Promise<unknown>; keys?: AccessKeys; contextRef?: string; now?: () => number; children?: ReactNode; }>;",
+      "AccessScope": "export type AccessScope = Readonly<{ contextRef: string; revision: string; }>;",
+      "AccessStatus": "export type AccessStatus = 'granted' | 'missing' | 'invalid' | 'expired';",
+      "useAccess": "export declare function useAccess(): AccessReader;",
+      "useAccessCapture": "export declare function useAccessCapture(): () => AccessCapture;",
+      "useAccessScope": "export declare function useAccessScope(): AccessScope | undefined;",
+      "useAccessStatus": "export declare function useAccessStatus(): AccessStatus;",
+      "useCapability": "export declare function useCapability(capability: string): boolean;",
+      "useFieldState": "export declare function useFieldState(key: string, state?: ControlState): FieldPresentation;",
+      "useNavigation": "export declare function useNavigation(manifest: PageManifest): readonly NavigationEntry[];"
+    },
+    "./server": {
+      "AccessLoaderOptions": "export type AccessLoaderOptions<Request extends object> = Readonly<{ load: (request: Request, signal: AbortSignal) => Promise<unknown>; contextRef: (request: Request) => string | undefined | Promise<string | undefined>; keys: AccessKeys; timeoutMs: number; now?: () => number; }>;",
+      "AccessResult": "export type AccessResult = Readonly<{ ok: true; access: PageAccess; }> | Readonly<{ ok: false; reason: AccessRefusal | 'UNAVAILABLE'; }>;",
+      "clientSnapshot": "export declare function clientSnapshot(result: AccessResult, keys: AccessKeys): PageAccess | null;",
+      "createAccessLoader": "export declare function createAccessLoader<Request extends object>(options: AccessLoaderOptions<Request>): (request: Request) => Promise<AccessResult>;"
+    },
+    "./testing": {
+      "appRoutes": "export declare function appRoutes(appDirectory: string): Promise<string[]>;"
+    }
+  }
+}

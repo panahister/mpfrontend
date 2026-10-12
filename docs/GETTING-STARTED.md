@@ -1,8 +1,9 @@
 # Getting started
 
-MP Frontend is currently distributed as source and locally packed packages. It is not yet published to a
-package registry. Use the Tiffin reference when you want a complete product example; use this guide when
-you want to evaluate or contribute to the foundation itself.
+MP Frontend is released to the public npm registry under `@mpfrontend`, one version for all its packages; no
+version is published yet, so until then it is distributed as source and locally packed packages. Use the
+reference product when you want a complete product example; use this guide when you want to evaluate or
+contribute to the foundation itself.
 
 ## Prerequisites
 
@@ -104,9 +105,16 @@ its own route; code that two apps need is a shared package. Each command is also
 `@mpfrontend/nx-plugin`. The [CLI guide](CLI-GUIDE.md) describes every command: what it does, when to run
 it, what it writes and what it refuses.
 
-Until registry publication exists, the supported public evaluation path is the vendored, hash-checked
-cohort in [MP Frontend Tiffin Reference](https://github.com/panahister/mpfrontend-tiffin-reference).
-Do not install an unpublished package name from an arbitrary registry.
+## Install from the registry, or offline
+
+A generated workspace binds the `@mpfrontend` scope to the public npm registry in `.npmrc` and pins every framework
+package at one exact cohort version, so no other registry can serve the scope and no newer version enters by a
+range. After a release is published, `pnpm install` takes the cohort from the registry; compare the integrity of each
+package in `pnpm-lock.yaml` with the release record in `docs/releases/<version>.md`, and run `npm audit signatures`
+for the registry signatures and provenance. Until the first release is published, and for an offline install, use
+the vendored path: the archives of a release (or of `pnpm pack:local`), forced through pnpm `overrides` and locked by
+the SHA-256 of the release record, as the reference product does. The [release guide](RELEASE-GUIDE.md) describes
+both.
 
 ## Repository-scoped AI procedures
 

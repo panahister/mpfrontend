@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/data-react",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "FieldView": "export type FieldView = Readonly<{ field: (key: string) => Readonly<{ view: boolean; }>; }>;",
+      "ListStateChange": "export type ListStateChange = Readonly<{ page?: number; size?: number; sort?: ListSort | undefined; filters?: Readonly<Record<string, string>>; }>;",
+      "ListUrlOptions": "export type ListUrlOptions = Readonly<{ size: number; sizes?: readonly number[]; sort?: ListSort; maxPage?: number; }>;",
+      "ListUrlState": "export type ListUrlState = Readonly<{ protocol: ListProtocol; parsers: ParserMap; defaults: ListState; read: (search: LoaderInput, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; fromValues: (values: Readonly<Record<string, unknown>>, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; hidden: (values: Readonly<Record<string, unknown>>, canView: ViewCheck | undefined) => string[]; serialize: (state: ListState) => string; }>;",
+      "QueryKeyScope": "export type QueryScope = Readonly<{ contextRef: string; revision: string; }>;",
+      "QueryScope": "export declare function QueryScope({ children }: Readonly<{ children?: ReactNode; }>): ReactNode;",
+      "ScopedMutationOptions": "export type ScopedMutationOptions<Variables, Result> = Readonly<{ operation: string; write: (variables: Variables, signal: AbortSignal) => Promise<Result>; invalidates: readonly string[]; }>;",
+      "ScopedQueryOptions": "export type ScopedQueryOptions<Params extends JsonParams, Data> = Readonly<{ operation: string; params: Params; read: (params: Params, signal: AbortSignal) => Promise<Data>; initialData?: Data; enabled?: boolean; staleTime?: number; }>;",
+      "useListUrlState": "export declare function useListUrlState(urlState: ListUrlState, options?: Readonly<{ canView?: ViewCheck; }>): readonly [ ListState, (change: ListStateChange) => void ];",
+      "useScopedMutation": "export declare function useScopedMutation<Variables, Result>(options: ScopedMutationOptions<Variables, Result>): UseMutationResult<Result, Error, Variables>;",
+      "useScopedQuery": "export declare function useScopedQuery<Params extends JsonParams, Data>(options: ScopedQueryOptions<Params, Data>): UseQueryResult<Data>;",
+      "useTableUrlState": "export declare function useTableUrlState(urlState: ListUrlState, options?: Readonly<{ access?: FieldView; }>): { page: number; size: number; sort: Readonly<{ field: string; direction: \"asc\" | \"desc\"; }> | undefined; filters: Readonly<Record<string, string>>; onPageChange: (page: number) => void; onSizeChange: (size: number) => void; onSortChange: (sort: ListSort | undefined) => void; onFiltersChange: (filters: Readonly<Record<string, string>>) => void; };",
+      "ViewCheck": "export type ViewCheck = (field: string) => boolean;"
+    },
+    "./shared": {
+      "inScope": "export declare function inScope(key: readonly unknown[], scope: QueryScope | undefined): boolean;",
+      "ListUrlOptions": "export type ListUrlOptions = Readonly<{ size: number; sizes?: readonly number[]; sort?: ListSort; maxPage?: number; }>;",
+      "listUrlState": "export declare function listUrlState(protocol: ListProtocol, options: ListUrlOptions): ListUrlState;",
+      "ListUrlState": "export type ListUrlState = Readonly<{ protocol: ListProtocol; parsers: ParserMap; defaults: ListState; read: (search: LoaderInput, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; fromValues: (values: Readonly<Record<string, unknown>>, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; hidden: (values: Readonly<Record<string, unknown>>, canView: ViewCheck | undefined) => string[]; serialize: (state: ListState) => string; }>;",
+      "QueryScope": "export type QueryScope = Readonly<{ contextRef: string; revision: string; }>;",
+      "scopedQueryKey": "export declare function scopedQueryKey(scope: QueryScope, operation: string, params?: Json): readonly unknown[];",
+      "ViewCheck": "export type ViewCheck = (field: string) => boolean;"
+    }
+  }
+}

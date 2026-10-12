@@ -23,3 +23,13 @@ test('the workspace cohort names the versions this repository packs',async()=>{
   assert.equal(COHORT.nxPlugin,await packedVersion('nx-plugin'));
   assert.equal(COHORT.workspaceConfig,await packedVersion('workspace-config'));
 });
+
+// One cohort version: every package carries the version that the workspace declares, and the AI procedures name it.
+test('every package carries the one cohort version that the workspace declares',async()=>{
+  const declared=(JSON.parse(await readFile(new URL('../../../package.json',import.meta.url),'utf8')) as {version:string}).version;
+  for(const name of ['access-core','access-react','ai-skills','app-layout','data-react','ftg-cli','ftg-core','i18n','nx-plugin',
+    'presentation-server','primitives','realtime-core','security-bff','tokens','ui','workspace-config'])
+    assert.equal(await packedVersion(name),declared,name);
+  const skills=await readFile(new URL('../../ai-skills/src/index.ts',import.meta.url),'utf8');
+  assert.match(skills,new RegExp(`SKILLS_VERSION='${declared}',SKILLS_CLI_VERSION='${declared}'`));
+});

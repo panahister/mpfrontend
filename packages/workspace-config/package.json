@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/workspace-config",
-  "version": "0.1.0-dev.0",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/workspace-config"
+  },
   "type": "module",
   "exports": {
     "./eslint": {
@@ -20,6 +26,10 @@
     "README.md",
     "tsconfig"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@eslint/css": "2.0.0",
     "@nx/eslint-plugin": "23.2.1",

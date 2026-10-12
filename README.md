@@ -33,8 +33,9 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is currently a verified **public source proof of concept**. Its sixteen packages are not
-> published to a package registry, and no stable public API guarantee is declared yet. The supported
+> MP Frontend is currently a verified **public source proof of concept**. Its sixteen packages share one
+> version under the [Versioning](#versioning) policy and are released to the public npm registry by a release
+> workflow; no version is published yet. The supported
 > evaluation path is this source repository plus the immutable, hash-checked cohort in the
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
 > [Maturity and scope](#maturity-and-scope) before choosing it for production.
@@ -88,7 +89,7 @@ MP Frontend makes those boundaries explicit:
 | Your product has no existing design system | Initialize with design source `none`; own tokens and composition in your product repository |
 | Your product already has a Figma file or DLS | Initialize with `existing`; attach a reviewed normalized export without changing or publishing the source file |
 | You want AI assistance | Install the Base or Design procedure profile into the consumer repository; keep the same human review gates |
-| You need a stable registry package today | Wait for the registry and compatibility release gates; package names in this source are currently prerelease and unpublished |
+| You need a registry package | Install the `@mpfrontend` cohort from the public npm registry at one exact version once a release is published, with the scope bound in `.npmrc`; read [Versioning](#versioning) |
 
 For a guided source walkthrough, read [Getting started](docs/GETTING-STARTED.md). For the exact current
 capability and limitation matrix, read [Implementation status](docs/IMPLEMENTATION-STATUS.md).
@@ -283,7 +284,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, and a fresh independent consumer | Registry publication and stable compatibility are not shipped |
+| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, a fresh independent consumer, a release workflow and install tests against local registries | The first publication waits for the owner; compatibility is a declared policy with API reports, not yet a published record |
 
 ## OpenAPI contract generation
 
@@ -476,8 +477,27 @@ The workspace contains sixteen domain-neutral packages:
 | [`@mpfrontend/security-bff`](packages/security-bff) | Server | OIDC lifecycle, opaque sessions, encrypted Redis records, refresh coordination, and revocation |
 | [`@mpfrontend/realtime-core`](packages/realtime-core) | Universal | Ticket admission, reconnect, replay/snapshot recovery, revocation, and diagnostics |
 
-Packages are modular, but the current public distribution proof validates them as one locked cohort. Do
-not install an unpublished package name from an arbitrary registry.
+Packages are modular, but they are released and verified as one cohort with one version. Install them from the
+public npm registry with the `@mpfrontend` scope bound to it in `.npmrc`, every package at the same exact version;
+[Versioning](#versioning) states the compatibility policy.
+
+## Versioning
+
+MP Frontend releases its sixteen packages as one cohort under one version. The CLI, the Nx generators and the
+application template write that exact version, never a range, and a test fails on a pin that differs from it.
+
+- Versions are semantic. While the major version is 0, a minor version may break, and its release notes say how
+  to move; a patch never breaks. From 1.0.0 on, only a major version breaks.
+- The public API is the exports of each package's entry points (the `exports` of its `package.json`): their names
+  and declarations. `packages/<name>/api-report.json` records it. Every check compares the built declarations
+  with it, and a release compares them with the last published version: a change needs a new version, and a
+  break a new minor version while the major version is 0.
+- A deprecated export stays for at least one minor version before it goes.
+- A published version is never published again with other bytes and never unpublished: a corrected build takes
+  the next version, and a bad version is deprecated with a message.
+- Releases go to the public npm registry under `@mpfrontend`, from main, by `.github/workflows/release.yml`, with
+  npm provenance. Each release has a record, `docs/releases/<version>.md`, with the SHA-256 and the integrity of
+  every archive; the [release guide](docs/RELEASE-GUIDE.md) describes the procedure.
 
 ## Verify the repository
 
@@ -524,7 +544,7 @@ The published source checkpoint currently records:
 
 | Evidence | Observed result |
 |---|---:|
-| Complete Nx workspace | 65/65 uncached lint, typecheck, test, and build targets |
+| Complete Nx workspace | 66/66 uncached lint, typecheck, test, build, and API-check targets |
 | Package cohort | 16/16 archives, manifests, digests, and export checks |
 | Distribution negative controls | 86/86 expected failures observed |
 | AI procedure format validation | 18/18 procedures |
@@ -563,24 +583,26 @@ production-certified platform.
 
 ```text
 .
-├── packages/
-│   ├── ftg-cli/               workspace, design, generation, and skills commands
-│   ├── nx-plugin/             deterministic Nx generators
-│   ├── ftg-core/              finite API contract normalization
-│   ├── ai-skills/             canonical repository-scoped AI procedures
-│   ├── workspace-config/      shared formatter, lint and TypeScript profile
-│   ├── primitives/            pure interaction and accessibility state
-│   ├── tokens/                semantic design-token boundaries
-│   ├── i18n/                  locale and direction foundations
-│   ├── access-core/           presentation access and authority fences
-│   ├── ui/                    React/Tailwind composition
-│   ├── app-layout/            application frame, header, navigation, and page frame
-│   ├── presentation-server/   server mediation and realtime transport
-│   ├── security-bff/          OIDC and encrypted session authority
-│   └── realtime-core/         client admission and recovery
-├── tools/distribution/        pack, independent-consumer, and negative-control gates
-├── docs/                      architecture, decisions, evidence, and runtime contracts
-└── .github/workflows/         verification-only CI; no publish or deployment credentials
+|-- packages/
+|   |-- ftg-cli/               workspace, design, generation, and skills commands
+|   |-- nx-plugin/             deterministic Nx generators
+|   |-- ftg-core/              finite API contract normalization and list protocols
+|   |-- ai-skills/             canonical repository-scoped AI procedures
+|   |-- workspace-config/      shared formatter, lint and TypeScript profile
+|   |-- primitives/            pure interaction and accessibility state
+|   |-- tokens/                semantic design-token boundaries
+|   |-- i18n/                  locale and direction foundations
+|   |-- access-core/           presentation access, page manifest, and authority fences
+|   |-- access-react/          access provider, guard, link, and server-only loader
+|   |-- data-react/            server data by access scope and typed URL state
+|   |-- ui/                    React/Tailwind composition
+|   |-- app-layout/            application frame, header, navigation, and page frame
+|   |-- presentation-server/   server mediation and realtime transport
+|   |-- security-bff/          OIDC and encrypted session authority
+|   `-- realtime-core/         client admission and recovery
+|-- tools/distribution/        pack, consumer, negative-control, registry, API and release gates
+|-- docs/                      architecture, decisions, evidence, release guide, and runtime contracts
+`-- .github/workflows/         verification CI, and the release workflow started by hand
 ```
 
 ## Maturity and scope
@@ -598,8 +620,8 @@ production-certified platform.
 
 ### Not shipped or not claimed
 
-- npm or another package-registry release.
-- Stable semantic-version compatibility guarantees.
+- A published npm release: the release workflow is in place and the first publication waits for the owner.
+- A stable major version: while the major version is 0, a minor version may break, as [Versioning](#versioning) says.
 - A public MP Frontend Figma Community library.
 - Automatic Figma extraction, watching, mutation, or publication.
 - Arbitrary OpenAPI support or automatic screen generation.
@@ -623,7 +645,9 @@ formal accessibility acceptance, and independent security review remain separate
 <details>
 <summary><strong>Can I install the packages from npm?</strong></summary>
 
-No official registry release exists yet. The public evaluation path uses this source and the vendored,
+Once a release is published, yes: the cohort goes to the public npm registry under `@mpfrontend` with
+provenance, and a generated workspace binds the scope to it. No version is published yet; until then the
+public evaluation path uses this source and the vendored,
 hash-checked package cohort in the Tiffin reference. Do not trust an arbitrary registry package using
 these names.
 </details>
@@ -677,8 +701,9 @@ grant credentials, approve a design, publish a release, or guarantee identical d
 <summary><strong>Can I use only one package?</strong></summary>
 
 The packages are intentionally modular and have explicit runtime roles. However, the current public
-distribution evidence validates one locked sixteen-package cohort, and no registry API stability contract
-exists yet. Evaluate isolated adoption against the package's documented boundary and your own tests.
+distribution evidence validates one locked sixteen-package cohort under one version, and the compatibility
+policy of [Versioning](#versioning) applies to the cohort. Evaluate isolated adoption against the package's
+documented boundary and your own tests.
 </details>
 
 <details>
@@ -705,6 +730,7 @@ deployment, visual acceptance, accessibility acceptance, and release approval.
 | [Frontend conventions](docs/FRONTEND-CONVENTIONS.md) | Placement rules, separation of concerns, API-to-feature workflow, generated ownership, and review checklist |
 | [Architecture](docs/ARCHITECTURE.md) | Trust boundaries, dependency direction, runtime flow, failure model, and non-goals |
 | [Implementation status](docs/IMPLEMENTATION-STATUS.md) | Exact versions, evidence, capability state, and open release gates |
+| [Release guide](docs/RELEASE-GUIDE.md) | The release workflow, the owner's steps for a publication, records, deprecation, and the offline path |
 | [Design synchronization](packages/ftg-cli/DESIGN-SYNC.md) | Binding/export schemas, lifecycle commands, ownership, evidence, and refusal behavior |
 | [Shared runtime](docs/R2-SHARED-RUNTIME.md) | Redis-backed session and admission validation contract |
 | [Reference CI](docs/R3-REFERENCE-CI.md) | Reproducible consumer artifact and CI expectations |

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/app-layout",
+  "version": "0.1.0",
+  "entries": {
+    "./styles.css": {
+      "file": "./src/styles.css"
+    },
+    "./tailwind.css": {
+      "file": "./src/tailwind.css"
+    },
+    ".": {
+      "AppFrame": "export declare function AppFrame({ skipLinkLabel, header, children, mainId }: { skipLinkLabel: string; header: ReactNode; children: ReactNode; mainId?: string; }): import(\"react\").JSX.Element;",
+      "AppHeader": "export declare function AppHeader({ brand, navigation, actions }: { brand?: ReactNode; navigation?: ReactNode; actions?: ReactNode; }): import(\"react\").JSX.Element;",
+      "Navigation": "export declare function Navigation({ label, items }: { label: string; items: readonly NavigationItem[]; }): import(\"react\").JSX.Element;",
+      "NavigationItem": "export type NavigationItem = Readonly<{ href: string; label: ReactNode; current?: boolean; }>;",
+      "PageFrame": "export declare function PageFrame({ title, actions, children, titleId }: { title: ReactNode; actions?: ReactNode; children: ReactNode; titleId?: string; }): import(\"react\").JSX.Element;"
+    }
+  }
+}

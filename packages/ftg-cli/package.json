@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/ftg-cli",
-  "version": "0.1.0-dev.20",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/ftg-cli"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,6 +21,10 @@
     "README.md",
     "DESIGN-SYNC.md"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@mpfrontend/ai-skills": "workspace:*",
     "@mpfrontend/ftg-core": "workspace:*",

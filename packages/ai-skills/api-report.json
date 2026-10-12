@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/ai-skills",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "checkSkills": "export declare function checkSkills(directory: string): Promise<{ ok: boolean; version: string; checked: number; agents: (\"codex\" | \"claude\")[]; }>;",
+      "installSkills": "export declare function installSkills(options: Options): Promise<{ ok: boolean; version: string; profile: \"base\" | \"design\"; agents: (\"codex\" | \"claude\")[]; dryRun: boolean; changes: { path: string; beforeHash: string | null; afterHash: string; }[]; installed: string[]; unavailable: { reason?: string; name: string; profile: string; available: boolean; }[]; }>;",
+      "skillCatalog": "export declare function skillCatalog(): { version: string; cliVersion: string; skills: { reason?: string; name: string; profile: string; available: boolean; }[]; };",
+      "SKILLS_CLI_VERSION": "export declare const SKILLS_VERSION = \"0.1.0\", SKILLS_CLI_VERSION = \"0.1.0\";",
+      "SKILLS_VERSION": "export declare const SKILLS_VERSION = \"0.1.0\", SKILLS_CLI_VERSION = \"0.1.0\";",
+      "SkillsError": "export declare class SkillsError extends Error { readonly exitCode: number; constructor(message: string, exitCode?: number); }"
+    }
+  }
+}

@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/i18n",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/i18n"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,6 +20,10 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "3.5.18",
     "intl-messageformat": "11.2.15"

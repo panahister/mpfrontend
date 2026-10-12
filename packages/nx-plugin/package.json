@@ -1,6 +1,12 @@
 {
   "name": "@mpfrontend/nx-plugin",
-  "version": "0.1.0-dev.19",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panahister/mpfrontend.git",
+    "directory": "packages/nx-plugin"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,6 +26,10 @@
     "schema.json",
     "schemas"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@nx/devkit": "23.2.1"
   },

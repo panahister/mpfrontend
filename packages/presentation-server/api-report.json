@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "package": "@mpfrontend/presentation-server",
+  "version": "0.1.0",
+  "entries": {
+    ".": {
+      "AdmissionTicket": "export type AdmissionTicket = { cookieHash: string; revision: string; expires: number; };",
+      "AdmissionTicketStore": "export type AdmissionTicketStore = { readonly shared?: boolean; readonly security?: Readonly<{ durable: boolean; tls: boolean; authenticated: boolean; }>; issue: (id: string, ticket: AdmissionTicket) => Promise<void>; consume: (id: string) => Promise<AdmissionTicket | undefined>; };",
+      "ConnectionBudget": "export type ConnectionBudget = { readonly shared?: boolean; reserve: (subject: string, id: string) => Promise<number | undefined>; renew: (subject: string, id: string) => Promise<number | undefined>; release: (subject: string, id: string) => Promise<void>; };",
+      "createPresentationRealtime": "export declare function createPresentationRealtime(config: SocketConfig): { handleHttp: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>; attach: (server: Server) => void; close: () => void; };",
+      "DevelopmentSocketConfig": "export type DevelopmentSocketConfig = CommonSocketConfig & { development: true; production?: never; ticketStore?: AdmissionTicketStore; connectionBudget?: ConnectionBudget; };",
+      "PresentationProductionProfile": "export type PresentationProductionProfile = Readonly<{ ticketStore: AdmissionTicketStore; connectionBudget: ConnectionBudget; }>;",
+      "presentationProductionRefusals": "export declare function presentationProductionRefusals(config: ProductionSocketConfig): string[];",
+      "ProductionSocketConfig": "export type ProductionSocketConfig = CommonSocketConfig & { production: PresentationProductionProfile; development?: never; };",
+      "SocketConfig": "export type SocketConfig = DevelopmentSocketConfig | ProductionSocketConfig;",
+      "SocketContext": "export type SocketContext = { subject: string; tenant: string | null; roles: string[]; csrf: string; };"
+    },
+    "./relay": {
+      "createRelay": "export declare function createRelay(options: RelayOptions): Relay;",
+      "Relay": "export type Relay = (request: Request, segments: readonly string[]) => Promise<Response>;",
+      "RELAY_REQUEST_HEADERS": "export declare const RELAY_REQUEST_HEADERS: readonly [ \"origin\", \"x-csrf-token\", \"idempotency-key\", \"accept-language\", \"content-type\", \"content-length\" ];",
+      "RELAY_RESPONSE_HEADERS": "export declare const RELAY_RESPONSE_HEADERS: readonly [ \"content-type\", \"content-length\", \"content-disposition\", \"content-security-policy\", \"x-content-type-options\", \"cache-control\", \"x-correlation-id\", \"idempotency-replayed\" ];",
+      "RelayOptions": "export type RelayOptions = Readonly<{ bffOrigin: string; basePath: string; sessionCookie: string; }>;"
+    }
+  }
+}

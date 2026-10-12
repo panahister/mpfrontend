@@ -10,6 +10,14 @@ accepted design-candidate versions. Review the target changelog/compatibility no
 bounded compatible cohort. Do not mix independently convenient package versions or rebuild a published
 version with different contents.
 
+Every `@mpfrontend` package carries one cohort version; pin all of them, and the CLI, the Nx plugin and the
+workspace configuration, at that exact version, never a range. Keep the scope bound to the public registry in
+`.npmrc` (`@mpfrontend:registry=https://registry.npmjs.org/`), so that no other registry can serve it. After the
+install, compare the lockfile's integrity of each package with the release record (`docs/releases/<version>.md`)
+and run `npm audit signatures` for the registry signatures and provenance. Read the release notes first: while the
+major version is 0 a minor version may break, and its notes say how to move; a patch never breaks. Offline, install
+the release's archives through pnpm overrides and lock the SHA-256 of the release record.
+
 Before mutation, record the current working-tree diff and runnable gates. Use `mpfrontend skills update
 --dry-run --json`, FTG/design dry-runs and package-manager resolution output to expose planned changes.
 An authored skill, generated-output or design collision is a stop condition; never force it away. Git

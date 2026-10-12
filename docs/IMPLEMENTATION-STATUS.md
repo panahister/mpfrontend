@@ -9,54 +9,50 @@ from the work required for a stable package and production deployment.
 
 Every count in this section was recomputed from uncached runs with Node 24.19.0 and pnpm 11.25.0
 (`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
-`pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis` and
-`pnpm public:verify`), on the tree of the commit that records it. A commit cannot name itself: the commit
-before this one is `b2974c9`, and the public verification line was run again on the tree that includes this
+`pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis`,
+`pnpm public:verify` and `pnpm exec nx run distribution:registry-install`), on the tree of the commit that records
+it. A commit cannot name itself: the commit
+before this one is `188148c`, and the public verification line was run again on the tree that includes this
 document.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0-dev.20` | 33/33 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.19` | 24/24 |
-| `@mpfrontend/ftg-core` | `0.1.0-dev.7` | 14/14 source tests, and the consumer gate |
-| `@mpfrontend/ai-skills` | `0.1.0-dev.13` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/access-core` | `0.1.0-dev.3` | 19/19 |
-| `@mpfrontend/access-react` | `0.1.0-dev.0` | 19/19 source tests, and the installed consumer's first paint and browser bundle |
-| `@mpfrontend/ui` | `0.1.0-dev.6` | 31/31 |
-| `@mpfrontend/data-react` | `0.1.0-dev.0` | 11/11 source tests, and the installed consumer's served list |
-| `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 109/109 |
-| `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
-| `@mpfrontend/presentation-server` | `0.1.0-dev.4` | 21/21 |
-| `@mpfrontend/security-bff` | `0.1.0-dev.7` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
-| `@mpfrontend/realtime-core` | `0.1.0-dev.6` | 11/11 source tests, 5/5 installed consumer assertions |
-| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 65/65 lint, typecheck, test, and build tasks, 393 source tests |
+| `@mpfrontend/ftg-cli` | `0.1.0` | 33/33 |
+| `@mpfrontend/nx-plugin` | `0.1.0` | 25/25 |
+| `@mpfrontend/ftg-core` | `0.1.0` | 14/14 source tests, and the consumer gate |
+| `@mpfrontend/ai-skills` | `0.1.0` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/access-core` | `0.1.0` | 19/19 |
+| `@mpfrontend/access-react` | `0.1.0` | 19/19 source tests, and the installed consumer's first paint and browser bundle |
+| `@mpfrontend/ui` | `0.1.0` | 31/31 |
+| `@mpfrontend/data-react` | `0.1.0` | 11/11 source tests, and the installed consumer's served list |
+| `@mpfrontend/workspace-config` | `0.1.0` | 109/109 |
+| `@mpfrontend/app-layout` | `0.1.0` | 6/6 |
+| `@mpfrontend/presentation-server` | `0.1.0` | 21/21 |
+| `@mpfrontend/security-bff` | `0.1.0` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/realtime-core` | `0.1.0` | 11/11 source tests, 5/5 installed consumer assertions |
+| Release tooling | the cohort's guards, record, API reports and registry install | 10/10 source tests, the guards' self-test, and the local registry install with its two seeded controls |
+| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 404 source tests |
 | Local package cohort | sixteen archives | 16/16 pack and manifest verification |
 | Distribution negative controls | eighty-six controls | 86/86 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=57 files=341` |
+| Public repository verification | one script over the working tree | `documents=58 files=363` |
 
-A package's version moves when anything it packs changes, so that one file name never stands for two
-different archives. Packing is deterministic: the same tree packs to the same bytes. The archives a consumer
-vendored before the hardening round were packed from an older tree and differ from those of `main` in every
-package, the five without a source change after `e3c9474` included (they lacked the `LICENSE` file). Every
-package a consumer could hold therefore moved by one: `access-core` `0.1.0-dev.2`, `ai-skills`
-`0.1.0-dev.12`, `ftg-cli` `0.1.0-dev.19`, `ftg-core` `0.1.0-dev.6`, `i18n` `0.1.0-dev.1`, `nx-plugin`
-`0.1.0-dev.18`, `presentation-server` `0.1.0-dev.4`, `primitives` `0.1.0-dev.1`, `realtime-core`
-`0.1.0-dev.6`, `security-bff` `0.1.0-dev.7`, `tokens` `0.1.0-dev.1` and `ui` `0.1.0-dev.5`. `app-layout` and
-`workspace-config` are new, were never packed for a consumer, and stay at `0.1.0-dev.0`. The OpenAPI
-generator stamp (`GENERATOR_VERSION`, `0.1.0-dev.6`) is not a package version and did not move, because the
-generator code did not change. `CHANGELOG.md` lists the change of each package, and
-`docs/releases/2026-10-12-package-cohort.md` lists the SHA-256 of each archive. A package whose packed files changed
-after that cohort has moved again and is listed under Unreleased in `CHANGELOG.md`; its release notes are written
-when it is packed for a consumer.
+From `0.1.0` on, one version names the whole cohort: the root `package.json` declares it, every package carries
+it, and every pin of a framework package (the app template, the Nx plugin's workspace cohort, the AI procedures)
+equals it; the release guard and a test refuse a pin that differs. The declared version is the next one to publish,
+and a version the registry already holds is never built again, so a change after a publication moves the version.
+`0.1.0` is not published yet. Before it, each package's version moved when anything it packed changed: the cohort
+of 2026-10-12 is listed with its SHA-256 in `docs/releases/2026-10-12-package-cohort.md`, and `CHANGELOG.md` lists
+the change of each package since then under Unreleased. The OpenAPI generator stamp (`GENERATOR_VERSION`,
+`0.1.0-dev.6`) is not a package version and did not move, because the generator code did not change.
 
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
 the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
 `.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
-would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 340
+would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 362
 tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
-file, so a fresh clone of the same commit prints `files=340`.
+file, so a fresh clone of the same commit prints `files=362`.
 
-Fresh independent consumer `mpfrontend-packed-consumer-pHMMLu` (the run on the tree of this commit) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-ZgYkSA` (the run on the tree of this commit) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators
@@ -104,8 +100,8 @@ own check, against a contract that declares the list's query parameters. Depende
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |
 | Repository-scoped AI procedures | Implemented | Fourteen Base and four optional Design procedures |
-| Registry package distribution | Not shipped | Current reference vendors immutable, hash-checked archives |
-| Stable public API guarantee | Not declared | Packages remain prerelease |
+| Registry package distribution | Prepared, not published | The release workflow (started by hand; guards before the build, the complete gate, a record of SHA-256 and integrity, publication by an approved job in the environment `npm` on main with npm provenance, `latest` never given to a prerelease), its guards' source tests and self-test, and an install from two throw-away local registries: the generated scope binding keeps a decoy registry from serving `@mpfrontend`, exact pins keep a newer version out, each with a seeded control observed failing. The workflow has not run on GitHub, nothing is published, and `npm audit signatures` over a published cohort has not run |
+| Public API and compatibility policy | Declared | README "Versioning": semantic versions, a minor version may break while the major version is 0 and a patch never breaks, a deprecated export stays for a minor version; one `api-report.json` per package compared on every check, and with the last published version at a release; no version is published yet, so no published baseline exists |
 
 ## Reference implementation
 
@@ -122,8 +118,8 @@ the reference and backend repositories; it is not inferred from the reusable pac
 
 ## Release gates still open
 
-- Publish immutable packages to an approved registry and prove installation without vendored archives.
-- Establish semantic-version compatibility policy and automated public API baselines.
+- Publish the first release (the owner's steps of docs/RELEASE-GUIDE.md) and prove installation from the public
+  registry with `npm audit signatures`.
 - Run dependency audit and remote GitHub CI for the published commit.
 - Complete production TLS, key custody, HA Redis, multi-region/failover, and load acceptance.
 - Complete formal accessibility testing across the supported component and screen matrix.
