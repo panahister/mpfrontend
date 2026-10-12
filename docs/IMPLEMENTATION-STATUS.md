@@ -42,7 +42,7 @@ equals it; the release guard and a test refuse a pin that differs. The declared 
 and a version the registry already holds is never built again, so a change after a publication moves the version.
 `0.1.0` is published ([release record](releases/0.1.0.md)). Before it, each package's version moved when anything it packed changed: the cohort
 of 2026-10-12 is listed with its SHA-256 in `docs/releases/2026-10-12-package-cohort.md`, and `CHANGELOG.md` lists
-the change of each package since then under Unreleased. The OpenAPI generator stamp (`GENERATOR_VERSION`,
+the change of each package since then under its version. The OpenAPI generator stamp (`GENERATOR_VERSION`,
 `0.1.0-dev.6`) is not a package version and did not move, because the generator code did not change.
 
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:

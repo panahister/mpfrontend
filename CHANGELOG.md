@@ -4,12 +4,26 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
-## Unreleased
+## 0.1.1 (not yet released)
 
-The next release is `0.1.0`: one version for all sixteen packages, the first published to the public npm registry
-under `@mpfrontend`. It ranks above every `0.1.0-dev.N` archive packed before it. Not published yet; the release
-record with the SHA-256 and the integrity of each archive is written by the release workflow when it publishes.
-Every package now names its repository, its license and its publish configuration (public access, provenance).
+One version for all sixteen packages, as the policy says: two packages changed, and the rest move with the cohort.
+The release record is written by the release workflow when it publishes.
+
+| Package | Version | Change |
+|---|---|---|
+| `@mpfrontend/security-bff` | `0.1.0` to `0.1.1` | A streamed answer that a browser would run as a document (HTML, XHTML, SVG, XML or script) is refused whole with a 502 unless the upstream sent an attachment disposition or a Content-Security-Policy with the sandbox directive. Before, the startup check only proved that the route could pass both headers, and an answer without them was served inline |
+| `@mpfrontend/access-react` | `0.1.0` to `0.1.1` | The server entry throws `ACCESS_SERVER_ENTRY_IN_BROWSER` when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot run it in a browser |
+| `@mpfrontend/nx-plugin` | `0.1.0` to `0.1.1` | A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the framework packages at `0.1.1` |
+| `@mpfrontend/ai-skills` | `0.1.0` to `0.1.1` | The procedures require CLI `0.1.1` |
+| `@mpfrontend/ftg-cli` | `0.1.0` to `0.1.1` | Its design-sync document names the new version |
+| The other eleven packages | `0.1.0` to `0.1.1` | Version only |
+
+## 0.1.0 (2026-10-12)
+
+The first release: one version for all sixteen packages, published to the public npm registry under `@mpfrontend`. It
+ranks above every `0.1.0-dev.N` archive packed before it. The record with the SHA-256 and the integrity of each archive
+is [docs/releases/0.1.0.md](docs/releases/0.1.0.md). Every package now names its repository, its license and its publish
+configuration (public access, provenance).
 
 | Package | Version | Change |
 |---|---|---|

@@ -52,7 +52,7 @@ test('init writes the quality profile, the check and a CI-neutral gate', () => {
   assert.match(files['CODEOWNERS']!, /^\/apps\/\s+@owner-placeholder\/apps$/m);
   assert.match(files['CODEOWNERS']!, /^\/packages\/\s+@owner-placeholder\/shared-packages$/m);
   assert.match(files['.agents/skills/README.md']!, /`mpfrontend-`\nprefix is reserved/);
-  assert.equal(manifest.devDependencies['@mpfrontend/nx-plugin'], '0.1.0', 'the Nx generators are installed');
+  assert.equal(manifest.devDependencies['@mpfrontend/nx-plugin'], '0.1.1', 'the Nx generators are installed');
 });
 
 test('create app writes format, format:check, lint and test targets and extends the shared configuration', async () => {

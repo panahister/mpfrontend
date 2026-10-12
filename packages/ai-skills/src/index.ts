@@ -2,7 +2,7 @@ import {readFile,lstat,realpath,mkdir,writeFile,rename,unlink,readdir} from 'nod
 import {resolve,join,dirname} from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 
-export const SKILLS_VERSION='0.1.0',SKILLS_CLI_VERSION='0.1.0';
+export const SKILLS_VERSION='0.1.1',SKILLS_CLI_VERSION='0.1.1';
 const names=['scaffold-app','implement-feature','integrate-openapi','form-from-api','table-from-api',
   'integrate-auth','apply-access','use-ui','configure-i18n','configure-theme','integrate-realtime',
   'verify-frontend','upgrade-project','prepare-release','import-design-system','sync-design-tokens',

@@ -5,7 +5,7 @@ description: Import a supplied normalized local DLS export as an immutable MP Fr
 
 # Import a declared design export
 
-Requires MP Frontend CLI 0.1.0 or the reviewed compatible cohort. Read the consumer instructions,
+Requires MP Frontend CLI 0.1.1 or the reviewed compatible cohort. Read the consumer instructions,
 installed CLI `DESIGN-SYNC.md`, approved source and its distribution limits. Check the actual
 `mpfrontend --version`. The CLI consumes a finite normalized export; it does not capture Figma.
 Prefer supplied local evidence. If another authorized read connector is available, follow that

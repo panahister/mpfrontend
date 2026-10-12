@@ -5,7 +5,7 @@ description: Verify a bounded MP Frontend consumer change using existing Nx and 
 
 # Verify a bounded change
 
-Requires MP Frontend CLI `0.1.0`. Read the consumer's instructions, changed-file scope and
+Requires MP Frontend CLI `0.1.1`. Read the consumer's instructions, changed-file scope and
 acceptance criteria. A review/diagnosis is read-only apart from normal diagnostic build/test artifacts;
 fixes, restarts, business writes and release actions require the corresponding user request.
 

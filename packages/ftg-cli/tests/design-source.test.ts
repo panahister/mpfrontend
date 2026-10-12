@@ -6,7 +6,7 @@ import {dirname,join} from 'node:path';
 import {createWorkspace} from '@mpfrontend/nx-plugin';
 import {designSourceCommand} from '../src/design-source.js';
 
-const cliVersion='0.1.0';
+const cliVersion='0.1.1';
 const binding=(fileKey='consumer-file',nodeId='1:2')=>({schemaVersion:1,id:'consumer-dls',source:{fileKey,nodeId},brandId:'consumer',modeAttribute:'data-mode',
   stateDirectory:'.mpfrontend/design/consumer-dls',outputDirectory:'themes/consumer/generated',tokens:[],components:[],ignoredTokens:[],ignoredComponents:[]});
 async function workspace(source:'none'|'existing'='none'){
