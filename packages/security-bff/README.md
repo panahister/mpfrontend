@@ -144,6 +144,10 @@ are explicit `type/subtype` values without parameters or wildcards, a GET route 
 size, `responseHeaders` comes from the closed set `STREAM_RESPONSE_HEADERS` (`content-type`,
 `content-length`, `content-disposition`, `content-security-policy`) and includes `content-type`, and each
 time is between 10 ms and one day with the idle timeout and the session check no longer than the total.
+A route whose `responseTypes` lists a type that runs script when a browser shows it inline on the app's
+origin (HTML, XHTML, SVG, any XML type, script) is refused with `INVALID_ROUTE_STREAM:SCRIPT_CAPABLE_TYPE`
+unless `responseHeaders` names both `content-disposition` and `content-security-policy`, so that the
+upstream can serve such an answer as an attachment or under a policy that sandboxes it.
 
 Before any byte of the body is read, a streamed request passes every check of an ordinary route, in the
 same order: the session and its refresh, Origin and the CSRF token for every method other than GET, the

@@ -149,6 +149,23 @@ test('a stream policy is checked at startup, and nothing is filled in with a def
   assert.equal(typeof createBff(route('GET',download)),'function');
 });
 
+test('a streamed route whose answer may be a script-capable type is refused at startup unless it passes a disposition and a policy',()=>{
+  const base={publicOrigin,issuer:'http://127.0.0.1:1/realms/test',clientId:'web',audience:'api',cookieName:'test_session',development:true as const};
+  const route=(method:string,stream:StreamPolicy)=>({...base,routes:[{method,pattern:/^\/x$/,origin:'http://127.0.0.1:2',stream}]}) as BffConfig;
+  const both=['content-type','content-disposition','content-security-policy'] as const;
+  // An answer of these types runs script when a browser shows it inline on the app's origin.
+  for(const type of ['image/svg+xml','text/html','application/xhtml+xml','text/xml','application/xml','application/rss+xml','text/javascript','application/javascript']){
+    for(const headers of [['content-type'],['content-type','content-disposition'],['content-type','content-security-policy'],['content-type','content-length']] as const){
+      assert.throws(()=>createBff(route('GET',{...download,responseTypes:['application/octet-stream',type],responseHeaders:[...headers]})),
+        /INVALID_ROUTE_STREAM:SCRIPT_CAPABLE_TYPE/,type+' '+headers.join(','));
+      assert.throws(()=>createBff(route('PUT',{...upload,responseTypes:[type],responseHeaders:[...headers]})),/INVALID_ROUTE_STREAM:SCRIPT_CAPABLE_TYPE/,'an upload answer: '+type);
+    }
+    assert.equal(typeof createBff(route('GET',{...download,responseTypes:[type],responseHeaders:[...both]})),'function',type+' with both headers');
+  }
+  for(const type of ['application/octet-stream','image/png','application/pdf','application/json','text/plain','text/csv'])
+    assert.equal(typeof createBff(route('GET',{...download,responseTypes:[type],responseHeaders:['content-type']})),'function',type);
+});
+
 test('a route without a stream keeps the JSON contract: 64 KiB, application/json and a JSON answer',async()=>{
   const h=await harness();
   try{

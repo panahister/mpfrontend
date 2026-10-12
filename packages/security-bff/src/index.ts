@@ -155,6 +155,13 @@ const mediaTypePattern=/^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_
 function mediaType(value:string|null|undefined){const type=value?.split(';')[0]!.trim().toLowerCase();return type||undefined;}
 /** The longest timeout a streamed route may set: one day. */
 const STREAM_TIMEOUT_MAX_MS=86400000;
+/**
+ * Media types whose document runs script when a browser shows it inline on the app's origin: HTML, XHTML, SVG, any
+ * XML and script itself. A streamed answer of one of them must pass a Content-Disposition and a
+ * Content-Security-Policy, so that the route can serve it as an attachment or sandbox it.
+ */
+const scriptCapable=(type:string)=>['text/html','application/xhtml+xml','image/svg+xml','text/xml','application/xml',
+  'text/javascript','application/javascript','application/ecmascript','text/ecmascript'].includes(type)||type.endsWith('+xml');
 /** Refuses a stream policy that is incomplete or out of bounds; nothing is filled in with a default. */
 function checkStream(route:ApiRoute){
   const stream=route.stream!,refuse=()=>{throw new Error('INVALID_ROUTE_STREAM');};
@@ -166,6 +173,8 @@ function checkStream(route:ApiRoute){
   if(!types(stream.responseTypes))refuse();
   const names=stream.responseHeaders;
   if(!Array.isArray(names)||new Set(names).size!==names.length||!names.every(name=>(STREAM_RESPONSE_HEADERS as readonly string[]).includes(name))||!names.includes('content-type'))refuse();
+  if(stream.responseTypes.some(scriptCapable)&&!(names.includes('content-disposition')&&names.includes('content-security-policy')))
+    throw new Error('INVALID_ROUTE_STREAM:SCRIPT_CAPABLE_TYPE');
   const time=(value:number)=>Number.isSafeInteger(value)&&value>=10&&value<=STREAM_TIMEOUT_MAX_MS;
   if(!time(stream.idleTimeoutMs)||!time(stream.totalTimeoutMs)||!time(stream.sessionCheckMs)||stream.idleTimeoutMs>stream.totalTimeoutMs||stream.sessionCheckMs>stream.totalTimeoutMs)refuse();
 }

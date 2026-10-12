@@ -25,7 +25,7 @@ Every package now names its repository, its license and its publish configuratio
 | `@mpfrontend/presentation-server` | `0.1.0-dev.4` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/primitives` | `0.1.0-dev.1` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.6` to `0.1.0` | Registry metadata only |
-| `@mpfrontend/security-bff` | `0.1.0-dev.7` to `0.1.0` | Registry metadata. The README states the measured bound of what the relay of a streamed body holds |
+| `@mpfrontend/security-bff` | `0.1.0-dev.7` to `0.1.0` | A streamed route whose answer may be HTML, XHTML, SVG, XML or script is refused at startup unless it passes both Content-Disposition and Content-Security-Policy. The README states the measured bound of what the relay of a streamed body holds. Registry metadata |
 | `@mpfrontend/tokens` | `0.1.0-dev.1` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/ui` | `0.1.0-dev.5` to `0.1.0` | `ResourceTable` and `ResourceForm` take field access: a column or field the person may not view is not rendered, a field they may not edit is disabled, and a save passes only the changed fields they may edit. `ResourceForm` takes helper and error texts per field. `ResourceTable` takes a declared client or server mode with controlled paging, sorting and filtering |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` to `0.1.0` | Registry metadata only |
@@ -35,7 +35,8 @@ workspace binds the scope to the public registry. Nothing changes until it passe
 `ResourceTable` or `access` to `ResourceForm`; with `access`, `ResourceForm` calls `onSubmit` with the patch. A list
 feature generated from now on has a contract test that fails until the captured contract declares the query
 parameters its list protocol sends (`page`, `size` and `search` in the template), and its read route answers an
-invalid list query with the defaults instead of 400.
+invalid list query with the defaults instead of 400. A Security BFF route that streams a script-capable answer and
+does not name both `content-disposition` and `content-security-policy` stops its start.
 
 ## 2026-10-12
 

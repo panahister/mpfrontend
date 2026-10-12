@@ -157,6 +157,10 @@ const mutations=[
   {name:'stream-pull-only-on-demand',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'},{highWaterMark:0}):undefined;',after:'},{highWaterMark:1e9}):undefined;',
     expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
+  // A streamed answer that may run script on the app's origin needs a disposition and a policy at startup.
+  {name:'stream-script-capable-type',package:'security-bff',test:'stream.test.ts',file:'index.ts',
+    before:"if(stream.responseTypes.some(scriptCapable)&&",after:"if(false&&stream.responseTypes.some(scriptCapable)&&",
+    expected:'a streamed route whose answer may be a script-capable type is refused at startup',options:['--test-name-pattern=script-capable']},
   // A relay that queues the body itself keeps Node's inbound buffers small; what it pulled and the upstream has not
   // taken shows the queue, even a moderate one of four chunks.
   {name:'stream-relay-moderate-queue',package:'security-bff',test:'stream.test.ts',file:'index.ts',
