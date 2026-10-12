@@ -182,6 +182,10 @@ const mutations=[
   {name:'stream-relay-moderate-queue',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'},{highWaterMark:0}):undefined;',after:'},{highWaterMark:4}):undefined;',
     expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
+  // An answer that a browser would run as a document is served only as an attachment or inside a sandbox.
+  {name:'stream-inline-script-answer',package:'security-bff',test:'stream.test.ts',file:'index.ts',
+    before:'if(!empty&&type!==undefined&&scriptCapable(type)&&',after:'if(false&&!empty&&type!==undefined&&scriptCapable(type)&&',
+    expected:'served only as an attachment or inside a sandbox',options:['--test-name-pattern=served only as an attachment']},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},

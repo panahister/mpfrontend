@@ -162,6 +162,13 @@ const STREAM_TIMEOUT_MAX_MS=86400000;
  */
 const scriptCapable=(type:string)=>['text/html','application/xhtml+xml','image/svg+xml','text/xml','application/xml',
   'text/javascript','application/javascript','application/ecmascript','text/ecmascript'].includes(type)||type.endsWith('+xml');
+/**
+ * Whether the answer of a script-capable type is safe to serve inline: an attachment, which a browser saves, or a
+ * Content-Security-Policy with the sandbox directive, which gives the document no origin. The startup check only
+ * proves that the route may pass both headers; the upstream decides at run time whether it sent them.
+ */
+const attachment=(value:string|null)=>value!==null&&/^\s*attachment\s*(;|$)/i.test(value);
+const sandboxed=(value:string|null)=>value!==null&&/(^|;)\s*sandbox\s*(;|\s|$)/i.test(value);
 /** Refuses a stream policy that is incomplete or out of bounds; nothing is filled in with a default. */
 function checkStream(route:ApiRoute){
   const stream=route.stream!,refuse=()=>{throw new Error('INVALID_ROUTE_STREAM');};
@@ -508,6 +515,8 @@ export function createBff(config:BffConfig){
     const empty=type===undefined&&([204,205,304].includes(answer.status)||answer.headers.get('content-length')==='0');
     // An answer of a type the route does not list is refused whole: none of its body is read.
     if(!empty&&(type===undefined||!stream.responseTypes.includes(type))){end(502,'UPSTREAM_MEDIA_TYPE_REJECTED');return;}
+    // An answer that a browser would run as a document, without a download disposition or a sandbox, is refused whole.
+    if(!empty&&type!==undefined&&scriptCapable(type)&&!attachment(answer.headers.get('content-disposition'))&&!sandboxed(answer.headers.get('content-security-policy'))){end(502,'UPSTREAM_INLINE_SCRIPT_REFUSED');return;}
     const passed:Record<string,string>={'x-content-type-options':'nosniff','cache-control':'no-store','x-correlation-id':call.requestId,
       ...(answer.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})};
     for(const name of stream.responseHeaders){

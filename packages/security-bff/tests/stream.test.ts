@@ -70,6 +70,8 @@ async function harness(extra:Partial<BffConfig>={}){
     {method:'PUT',pattern:/^\/v1\/slow$/,origin,stream:{...upload,idleTimeoutMs:200,totalTimeoutMs:800}},
     {method:'GET',pattern:/^\/v1\/slow$/,origin,stream:{...download,idleTimeoutMs:200,totalTimeoutMs:800}},
     {method:'POST',pattern:/^\/v1\/admin$/,origin,roles:['admin'],stream:upload},
+    {method:'GET',pattern:/^\/v1\/pages\/[a-z]+$/,origin,stream:{...download,responseTypes:['text/html','image/svg+xml','application/octet-stream'],
+      responseHeaders:['content-type','content-disposition','content-security-policy']}},
     {method:'POST',pattern:/^\/v1\/strong$/,origin,authentication:{acr:['strong']},stream:upload},
     {method:'POST',pattern:/^\/v1\/json$/,origin},
   ];
@@ -327,6 +329,34 @@ test('a streamed answer arrives as it is sent, byte for byte, with only the head
     assert.equal(refused.status,502);assert.equal(JSON.parse(text).title,'UPSTREAM_MEDIA_TYPE_REJECTED');assert.ok(!text.includes('secret'));
     h.setUpstream((_req,res)=>{res.writeHead(200);res.end('untyped');});
     assert.equal((await fetch(h.base+'/v1/files/untyped',{headers:{cookie:session.cookie}})).status,502,'an answer without a type is refused');
+  }finally{await h.close();}
+});
+
+test('an answer that a browser would run as a document is served only as an attachment or inside a sandbox',async()=>{
+  const h=await harness();
+  try{
+    const session=await h.signIn();
+    const answer=async(headers:Record<string,string>)=>{
+      h.setUpstream((_req,res)=>{res.writeHead(200,headers);res.end('<script>upstream secret</script>');});
+      const response=await fetch(h.base+'/v1/pages/report',{headers:{cookie:session.cookie}});
+      return {status:response.status,text:await response.text(),headers:response.headers};
+    };
+    // The route may pass both headers, but the upstream decides: with neither, or with a policy that is no sandbox, or with
+    // a disposition that is inline, the answer is refused whole.
+    for(const [type,headers] of [['text/html',{}],['image/svg+xml',{}],['text/html',{'content-disposition':'inline'}],
+      ['text/html',{'content-security-policy':"default-src 'none'"}],['text/html',{'content-disposition':'inline; filename="a.html"','content-security-policy':"default-src 'none'"}],
+      ['text/html',{'content-security-policy':"script-src 'none'; sandboxed-frame"}]] as const){
+      const refused=await answer({'content-type':type,...headers});
+      assert.equal(refused.status,502,type+' '+JSON.stringify(headers));
+      assert.equal(JSON.parse(refused.text).title,'UPSTREAM_INLINE_SCRIPT_REFUSED');assert.ok(!refused.text.includes('secret'),'none of its body is served');
+    }
+    // An attachment, or a sandbox, is served; so is an answer of a type that runs nothing.
+    const saved=await answer({'content-type':'text/html','content-disposition':'attachment; filename="a.html"'});
+    assert.equal(saved.status,200);assert.equal(saved.headers.get('content-disposition'),'attachment; filename="a.html"');
+    const sandbox=await answer({'content-type':'image/svg+xml','content-security-policy':'sandbox'});
+    assert.equal(sandbox.status,200);assert.equal(sandbox.headers.get('content-security-policy'),'sandbox');
+    assert.equal((await answer({'content-type':'text/html','content-security-policy':"default-src 'none'; Sandbox allow-scripts"})).status,200,'a sandbox directive among others, in any case');
+    assert.equal((await answer({'content-type':'application/octet-stream'})).status,200,'a type that runs nothing needs neither header');
   }finally{await h.close();}
 });
 
