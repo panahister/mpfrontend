@@ -1,11 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,cp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
-import {join,isAbsolute} from 'node:path';
+import {join,dirname,isAbsolute} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
 import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,trustedPublishingProblems,workflowTokenProblems,
   integrityOf,recordMarkdown,unreleasedChanges,releaseChanges,sumsText,selfTest} from './release.mjs';
+import {setCohortVersion} from './set-cohort-version.mjs';
 import {apiReport,compareReports,policyProblems} from './api-report.mjs';
 
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -128,6 +129,30 @@ test('npm CLI 11.5.1 and Node 22.14.0 are the least that publish by trusted publ
   assert.equal(trustedPublishingProblems('10.9.2','24.19.0').length,1);
   assert.equal(trustedPublishingProblems('11.6.0','22.13.1').length,1);
   assert.equal(trustedPublishingProblems('9.0.0','20.0.0').length,2);
+});
+
+test('moving the cohort changes every place that names its version, and the guard then accepts the new version',async()=>{
+  const copy=await mkdtemp(join(tmpdir(),'mpfrontend-set-version-'));
+  try{
+    for(const path of ['package.json','packages/nx-plugin/templates/next/package.json.template','packages/nx-plugin/src/workspace.ts','packages/ai-skills/src/index.ts','packages/ftg-cli/DESIGN-SYNC.md','.github/ISSUE_TEMPLATE/bug_report.yml']){
+      await mkdir(dirname(join(copy,path)),{recursive:true});await cp(join(root,path),join(copy,path));
+    }
+    await cp(join(root,'packages/ai-skills/skills'),join(copy,'packages/ai-skills/skills'),{recursive:true});
+    for(const directory of await readdir(join(root,'packages'))){
+      await mkdir(join(copy,'packages',directory),{recursive:true});
+      await cp(join(root,'packages',directory,'package.json'),join(copy,'packages',directory,'package.json'));
+    }
+    const moved=await setCohortVersion(copy,'9.8.7-rc.1');
+    assert.equal(moved.from,declared);assert.equal(moved.to,'9.8.7-rc.1');
+    assert.deepEqual(await cohortProblems(copy,'9.8.7-rc.1'),[]);
+    assert.match(await readFile(join(copy,'packages/ftg-cli/DESIGN-SYNC.md'),'utf8'),/^CLI 9\.8\.7-rc\.1 implements/m);
+    assert.match(await readFile(join(copy,'.github/ISSUE_TEMPLATE/bug_report.yml'),'utf8'),/ftg-cli 9\.8\.7-rc\.1"/);
+    assert.ok((await cohortProblems(copy,declared)).length>0,'the old version is no longer the cohort');
+    // A place the tool cannot find is an error: a template without a pin.
+    await writeFile(join(copy,'packages/nx-plugin/templates/next/package.json.template'),'{}');
+    await assert.rejects(setCohortVersion(copy,'9.8.8'),/COHORT_VERSION_NOT_FOUND:packages\/nx-plugin\/templates/);
+    await assert.rejects(setCohortVersion(copy,'nine'),/USAGE/);
+  }finally{await rm(copy,{recursive:true,force:true});}
 });
 
 test('every guard of the workflow refuses its seeded input in the self-test it runs',async()=>{

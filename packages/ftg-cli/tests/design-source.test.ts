@@ -6,7 +6,8 @@ import {dirname,join} from 'node:path';
 import {createWorkspace} from '@mpfrontend/nx-plugin';
 import {designSourceCommand} from '../src/design-source.js';
 
-const cliVersion='0.1.1';
+// The cohort version is the one the root declares, so that moving the cohort moves no test.
+const cliVersion=(JSON.parse(await readFile(new URL('../../../package.json',import.meta.url),'utf8')) as {version:string}).version;
 const binding=(fileKey='consumer-file',nodeId='1:2')=>({schemaVersion:1,id:'consumer-dls',source:{fileKey,nodeId},brandId:'consumer',modeAttribute:'data-mode',
   stateDirectory:'.mpfrontend/design/consumer-dls',outputDirectory:'themes/consumer/generated',tokens:[],components:[],ignoredTokens:[],ignoredComponents:[]});
 async function workspace(source:'none'|'existing'='none'){

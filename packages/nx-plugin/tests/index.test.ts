@@ -3,6 +3,8 @@ import * as generator from '../src/index.js';
 import {mkdtemp,readFile,rm,lstat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+// The cohort version is the one the root declares, so that moving the cohort moves no test.
+const declared=(JSON.parse(await readFile(new URL('../../../package.json',import.meta.url),'utf8')) as {version:string}).version;
 test('workspace creation is a real deterministic command with dry-run and existing-destination refusal',async()=>{
   assert.equal(typeof generator.createWorkspace,'function','workspace initialization must not rely on a handwritten test setup');
   const temporary=await mkdtemp(join(tmpdir(),'mpfrontend-workspace-'));
@@ -15,11 +17,11 @@ test('workspace creation is a real deterministic command with dry-run and existi
     assert.deepEqual(result.files,preview.files);
     const manifest=JSON.parse(await readFile(join(directory,'package.json'),'utf8'));
     assert.equal(manifest.packageManager,'pnpm@11.25.0');assert.equal(manifest.devDependencies.nx,'23.2.1');
-    assert.equal(manifest.devDependencies['@mpfrontend/ftg-cli'],'0.1.1');
+    assert.equal(manifest.devDependencies['@mpfrontend/ftg-cli'],declared);
     const workspace=JSON.parse(await readFile(join(directory,'.mpfrontend/workspace.json'),'utf8'));
-    assert.equal(workspace.cliVersion,'0.1.1');assert.equal(workspace.designSource,'none');
+    assert.equal(workspace.cliVersion,declared);assert.equal(workspace.designSource,'none');
     assert.deepEqual(JSON.parse(await readFile(join(directory,'.mpfrontend/design-source.json'),'utf8')),{
-      schemaVersion:1,generator:'MPFrontendDesignSource',cliVersion:'0.1.1',source:'none',status:'disabled',binding:null,bindingHash:null,sourceIdentity:null,release:null
+      schemaVersion:1,generator:'MPFrontendDesignSource',cliVersion:declared,source:'none',status:'disabled',binding:null,bindingHash:null,sourceIdentity:null,release:null
     });
     assert.ok((await readFile(join(directory,'README.md'),'utf8')).includes('eighteen finite workflows'));
     assert.ok((await readFile(join(directory,'pnpm-workspace.yaml'),'utf8')).includes('apps/*'));

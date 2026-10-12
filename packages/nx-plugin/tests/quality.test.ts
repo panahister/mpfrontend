@@ -10,6 +10,9 @@ import {workspaceConfig} from '@mpfrontend/workspace-config/eslint';
 import formatter from '@mpfrontend/workspace-config/prettier';
 import {applicationFiles, createApplication, workspaceFiles} from '../src/index.js';
 
+// The cohort version is the one the root declares, so that moving the cohort moves no test.
+const declared=(JSON.parse(await readFile(new URL('../../../package.json',import.meta.url),'utf8')) as {version:string}).version;
+
 const shortName = 'ab', longName = 'a' + 'b'.repeat(48);
 /** Files that the generated .prettierignore leaves to the tool that writes them. */
 const toolOwned = (path: string) => path.startsWith('.mpfrontend/') || path === 'pnpm-workspace.yaml' || path.endsWith('next-env.d.ts');
@@ -52,7 +55,7 @@ test('init writes the quality profile, the check and a CI-neutral gate', () => {
   assert.match(files['CODEOWNERS']!, /^\/apps\/\s+@owner-placeholder\/apps$/m);
   assert.match(files['CODEOWNERS']!, /^\/packages\/\s+@owner-placeholder\/shared-packages$/m);
   assert.match(files['.agents/skills/README.md']!, /`mpfrontend-`\nprefix is reserved/);
-  assert.equal(manifest.devDependencies['@mpfrontend/nx-plugin'], '0.1.1', 'the Nx generators are installed');
+  assert.equal(manifest.devDependencies['@mpfrontend/nx-plugin'], declared, 'the Nx generators are installed');
 });
 
 test('create app writes format, format:check, lint and test targets and extends the shared configuration', async () => {
