@@ -193,7 +193,10 @@ async function published(registry,recordPath){
     const audit=join(context.temporary,'audit');await mkdir(audit);
     await writeFile(join(audit,'package.json'),JSON.stringify({name:'cohort-audit',private:true,dependencies:Object.fromEntries(record.packages.map(entry=>[entry.name,entry.version]))},null,2));
     await writeFile(join(audit,'.npmrc'),'@mpfrontend:registry='+registry+'\n');
-    await run('npm',['install','--ignore-scripts','--no-audit','--no-fund'],{cwd:audit,env:context.env});
+    // The audit reads the sixteen archives as the registry served them; the peers (React, nuqs) are an app's own and
+    // the generated app above installed them. npm would otherwise resolve this bare folder's missing peers and refuse
+    // the cohort over an optional peer of nuqs. An npm consumer that declares its own react installs the cohort.
+    await run('npm',['install','--ignore-scripts','--no-audit','--no-fund','--legacy-peer-deps'],{cwd:audit,env:context.env});
     const output=await run('npm',['audit','signatures','--json','--include-attestations'],{cwd:audit,env:context.env,capture:true});
     const report=JSON.parse(output.slice(output.indexOf('{')));
     assert.deepEqual(report.invalid??[],[]);assert.deepEqual(report.missing??[],[]);
