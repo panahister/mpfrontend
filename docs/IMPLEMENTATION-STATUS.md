@@ -17,30 +17,30 @@ document.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0` | 33/33 |
-| `@mpfrontend/nx-plugin` | `0.1.0` | 25/25 |
-| `@mpfrontend/ftg-core` | `0.1.0` | 14/14 source tests, and the consumer gate |
-| `@mpfrontend/ai-skills` | `0.1.0` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/access-core` | `0.1.0` | 19/19 |
-| `@mpfrontend/access-react` | `0.1.0` | 19/19 source tests, and the installed consumer's first paint and browser bundle |
-| `@mpfrontend/ui` | `0.1.0` | 31/31 |
-| `@mpfrontend/data-react` | `0.1.0` | 11/11 source tests, and the installed consumer's served list |
-| `@mpfrontend/workspace-config` | `0.1.0` | 109/109 |
-| `@mpfrontend/app-layout` | `0.1.0` | 6/6 |
-| `@mpfrontend/presentation-server` | `0.1.0` | 21/21 |
-| `@mpfrontend/security-bff` | `0.1.0` | 66/66 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
-| `@mpfrontend/realtime-core` | `0.1.0` | 11/11 source tests, 5/5 installed consumer assertions |
-| Release tooling | the cohort's guards, record, API reports and registry install | 10/10 source tests, the guards' self-test, and the local registry install with its two seeded controls |
-| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 408 source tests |
+| `@mpfrontend/ftg-cli` | `0.1.1` | 33/33 |
+| `@mpfrontend/nx-plugin` | `0.1.1` | 25/25 |
+| `@mpfrontend/ftg-core` | `0.1.1` | 14/14 source tests, and the consumer gate |
+| `@mpfrontend/ai-skills` | `0.1.1` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/access-core` | `0.1.1` | 19/19 |
+| `@mpfrontend/access-react` | `0.1.1` | 20/20 source tests, and the installed consumer's first paint and browser bundle |
+| `@mpfrontend/ui` | `0.1.1` | 31/31 |
+| `@mpfrontend/data-react` | `0.1.1` | 11/11 source tests, and the installed consumer's served list |
+| `@mpfrontend/workspace-config` | `0.1.1` | 109/109 |
+| `@mpfrontend/app-layout` | `0.1.1` | 6/6 |
+| `@mpfrontend/presentation-server` | `0.1.1` | 21/21 |
+| `@mpfrontend/security-bff` | `0.1.1` | 67/67 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/realtime-core` | `0.1.1` | 11/11 source tests, 5/5 installed consumer assertions |
+| Release tooling | the cohort's guards, record, API reports and registry install | 15/15 source tests, the guards' self-test, and the local registry install with its two seeded controls |
+| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 413 source tests |
 | Local package cohort | sixteen archives | 16/16 pack and manifest verification |
-| Distribution negative controls | ninety-three controls | 93/93 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=59 files=364` |
+| Distribution negative controls | ninety-six controls | 96/96 expected failures observed |
+| Public repository verification | one script over the working tree | `documents=59 files=363` |
 
 From `0.1.0` on, one version names the whole cohort: the root `package.json` declares it, every package carries
 it, and every pin of a framework package (the app template, the Nx plugin's workspace cohort, the AI procedures)
 equals it; the release guard and a test refuse a pin that differs. The declared version is the next one to publish,
 and a version the registry already holds is never built again, so a change after a publication moves the version.
-`0.1.0` is published ([release record](releases/0.1.0.md)). Before it, each package's version moved when anything it packed changed: the cohort
+`0.1.0` is published ([release record](releases/0.1.0.md)); the declared version, `0.1.1`, is the next to publish. Before `0.1.0`, each package's version moved when anything it packed changed: the cohort
 of 2026-10-12 is listed with its SHA-256 in `docs/releases/2026-10-12-package-cohort.md`, and `CHANGELOG.md` lists
 the change of each package since then under its version. The OpenAPI generator stamp (`GENERATOR_VERSION`,
 `0.1.0-dev.6`) is not a package version and did not move, because the generator code did not change.
@@ -48,11 +48,10 @@ the change of each package since then under its version. The OpenAPI generator s
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
 the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
 `.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
-would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 363
-tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
-file, so a fresh clone of the same commit prints `files=363`.
+would not. `documents` is the number of Markdown files found by the same walk. The figure recorded is the one a
+fresh clone of the commit prints; a working tree with an untracked file prints more.
 
-Fresh independent consumer `mpfrontend-packed-consumer-4hJZ4w` (the run on the tree of this commit) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-dlmBR2` (the run on the tree of this commit) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators
@@ -100,7 +99,7 @@ own check, against a contract that declares the list's query parameters. Depende
 | Consumer-owned design attachment | Implemented | `none` and `existing`; hash, path, symlink, lock, and drift refusal |
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |
 | Repository-scoped AI procedures | Implemented | Fourteen Base and four optional Design procedures |
-| Registry package distribution | Published, `0.1.0` | The release workflow (started by hand; guards before the build, the complete gate, a record of SHA-256 and integrity, publication by an approved job in the environment `npm` on main with npm provenance, `latest` never given to a prerelease), its guards' source tests and self-test, and an install from two throw-away local registries: the generated scope binding keeps a decoy registry from serving `@mpfrontend`, exact pins keep a newer version out, each with a seeded control observed failing. The workflow ran on GitHub on 2026-10-12: a rehearsal, a first publication that stopped before any package reached the registry, and the run that published all sixteen. `npm audit signatures` over the published cohort verified 190 packages with 0 invalid and 0 missing, and each of the sixteen carries a provenance attestation naming the release commit. The script's own audit step fails with an npm peer conflict when it installs the sixteen together, so that check passed by hand with `--legacy-peer-deps` |
+| Registry package distribution | Published, `0.1.0` | The release workflow (started by hand; guards before the build, the complete gate, a record of SHA-256 and integrity, publication by an approved job in the environment `npm` on main with npm provenance, `latest` never given to a prerelease), its guards' source tests and self-test, and an install from two throw-away local registries: the generated scope binding keeps a decoy registry from serving `@mpfrontend`, exact pins keep a newer version out, each with a seeded control observed failing. The workflow ran on GitHub on 2026-10-12: a rehearsal, two attempts that stopped before any package reached the registry (a path that npm read as a repository, a token without the box that bypasses two-factor authentication), and the re-run that published all sixteen. `npm audit signatures` over the published cohort verified 190 packages with 0 invalid and 0 missing, and each of the sixteen carries a provenance attestation naming the release commit. The audit step of the registry-install script first failed on an npm peer conflict when it installed the sixteen into a bare folder; it was repaired for 0.1.1 and now passes against the published cohort |
 | Public API and compatibility policy | Declared | README "Versioning": semantic versions, a minor version may break while the major version is 0 and a patch never breaks, a deprecated export stays for a minor version; one `api-report.json` per package compared on every check, and with the last published version at a release; no version is published yet, so no published baseline exists |
 
 ## Reference implementation
