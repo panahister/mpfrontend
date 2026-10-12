@@ -1,0 +1,70 @@
+{
+  "version": "0.1.0",
+  "commit": "c5e34fe2686e9e97c8aefe300caf26cffa361cc1",
+  "packages": {
+    "@mpfrontend/access-core": {
+      "file": "mpfrontend-access-core-0.1.0.tgz",
+      "integrity": "sha512-Zh7RurNTAkQr+wemwwUga8/MShSJbEABKU+9mt4sjsaqf/GZKEfbL6piWHeru+flca7jBR05WhndJDE2GIvKmw=="
+    },
+    "@mpfrontend/access-react": {
+      "file": "mpfrontend-access-react-0.1.0.tgz",
+      "integrity": "sha512-GA8sE8fxNSCnoq7hhJtjuNongyJYZ3SP8wNEQGI6MEhhhUIzC0/0pDhbpsVfGiqgPsucoW/GOagvp8OGlXU0iQ=="
+    },
+    "@mpfrontend/ai-skills": {
+      "file": "mpfrontend-ai-skills-0.1.0.tgz",
+      "integrity": "sha512-ybwee6q0X2yXICmuBqxyQYBtlzd7U0MIc26o6uEHjVmhkNNq3OfznT+8+S6nBPfWJ0y2bSLve/uqT6NyGaZRKA=="
+    },
+    "@mpfrontend/app-layout": {
+      "file": "mpfrontend-app-layout-0.1.0.tgz",
+      "integrity": "sha512-ZmjAwGUoEU7zd2tVjT9NShlWJZtoBCZnWQgs8Vu46JgyZEbjqD7GraAY6IhmP3P1lvbz/79Hpe4HGZftvEVw3Q=="
+    },
+    "@mpfrontend/data-react": {
+      "file": "mpfrontend-data-react-0.1.0.tgz",
+      "integrity": "sha512-FUkIBM0HwmAbSdPIxcqmClmD41CrqANVx/aJN3a17NfQ6vXUMvER2MbrhQB6c9o8b9Qrky3Y5dbLojBDcu/jzA=="
+    },
+    "@mpfrontend/ftg-cli": {
+      "file": "mpfrontend-ftg-cli-0.1.0.tgz",
+      "integrity": "sha512-OGDqLyBukmAHUN31z08F3QEY8pwG0lT7Linoju/LFzZpN+LDw1L1JaqgNFp6TT73rEc6T1iLXu0ug+64iQmOGg=="
+    },
+    "@mpfrontend/ftg-core": {
+      "file": "mpfrontend-ftg-core-0.1.0.tgz",
+      "integrity": "sha512-6ANRdj/OTS/J13JfZKT7enGlYcG3ZoIeaqOWB7IFbtXexM7zZ/bKLMoxgbnQu48ZJl22eg9SoQjo5daEHMghqQ=="
+    },
+    "@mpfrontend/i18n": {
+      "file": "mpfrontend-i18n-0.1.0.tgz",
+      "integrity": "sha512-EYFPlV/+jbmzgcSLZnpe9Fsa2JXa2IVdiWQ73NAxEt0pMxMmsGXZJ8EezxF4Q6/qA0fL0FLkZOQnJF/oCgM11Q=="
+    },
+    "@mpfrontend/nx-plugin": {
+      "file": "mpfrontend-nx-plugin-0.1.0.tgz",
+      "integrity": "sha512-NdMVbT6Fq4j0fqaC5V6iQYCTgryqvZOG5yO8K/AeyjAGMDKUwHZYOz/m+fMoLZdpzFGy79I8ZaNn9zcBtsY2cQ=="
+    },
+    "@mpfrontend/presentation-server": {
+      "file": "mpfrontend-presentation-server-0.1.0.tgz",
+      "integrity": "sha512-T65+I3yfZjyOIXQ7FGps2hdTw4V2nAsNa6/sqzjL7yepShO6GslaopZ2rR350CwvoAauezuDbdeATRwjMm3zow=="
+    },
+    "@mpfrontend/primitives": {
+      "file": "mpfrontend-primitives-0.1.0.tgz",
+      "integrity": "sha512-E7G52rFQzMXZAzu0r1o5bHdcCOxyaflrBjTtCSgfI2eH5KMHdvmeMyVle6QPCdo/SpLWcdAAYJCjLG8S7IjrFA=="
+    },
+    "@mpfrontend/realtime-core": {
+      "file": "mpfrontend-realtime-core-0.1.0.tgz",
+      "integrity": "sha512-tbY5dtuGAD7YSLOBx6bNYnZ2FBbRf4KA/pdgsvRYctFPklFD7uSaVhEaOJHWcUMPiCi+txj3TVPvuntelzXraQ=="
+    },
+    "@mpfrontend/security-bff": {
+      "file": "mpfrontend-security-bff-0.1.0.tgz",
+      "integrity": "sha512-jEMZsYiVK1k3LENa+NLKHczmaVwV/gXVzfpDQ6AuXpJUdUcBESVf6X9H5ZpIeT/82pyLujQoA4YtDFztU1znkw=="
+    },
+    "@mpfrontend/tokens": {
+      "file": "mpfrontend-tokens-0.1.0.tgz",
+      "integrity": "sha512-8Qx5uf39lI/Fc3fZRTxqMswU2BgpmoNjQuvHdQ7d52oF6XHmaLUCqO+iQXORJMI5HSJW70o82Kl+UrTbQ4LOjg=="
+    },
+    "@mpfrontend/ui": {
+      "file": "mpfrontend-ui-0.1.0.tgz",
+      "integrity": "sha512-BfNaT8+OugDBPnTJe1cH75SuQhcYMXu6KX4uMRQeXpv3HlmxEa6hlqhmTpN4tYnql3ojpOBWaoYkk5EEbbzeew=="
+    },
+    "@mpfrontend/workspace-config": {
+      "file": "mpfrontend-workspace-config-0.1.0.tgz",
+      "integrity": "sha512-hYgAkIQiFweEkBberJxcmmP+z+V/IXDHu4+Zw3bi7M7iR4vRh/ux4CG01WjJT20Agq8YDDQ/At3eqwunWZWUGw=="
+    }
+  }
+}

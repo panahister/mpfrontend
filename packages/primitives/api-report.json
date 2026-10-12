@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/primitives",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "entries": {
     ".": {
       "buttonState": "export declare function buttonState(input: Readonly<{ disabled?: boolean; loading?: boolean; restricted?: boolean; }>): ButtonState;",

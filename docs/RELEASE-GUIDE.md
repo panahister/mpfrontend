@@ -40,14 +40,19 @@ Without the `publish` input the run is a rehearsal: it does everything but the p
 
 ## Preparing a release (a pull request on main)
 
-1. Set the version in the root `package.json` and in every `packages/*/package.json`, and every pin of a framework
-   package to it. `node tools/distribution/release.mjs guard --version <version> --ref refs/heads/main` lists each
+1. Move the cohort with `node tools/distribution/set-cohort-version.mjs <version>`: it sets the version in the root
+   `package.json` and in every `packages/*/package.json`, and every pin of a framework package to it (the template, the
+   Nx plugin's cohort, the AI procedures), and fails when a place it expects is missing. `node tools/distribution/release.mjs guard --version <version> --ref refs/heads/main` lists each
    value that differs (it also asks the registry whether the version is free).
 2. Give the changes of the release their own section in `CHANGELOG.md`, headed `## <version>`. The record of the run
    reads that section, and the `Unreleased` section when the version has none.
-3. API: `pnpm check` compares each package's built declarations with its `api-report.json`. When the API changed
+3. API: every build compares each package's built declarations with the published archive of the baseline version
+   (`tools/distribution/api-baseline.json`, which names that version, the commit and the integrity of every archive; the
+   archives come from the registry and their bytes must be the recorded ones; a build that cannot fetch them fails, it
+   does not skip the comparison), and with its `api-report.json`. When the API changed
    and the version moved as the policy says, the check passes; record the new API at the new version with
-   `pnpm api:update` in the same pull request, so that it is the baseline of the next release.
+   `pnpm api:update` in the same pull request, so that it is the recorded API of the next release. After a release, move
+   the baseline to it in a commit of its own: `node tools/distribution/api-report.mjs baseline --record <release.json>`.
 4. Run the gate locally if you want the evidence before the workflow:
    `pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
    `pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis`,

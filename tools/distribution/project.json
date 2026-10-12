@@ -6,10 +6,11 @@
   "targets": {
     "test": {
       "executor": "nx:run-commands",
-      "options": {"command": "node --test tools/distribution/toolchain.test.mjs tools/distribution/release.test.mjs"}
+      "options": {"command": "node --test tools/distribution/toolchain.test.mjs tools/distribution/release.test.mjs tools/distribution/api-baseline.test.mjs"}
     },
     "api-check": {
       "executor": "nx:run-commands",
+      "cache": false,
       "dependsOn": ["^build"],
       "options": {"command": "node tools/distribution/api-report.mjs check"}
     },

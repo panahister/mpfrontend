@@ -31,5 +31,5 @@ test('every package carries the one cohort version that the workspace declares',
     'presentation-server','primitives','realtime-core','security-bff','tokens','ui','workspace-config'])
     assert.equal(await packedVersion(name),declared,name);
   const skills=await readFile(new URL('../../ai-skills/src/index.ts',import.meta.url),'utf8');
-  assert.match(skills,new RegExp(`SKILLS_VERSION='${declared}',SKILLS_CLI_VERSION='${declared}'`));
+  assert.match(skills,new RegExp(`SKILLS_VERSION:string='${declared}',SKILLS_CLI_VERSION:string='${declared}'`));
 });

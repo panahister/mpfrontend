@@ -19,7 +19,7 @@ export async function setCohortVersion(root,version){
     ['package.json',text=>text.replace(/^(  "version": ")[^"]+(",)$/m,'$1'+version+'$2')],
     ...packages.map(name=>['packages/'+name+'/package.json',text=>text.replace(/^(  "version": ")[^"]+(",)$/m,'$1'+version+'$2')]),
     ['packages/nx-plugin/templates/next/package.json.template',text=>text.replace(/^(\s+"@mpfrontend\/[a-z0-9-]+": ")[^"]+(")/gm,'$1'+version+'$2')],
-    ['packages/ai-skills/src/index.ts',text=>text.replace(/SKILLS_VERSION='[^']+',SKILLS_CLI_VERSION='[^']+'/,"SKILLS_VERSION='"+version+"',SKILLS_CLI_VERSION='"+version+"'")],
+    ['packages/ai-skills/src/index.ts',text=>text.replace(/SKILLS_VERSION:string='[^']+',SKILLS_CLI_VERSION:string='[^']+'/,"SKILLS_VERSION:string='"+version+"',SKILLS_CLI_VERSION:string='"+version+"'")],
     ['packages/nx-plugin/src/workspace.ts',text=>text.replace(/\{cli:'[^']+',nxPlugin:'[^']+',workspaceConfig:'[^']+'\}/,"{cli:'"+version+"',nxPlugin:'"+version+"',workspaceConfig:'"+version+"'}")],
     ...(await readdir(join(root,'packages/ai-skills/skills'))).sort().map(skill=>['packages/ai-skills/skills/'+skill+'/SKILL.md',
       text=>text.split('\n').map((line,index)=>index===7?line.split(old).join(version):line).join('\n'),true]),

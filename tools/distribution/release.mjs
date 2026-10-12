@@ -67,7 +67,7 @@ export async function cohortProblems(root,asked){
   const cohort=/COHORT=\{cli:'([^']*)',nxPlugin:'([^']*)',workspaceConfig:'([^']*)'\}/.exec(workspace);
   if(!cohort||cohort.slice(1).some(pin=>pin!==declared))problems.push('WORKSPACE_PIN:'+(cohort?cohort.slice(1).join(','):'missing'));
   const skills=await readFile(join(root,'packages/ai-skills/src/index.ts'),'utf8');
-  const skillVersions=/SKILLS_VERSION='([^']*)',SKILLS_CLI_VERSION='([^']*)'/.exec(skills);
+  const skillVersions=/SKILLS_VERSION(?::string)?='([^']*)',SKILLS_CLI_VERSION(?::string)?='([^']*)'/.exec(skills);
   if(!skillVersions||skillVersions.slice(1).some(pin=>pin!==declared))problems.push('SKILLS_PIN:'+(skillVersions?skillVersions.slice(1).join(','):'missing'));
   for(const skill of (await readdir(join(root,'packages/ai-skills/skills'))).sort()){
     const text=await readFile(join(root,'packages/ai-skills/skills',skill,'SKILL.md'),'utf8');

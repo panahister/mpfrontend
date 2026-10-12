@@ -4,19 +4,19 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
-## 0.1.1 (not yet released)
+## Unreleased
 
-One version for all sixteen packages, as the policy says: two packages changed, and the rest move with the cohort.
-The release record is written by the release workflow when it publishes.
+The changes since `0.1.0`, the last release. Nothing between `0.1.0` and `1.0.0` is published: these become the
+notes of `1.0.0`. The version the tree declares meanwhile is a working version and is never published.
 
 | Package | Version | Change |
 |---|---|---|
-| `@mpfrontend/security-bff` | `0.1.0` to `0.1.1` | A streamed answer that a browser would run as a document (HTML, XHTML, SVG, XML or script) is refused whole with a 502 unless the upstream sent an attachment disposition or a Content-Security-Policy with the sandbox directive. Before, the startup check only proved that the route could pass both headers, and an answer without them was served inline |
-| `@mpfrontend/access-react` | `0.1.0` to `0.1.1` | The server entry throws `ACCESS_SERVER_ENTRY_IN_BROWSER` when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot run it in a browser |
-| `@mpfrontend/nx-plugin` | `0.1.0` to `0.1.1` | A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the framework packages at `0.1.1` |
-| `@mpfrontend/ai-skills` | `0.1.0` to `0.1.1` | The procedures require CLI `0.1.1` |
-| `@mpfrontend/ftg-cli` | `0.1.0` to `0.1.1` | Its design-sync document names the new version |
-| The other eleven packages | `0.1.0` to `0.1.1` | Version only |
+| `@mpfrontend/security-bff` | since `0.1.0` | A streamed answer that a browser would run as a document (HTML, XHTML, SVG, XML or script) is refused whole with a 502 unless the upstream sent an attachment disposition or a Content-Security-Policy with the sandbox directive. Before, the startup check only proved that the route could pass both headers, and an answer without them was served inline |
+| `@mpfrontend/access-react` | since `0.1.0` | The server entry throws `ACCESS_SERVER_ENTRY_IN_BROWSER` when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot run it in a browser |
+| `@mpfrontend/nx-plugin` | since `0.1.0` | A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the framework packages at the cohort version |
+| `@mpfrontend/ai-skills` | since `0.1.0` | The procedures require the CLI of the cohort |
+| `@mpfrontend/ftg-cli` | since `0.1.0` | Its design-sync document names the new version |
+| The other eleven packages | since `0.1.0` | Version only |
 
 ## 0.1.0 (2026-10-12)
 

@@ -8,7 +8,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
-import {REGISTRY,parseVersion} from './release.mjs';
+import {REGISTRY,parseVersion,integrityOf} from './release.mjs';
 
 const exec=promisify(execFile);
 const defaultRoot=fileURLToPath(new URL('../../',import.meta.url));
@@ -91,6 +91,44 @@ async function currentReports(root){
   }
   return reports;
 }
+/** The report of the package an archive holds: its declarations and its package.json. */
+async function reportOfArchive(bytes){
+  const directory=await mkdtemp(join(tmpdir(),'mpfrontend-api-baseline-'));
+  try{
+    const archive=join(directory,'package.tgz');
+    await writeFile(archive,bytes);await mkdir(join(directory,'out'));
+    await exec('tar',['-xzf',archive,'-C',join(directory,'out')]);
+    const unpacked=join(directory,'out','package');
+    return apiReport(unpacked,JSON.parse(await readFile(join(unpacked,'package.json'),'utf8')));
+  }finally{await rm(directory,{recursive:true,force:true});}
+}
+/**
+ * The report of one published version, from its archive on the registry, whose bytes must be the ones the baseline
+ * file records. An archive that cannot be fetched or that differs is an error, never a version to skip.
+ */
+export async function baselineReport(name,version,integrity,{registry=REGISTRY,fetchImpl=fetch}={}){
+  const url=registry.replace(/\/$/,'')+'/'+name+'/-/'+name.split('/').pop()+'-'+version+'.tgz';
+  const response=await fetchImpl(url,{signal:AbortSignal.timeout(60000)});
+  if(response.status!==200)throw new Error('BASELINE_ARCHIVE_ANSWER:'+response.status);
+  const bytes=Buffer.from(await response.arrayBuffer());
+  if(integrityOf(bytes)!==integrity)throw new Error('BASELINE_INTEGRITY_MISMATCH');
+  return reportOfArchive(bytes);
+}
+/**
+ * The policy against the baseline: every package the build holds is compared with the version of the baseline file, which
+ * is the last published one. A package the file does not name, an archive that is unavailable and one with other bytes
+ * are problems; nothing is skipped.
+ */
+export async function baselineProblems(baseline,reports,options={}){
+  const problems=[];
+  await Promise.all(reports.map(async report=>{
+    const entry=baseline.packages?.[report.package];
+    if(!entry){problems.push('API_BASELINE_MISSING:'+report.package);return;}
+    try{problems.push(...policyProblems(await baselineReport(report.package,baseline.version,entry.integrity,options),report));}
+    catch(error){problems.push('API_BASELINE_UNAVAILABLE:'+report.package+'@'+baseline.version+': '+(error instanceof Error?error.message:String(error)));}
+  }));
+  return problems.sort();
+}
 /** The report of the last published version of a package, from its archive on the registry; undefined when none. */
 export async function publishedReport(name,{registry=REGISTRY,fetchImpl=fetch}={}){
   const response=await fetchImpl(registry.replace(/\/$/,'')+'/'+name.replace('/','%2f'),{headers:{accept:'application/json'},signal:AbortSignal.timeout(20000)});
@@ -99,15 +137,7 @@ export async function publishedReport(name,{registry=REGISTRY,fetchImpl=fetch}={
   const metadata=await response.json(),latest=metadata['dist-tags']?.latest;
   if(!latest)return undefined;
   const tarball=metadata.versions[latest].dist.tarball;
-  const directory=await mkdtemp(join(tmpdir(),'mpfrontend-api-baseline-'));
-  try{
-    const archive=join(directory,'package.tgz');
-    const bytes=Buffer.from(await (await fetchImpl(tarball,{signal:AbortSignal.timeout(60000)})).arrayBuffer());
-    await writeFile(archive,bytes);await mkdir(join(directory,'out'));
-    await exec('tar',['-xzf',archive,'-C',join(directory,'out')]);
-    const unpacked=join(directory,'out','package');
-    return apiReport(unpacked,JSON.parse(await readFile(join(unpacked,'package.json'),'utf8')));
-  }finally{await rm(directory,{recursive:true,force:true});}
+  return reportOfArchive(Buffer.from(await (await fetchImpl(tarball,{signal:AbortSignal.timeout(60000)})).arrayBuffer()));
 }
 
 async function main(args){
@@ -127,8 +157,19 @@ async function main(args){
       }
       problems.push(...policyProblems(base,report,difference));
     }
+    // Every build also compares the API with the last published version, whose archives the baseline file names.
+    const baseline=JSON.parse(await readFile(join(root,'tools/distribution/api-baseline.json'),'utf8'));
+    problems.push(...await baselineProblems(baseline,(await currentReports(root)).map(item=>item.report)));
     if(problems.length){console.error(problems.join('\n'));process.exit(1);}
-    console.log(JSON.stringify({ok:true,packages:compared}));
+    console.log(JSON.stringify({ok:true,packages:compared,baseline:baseline.version,comparedWithPublished:Object.keys(baseline.packages).length}));
+  }else if(command==='baseline'){
+    // After a release: the baseline becomes that release, from the record the workflow wrote (its own commit).
+    const index=args.indexOf('--record');
+    if(index<0)throw new Error('USAGE: api-report.mjs baseline --record <release.json>');
+    const record=JSON.parse(await readFile(args[index+1],'utf8'));
+    const packages=Object.fromEntries(record.packages.map(entry=>[entry.name,{file:entry.file,integrity:entry.integrity}]));
+    await writeFile(join(root,'tools/distribution/api-baseline.json'),JSON.stringify({version:record.version,commit:record.commit,packages},null,2)+'\n');
+    console.log(JSON.stringify({ok:true,baseline:record.version,packages:record.packages.length}));
   }else if(command==='update'){
     for(const {directory,report} of await currentReports(root))await writeFile(join(directory,'api-report.json'),JSON.stringify(report,null,2)+'\n');
     console.log(JSON.stringify({ok:true,updated:(await packageDirectories(root)).length}));
@@ -143,6 +184,6 @@ async function main(args){
     }
     if(problems.length){console.error(problems.join('\n'));process.exit(1);}
     console.log(JSON.stringify({ok:true,registry,comparedWithPublished:compared,neverPublished:unpublished}));
-  }else throw new Error('USAGE: api-report.mjs check|update|registry [--registry <url>]');
+  }else throw new Error('USAGE: api-report.mjs check|update|baseline|registry [--registry <url>]');
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])await main(process.argv.slice(2));

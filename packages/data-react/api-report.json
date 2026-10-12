@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/data-react",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "entries": {
     ".": {
       "FieldView": "export type FieldView = Readonly<{ field: (key: string) => Readonly<{ view: boolean; }>; }>;",
