@@ -157,6 +157,11 @@ const mutations=[
   {name:'stream-pull-only-on-demand',package:'security-bff',test:'stream.test.ts',file:'index.ts',
     before:'},{highWaterMark:0}):undefined;',after:'},{highWaterMark:1e9}):undefined;',
     expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
+  // A relay that queues the body itself keeps Node's inbound buffers small; what it pulled and the upstream has not
+  // taken shows the queue, even a moderate one of four chunks.
+  {name:'stream-relay-moderate-queue',package:'security-bff',test:'stream.test.ts',file:'index.ts',
+    before:'},{highWaterMark:0}):undefined;',after:'},{highWaterMark:4}):undefined;',
+    expected:'the BFF holds a bounded window',options:['--test-name-pattern=bounded window']},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},

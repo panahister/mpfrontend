@@ -25,7 +25,7 @@ Every package now names its repository, its license and its publish configuratio
 | `@mpfrontend/presentation-server` | `0.1.0-dev.4` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/primitives` | `0.1.0-dev.1` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.6` to `0.1.0` | Registry metadata only |
-| `@mpfrontend/security-bff` | `0.1.0-dev.7` to `0.1.0` | Registry metadata only |
+| `@mpfrontend/security-bff` | `0.1.0-dev.7` to `0.1.0` | Registry metadata. The README states the measured bound of what the relay of a streamed body holds |
 | `@mpfrontend/tokens` | `0.1.0-dev.1` to `0.1.0` | Registry metadata only |
 | `@mpfrontend/ui` | `0.1.0-dev.5` to `0.1.0` | `ResourceTable` and `ResourceForm` take field access: a column or field the person may not view is not rendered, a field they may not edit is disabled, and a save passes only the changed fields they may edit. `ResourceForm` takes helper and error texts per field. `ResourceTable` takes a declared client or server mode with controlled paging, sorting and filtering |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` to `0.1.0` | Registry metadata only |

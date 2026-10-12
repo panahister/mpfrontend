@@ -30,7 +30,8 @@ type Call={method:string;url:string;headers:IncomingHttpHeaders;complete:boolean
 
 /**
  * An identity provider, a programmable upstream API and a BFF over both. The BFF's server records each
- * incoming request, so that a test can see how much of a body the BFF holds.
+ * incoming request and counts the bytes the BFF pulled from its body, so that a test can see how much of a body the
+ * BFF holds.
  */
 async function harness(extra:Partial<BffConfig>={}){
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
@@ -80,7 +81,18 @@ async function harness(extra:Partial<BffConfig>={}){
   }};
   const handle=createBff({publicOrigin,issuer,clientId:'web',audience:'api',cookieName:'test_session',development:true,routes,acrValues:['strong'],sessionVault,...extra} as BffConfig);
   const inbound:IncomingMessage[]=[];
-  const bff=createServer((req,res)=>{inbound.push(req);void handle(req,res);});
+  const pulled=new WeakMap<IncomingMessage,number>();
+  const bff=createServer((req,res)=>{
+    inbound.push(req);pulled.set(req,0);
+    // The relay reads the body through the request's async iterator; each chunk it takes is counted here.
+    const iterate=req[Symbol.asyncIterator].bind(req);
+    (req as unknown as {[Symbol.asyncIterator]:()=>AsyncIterator<Buffer>})[Symbol.asyncIterator]=()=>{
+      const inner=iterate() as AsyncIterator<Buffer>;
+      return {next:async()=>{const step=await inner.next();if(!step.done)pulled.set(req,pulled.get(req)!+step.value.length);return step;},
+        return:async(value?:unknown)=>inner.return?inner.return(value):{done:true,value:undefined}};
+    };
+    void handle(req,res);
+  });
   await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+(bff.address() as {port:number}).port;
   const signIn=async()=>{
@@ -108,7 +120,7 @@ async function harness(extra:Partial<BffConfig>={}){
     return {client,response};
   };
   const close=async()=>{for(const server of [bff,provider,upstream])server.closeAllConnections();await Promise.all([bff,provider,upstream].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));};
-  return {base,calls,inbound,expired,signIn,open,close,setUpstream:(next:Upstream)=>{handler=next;}};
+  return {base,calls,inbound,pulled,expired,signIn,open,close,setUpstream:(next:Upstream)=>{handler=next;}};
 }
 /** Writes one chunk and waits while the connection asks the writer to wait. */
 const send=(client:ClientRequest,chunk:Uint8Array)=>new Promise<void>((resolve,reject)=>{
@@ -169,12 +181,32 @@ test('a streamed upload reaches the upstream as it arrives, unchanged, and the B
     assert.equal(answer.status,201);assert.equal(answer.body.toString(),'{"stored":true}');
     assert.equal(digest(Buffer.concat(received)),digest(body));
 
-    // While the upstream reads nothing, the client can push no more than a bounded window into the BFF.
-    const release=signal(),total=32*MB,chunk=Buffer.alloc(64*KB,7);let delivered=0;
+    // While the upstream reads nothing, the client can push no more than a bounded window into the BFF. Two measures:
+    // Node's inbound buffers of the request, and what the relay holds itself, the bytes it pulled from the request
+    // minus the bytes the upstream request took from it. A relay that drained the body into a queue of its own would
+    // keep the first small and the second large. Kernel socket buffers are outside both.
+    const release=signal(),total=32*MB,chunk=Buffer.alloc(64*KB,7);let delivered=0,taken=0;
     h.setUpstream(async(req,res)=>{await release.promise;for await(const part of req)delivered+=(part as Buffer).length;res.writeHead(201,{'content-type':'application/json'});res.end('{}');});
+    const originalFetch=globalThis.fetch;
+    globalThis.fetch=((input:RequestInfo|URL,init?:RequestInit)=>{
+      const body=init?.body;
+      if(!(body instanceof ReadableStream))return originalFetch(input,init);
+      // The upstream request reads the body through this stream; it counts what it takes and holds nothing itself.
+      const reader=(body as ReadableStream<Uint8Array>).getReader();
+      const counted=new ReadableStream<Uint8Array>({
+        async pull(controller){const {done,value}=await reader.read();if(done){controller.close();return;}taken+=value.byteLength;controller.enqueue(value);},
+        cancel(reason){return reader.cancel(reason);},
+      },{highWaterMark:0});
+      return originalFetch(input,{...init,body:counted});
+    }) as typeof fetch;
+    const index=h.inbound.length;
     const second=h.open('/v1/files/report',writeHeaders(session,{'content-type':'application/octet-stream','content-length':String(total)}));
-    let written=0,largest=0;
-    const sampler=setInterval(()=>{const req=h.inbound.at(-1)!;largest=Math.max(largest,req.readableLength+(req.socket?.readableLength??0));},2);
+    let written=0,largest=0,held=0;
+    const sampler=setInterval(()=>{
+      const req=h.inbound[index];if(!req)return;
+      largest=Math.max(largest,req.readableLength+(req.socket?.readableLength??0));
+      held=Math.max(held,(h.pulled.get(req)??0)-taken);
+    },2);
     try{
       while(written<total){
         if(second.client.write(chunk)){written+=chunk.length;continue;}
@@ -182,9 +214,12 @@ test('a streamed upload reaches the upstream as it arrives, unchanged, and the B
         const drained=await Promise.race([new Promise<boolean>(resolve=>second.client.once('drain',()=>resolve(true))),pause(500).then(()=>false)]);
         if(!drained)break;
       }
-    }finally{clearInterval(sampler);}
+    }finally{clearInterval(sampler);globalThis.fetch=originalFetch;}
     assert.ok(written<total,'the client stalls while the upstream reads nothing ('+written+' of '+total+' bytes written)');
     assert.ok(largest<=256*KB,'the BFF buffered at most 256 KiB of the body (largest '+largest+' bytes)');
+    // A chunk is pulled only when the upstream request asks for one, so between chunks the relay holds none; two
+    // chunks of Node's 64 KiB reads are the bound, and a queue of four chunks already exceeds it.
+    assert.ok(held<=128*KB,'the relay held at most 128 KiB that the upstream had not taken (largest '+held+' bytes)');
     release.resolve();
     while(written<total){await send(second.client,chunk);written+=chunk.length;}
     second.client.end();

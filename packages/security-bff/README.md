@@ -163,7 +163,10 @@ requirement. Then:
   back by backpressure. The BFF holds a bounded window of a body, never all of it: the inbound socket and
   request buffers (Node's 64 KiB high-water mark each; the test measured at most 130,775 bytes), the
   chunk being forwarded and the outbound socket buffer (64 KiB high-water mark): at most about 256 KiB of
-  process memory per transfer, whatever the size of the body. Kernel socket buffers come on top.
+  process memory per transfer, whatever the size of the body. Kernel socket buffers come on top. The test
+  measures the relay itself too: the bytes it pulled from the request minus the bytes the upstream request
+  took from it stay at most 128 KiB (it measured none between chunks), and a negative control with a queue
+  of four chunks fails that measure.
 - **The answer streams.** The answer reaches the client as it arrives, byte for byte, with the upstream
   status and only the headers the route names, plus `X-Content-Type-Options: nosniff`,
   `Cache-Control: no-store` and the correlation id. An answer whose media type is not in `responseTypes`

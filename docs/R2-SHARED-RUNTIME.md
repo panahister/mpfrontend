@@ -38,7 +38,8 @@ an ordinary route runs, in the same order, before the first byte of the body is 
   with 413, another media type with 415, each before any upstream call.
 - Bodies stream in both directions with backpressure. The BFF holds a bounded window of a body (its
   inbound socket and request buffers, the chunk being forwarded and the outbound socket buffer, at most
-  about 256 KiB per transfer); the presentation relay holds none beyond the stream it passes.
+  about 256 KiB per transfer, with what the relay pulled and the upstream has not taken measured at most
+  128 KiB); the presentation relay holds none beyond the stream it passes.
 - The session record is read again at the route's interval and once when the request body ends, before
   its last chunk goes upstream; an ended session aborts the upstream call and no success reaches the
   client.
