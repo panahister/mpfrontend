@@ -501,12 +501,15 @@ test('an upstream that answers before it reads the upload gets its answer throug
     const total=16*MB;
     const upload=h.open('/v1/files/report',writeHeaders(session,{'content-type':'application/octet-stream','content-length':String(total)}));
     // The client sends the start of the body only, and waits for the answer.
-    for(let offset=0;offset<256*KB;offset+=64*KB)await send(upload.client,Buffer.alloc(64*KB));
+    const sent=256*KB;
+    for(let offset=0;offset<sent;offset+=64*KB)await send(upload.client,Buffer.alloc(64*KB));
     const answer=await within(upload.response,5000,'the early answer did not reach the client');
     assert.equal(answer.status,409);assert.equal(answer.body.toString(),'{"title":"CONFLICT"}');
     assert.equal(answer.headers.connection,'close','the connection closes, so the unread rest is never read');
     upload.client.destroy();
-    assert.ok((h.pulled.get(h.inbound.at(-1)!)??0)<total,'the BFF did not read the whole body');
+    // The client sent only the start, so the rest of the body cannot have been read; what is held is that the relay did not
+    // pull more than the client wrote (the closed connection above is what stops it reading on).
+    assert.ok((h.pulled.get(h.inbound.at(-1)!)??0)<=sent,'the BFF pulled no more than the client wrote');
   }finally{await h.close();}
 });
 
