@@ -4,7 +4,7 @@ export type DesignSource='none'|'existing';
 export type WorkspaceOptions={name:string;directory:string;designSource?:DesignSource;dryRun?:boolean};
 const json=(value:unknown)=>JSON.stringify(value,null,2)+'\n';
 /** The cohort a new workspace pins; the quality profile is upgraded with it, never copied into the workspace. */
-export const COHORT={cli:'0.1.0-dev.19',nxPlugin:'0.1.0-dev.18',workspaceConfig:'0.1.0-dev.0'} as const;
+export const COHORT={cli:'0.1.0-dev.20',nxPlugin:'0.1.0-dev.19',workspaceConfig:'0.1.0-dev.0'} as const;
 /** Tool versions the quality profile is verified with. */
 export const QUALITY_TOOLS={eslint:'10.12.0',prettier:'3.9.9',tsx:'4.23.15'} as const;
 /** Workspace scripts. `check` is the gate that CI and the CI-neutral script run. */

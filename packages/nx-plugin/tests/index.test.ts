@@ -15,11 +15,11 @@ test('workspace creation is a real deterministic command with dry-run and existi
     assert.deepEqual(result.files,preview.files);
     const manifest=JSON.parse(await readFile(join(directory,'package.json'),'utf8'));
     assert.equal(manifest.packageManager,'pnpm@11.25.0');assert.equal(manifest.devDependencies.nx,'23.2.1');
-    assert.equal(manifest.devDependencies['@mpfrontend/ftg-cli'],'0.1.0-dev.19');
+    assert.equal(manifest.devDependencies['@mpfrontend/ftg-cli'],'0.1.0-dev.20');
     const workspace=JSON.parse(await readFile(join(directory,'.mpfrontend/workspace.json'),'utf8'));
-    assert.equal(workspace.cliVersion,'0.1.0-dev.19');assert.equal(workspace.designSource,'none');
+    assert.equal(workspace.cliVersion,'0.1.0-dev.20');assert.equal(workspace.designSource,'none');
     assert.deepEqual(JSON.parse(await readFile(join(directory,'.mpfrontend/design-source.json'),'utf8')),{
-      schemaVersion:1,generator:'MPFrontendDesignSource',cliVersion:'0.1.0-dev.19',source:'none',status:'disabled',binding:null,bindingHash:null,sourceIdentity:null,release:null
+      schemaVersion:1,generator:'MPFrontendDesignSource',cliVersion:'0.1.0-dev.20',source:'none',status:'disabled',binding:null,bindingHash:null,sourceIdentity:null,release:null
     });
     assert.ok((await readFile(join(directory,'README.md'),'utf8')).includes('eighteen finite workflows'));
     assert.ok((await readFile(join(directory,'pnpm-workspace.yaml'),'utf8')).includes('apps/*'));

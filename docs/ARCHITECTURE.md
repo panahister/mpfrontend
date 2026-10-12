@@ -90,7 +90,7 @@ sequenceDiagram
 
 The BFF is not the only authorization wall. A compromised or misconfigured gateway must not turn an
 internal service into an unauthenticated API. Likewise, a client-side capability snapshot is a display
-projection, not a policy decision point.
+projection, not a policy decision point: a hidden control is not authorization.
 
 ## Build-time contract flow
 
@@ -122,7 +122,12 @@ keys, credentials, raw design files, and redistribution rights are outside this 
 ## Package dependency direction
 
 - `primitives`, `tokens`, `i18n`, `access-core`, and `ftg-core` are low-level, domain-neutral libraries.
-- `ui` composes primitives and semantic styling but does not own a product theme.
+  `access-core` holds the access snapshot, its run-time validation, field state and the page manifest.
+- `access-react` binds an access snapshot to React: a provider, hooks, a guard and a link for the client, and a
+  server-only loader entry that a browser bundle cannot include. It decides no rule and reads no role name or token
+  claim; the consumer's server resolves its rules into the snapshot.
+- `ui` composes primitives and semantic styling but does not own a product theme. Its table and form take field
+  access from an access reader.
 - `presentation-server`, `security-bff`, and `realtime-core` own server/runtime boundaries.
 - `ftg-cli` and `nx-plugin` operate on repositories; runtime packages do not depend on them.
 - `ai-skills` describes bounded procedures and invokes supported tooling; it does not become an alternate

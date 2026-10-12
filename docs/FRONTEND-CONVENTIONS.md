@@ -156,6 +156,35 @@ uses logical properties (start and end), never left and right.
   boundaries.
 - Treat external data as `unknown` until the generated or approved handwritten boundary validates it.
 
+## Access in the UI
+
+The consumer's server decides what each person may see and do. It resolves its own rules (for example, a menu
+entry closed until granted, or the elements of a granted page open unless denied) into an explicit snapshot: a
+context reference, a revision, an expiry, capabilities and field access. The snapshot reaches the browser through
+the BFF, and the UI shows menus, pages, actions and fields from it only. The browser decides no rule and never reads
+a role name or a token claim.
+
+- **One page manifest per app.** `definePageManifest` of `@mpfrontend/access-core` lists every route once: the
+  capability its page needs, the capability of its menu entry, its elements (an element's own stable id is its
+  capability key unless it names another) and the field keys its components read, plus the navigation groups.
+  Ids are stable strings, defined once. A test runs `assertPageManifest(manifest, {routes: await appRoutes('src/app'),
+  ids})`, which fails on a duplicate id, an id the app uses that the manifest does not register, and a route with
+  no manifest entry.
+- **Load on the server, once per request.** A server component reads the snapshot with `createAccessLoader` of
+  `@mpfrontend/access-react/server`, which validates it (shape, revision, expiry, context reference, known keys)
+  and refuses a malformed, expired or mismatched one. It passes `clientSnapshot(result, pageKeys(manifest, page))`
+  to an `AccessProvider`: the page's part only, never identity or token data. The server entry cannot enter a
+  browser bundle.
+- **Present from the provider.** `AccessGuard`, `AccessLink`, `useCapability`, `useFieldState`, `useNavigation`,
+  and the `access` property of `ResourceTable` and `ResourceForm`. A denied element is hidden by default; a guard
+  shows a fallback or a disabled state only when it asks for it. A missing provider, a missing, malformed or expired
+  snapshot and an unknown id close every kind of entry. At expiry the provider closes everything, on an idle screen
+  too, and it asks the loader again when the window regains focus; a new revision or context replaces the snapshot
+  whole and aborts the work captured under the old one.
+- **A hidden control is not authorization.** The BFF, the gateway and every service still refuse each request the
+  person may not make. A save sends only the changed fields the person may edit (`dirtyPatch`), and the server still
+  checks them.
+
 ## Standard API-backed feature path
 
 ```mermaid
@@ -270,6 +299,7 @@ ambiguous. It must not choose a business rule merely because one implementation 
 | Nx, [Enforce Module Boundaries](https://nx.dev/features/enforce-module-boundaries) | Dependency direction and tag-enforced repository boundaries |
 | Feature-Sliced Design, [Public API](https://feature-sliced.design/docs/reference/public-api) | One public entry per feature or entity, with deeper imports refused |
 | ESLint, [Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files), and [Prettier](https://prettier.io/docs/) | One shared flat configuration and formatter profile that each project extends |
+| OWASP, [A01:2021 Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/) | Access is enforced in trusted server code; the UI's snapshot only presents the server's decision, and whatever it does not grant is denied |
 | Testing Library, [Guiding Principles](https://testing-library.com/docs/guiding-principles) | Tests emphasize observable behavior over implementation detail |
 | Unicode, [ICU MessageFormat](https://unicode-org.github.io/icu/userguide/format_parse/messages/) | Messages with named parameters, plural and select rules per locale, placed by each translation |
 | OpenAPI Initiative, [Specification](https://spec.openapis.org/oas/latest.html) | The captured API description is a reviewed contract input |

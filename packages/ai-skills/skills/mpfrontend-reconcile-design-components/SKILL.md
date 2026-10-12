@@ -5,7 +5,7 @@ description: Reconcile declared added, changed or removed DLS components with MP
 
 # Reconcile authored component behavior
 
-Requires the reviewed CLI dev.19 cohort, an attached design source and a normalized candidate with explicit interaction evidence.
+Requires the reviewed CLI dev.20 cohort, an attached design source and a normalized candidate with explicit interaction evidence.
 Read consumer instructions, installed CLI `DESIGN-SYNC.md`, approved source, adapter bindings and
 the actual public UI types. Use stable IDs for component identity; display renames do not justify
 creating duplicates. Core currently exposes six finite components, not the whole supplied DLS.

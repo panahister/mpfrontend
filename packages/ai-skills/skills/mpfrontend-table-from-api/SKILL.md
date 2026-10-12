@@ -14,9 +14,11 @@ form inputs. Missing success schemas require API/projection review, not fabricat
 Place generated parsing before state/rendering while preserving the consumer's authority and abort
 fences. Extract rows from the validated model in an authored adapter. Use `ResourceTable` from
 `@mpfrontend/ui`, a caption, localized labels, a value formatter and stable domain row keys when
-available. Keep authorized detail navigation consumer-owned; do not derive permissions from fields.
-Untrusted text stays React text, not injected HTML. Do not reveal sensitive columns merely because
-the API describes them.
+available. When the page has an access snapshot, pass `access={useAccess()}` from `@mpfrontend/access-react`: a
+column whose field the person may not view is removed with its header. Field access comes from the server's
+snapshot; do not derive permissions from fields or role names. Keep authorized detail navigation consumer-owned
+and render a detail link with `AccessLink`, which renders nothing when denied. Untrusted text stays React text, not
+injected HTML. Do not reveal sensitive columns merely because the API describes them.
 
 The current table is finite: columns, rows, formatting and an optional detail cell. Implement loading,
 error, empty, paging, sorting and filtering in the consumer using the real API semantics; do not
@@ -25,7 +27,7 @@ empty pages explicitly after refresh. Keep horizontal overflow inside the table,
 and use logical alignment for right to left. Refresh must not overwrite an unrelated editing draft.
 
 Test the actual response adapter with malformed data, status mismatch, nullable/optional values,
-empty results and meaningful row-key/detail behavior. Prove the parser runs before protected data
+empty results, meaningful row-key/detail behavior and, with an access snapshot, a column the person may not view. Prove the parser runs before protected data
 is published and that an isolated parser-removal control fails a real assertion. Check labels,
 number/date formatting, loading/retry and keyboard detail access left to right and right to left, light/dark and
 mobile widths. Run the actual generated-check and Nx gates uncached.

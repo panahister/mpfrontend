@@ -5,7 +5,7 @@ description: Create an independent MP Frontend Next.js app with the installed CL
 
 # Scaffold an app
 
-Requires MP Frontend CLI `0.1.0-dev.19` and the compatible packaged Nx plugin. Read the consumer's
+Requires MP Frontend CLI `0.1.0-dev.20` and the compatible packaged Nx plugin. Read the consumer's
 repository instructions before changing files; this skill grants no release or external-write authority.
 
 Obtain the app name, new destination and an approved local OpenAPI projection. Do not choose a

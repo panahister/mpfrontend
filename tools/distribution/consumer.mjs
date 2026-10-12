@@ -173,7 +173,10 @@ await writeFile(join(foundation,'build.mjs'),'import {mkdir,readFile,writeFile} 
 await assert.rejects(lstat(join(foundation,'dist')),{code:'ENOENT'});
 const fixtureManifestPath=join(workspace,'apps/sample/package.json');
 const fixtureManifest=JSON.parse(await readFile(fixtureManifestPath,'utf8'));
-fixtureManifest.dependencies['@independent/foundation']='workspace:*';await writeFile(fixtureManifestPath,JSON.stringify(fixtureManifest,null,2));
+fixtureManifest.dependencies['@independent/foundation']='workspace:*';
+// The access bindings, from their packed archive like every framework package.
+fixtureManifest.dependencies['@mpfrontend/access-react']=inventory.packages.find(p=>p.name==='@mpfrontend/access-react').version;
+await writeFile(fixtureManifestPath,JSON.stringify(fixtureManifest,null,2));
 const configPath=join(workspace,'apps/sample/ftg.config.json');
 const config=JSON.parse(await readFile(configPath,'utf8'));
 config.resources.push({name:'submission',operationId:'submitFixture',responseStatus:'202'});
@@ -193,6 +196,37 @@ import {parseRequest} from '../../api/generated/catalog/request-models.gen';
 export default function RequestCheck(){const [values,setValues]=useState<Record<string,unknown>>({name:'Example',quantity:1,approved:false}),[result,setResult]=useState('');
 // A synthetic verification page: it shows machine values only, so it needs no catalog message.
 return <main><p>{fixtureFoundation}</p><ResourceForm fields={requests[0]!.fields} values={values} saveLabel={requests[0]!.name} onChange={(key,value)=>setValues(old=>({...old,[key]:value}))} onSubmit={()=>{try{setResult(JSON.stringify(parseRequest('submission',values)));}catch{setResult('INVALID_API_REQUEST');}}}/><p role="status">{result}</p></main>;}
+`);
+// Synthetic access probes: a server component reads a fixed snapshot through the server-only loader and gives a
+// client provider the part it needs; a client page imports the server entry, which its browser bundle must refuse.
+const accessProbe=join(workspace,'apps/sample/src/app/access-check');await mkdir(accessProbe);
+await writeFile(join(accessProbe,'page.tsx'),`import { headers } from 'next/headers';
+import { clientSnapshot, createAccessLoader } from '@mpfrontend/access-react/server';
+import { AccessCheck } from './access-check';
+const keys = { capabilities: ['probe.granted', 'probe.denied'], fields: [] };
+// A fixed snapshot stands in for the consumer's own endpoint behind the BFF.
+const read = createAccessLoader({
+  load: async () => ({ contextRef: 'probe', revision: 'r1', expiresAt: Date.now() + 60000, capabilities: { 'probe.granted': true, 'probe.denied': false }, fields: {} }),
+  contextRef: () => 'probe',
+  keys,
+  timeoutMs: 1000,
+});
+export default async function AccessCheckPage() {
+  return <AccessCheck snapshot={clientSnapshot(await read(await headers()), keys)} />;
+}
+`);
+await writeFile(join(accessProbe,'access-check.tsx'),`'use client';
+import { AccessGuard, AccessLink, AccessProvider } from '@mpfrontend/access-react';
+export function AccessCheck({ snapshot }: { snapshot: unknown }) {
+  return <AccessProvider snapshot={snapshot}><AccessGuard capability="probe.granted"><output data-probe="granted-action" /></AccessGuard><AccessGuard capability="probe.denied"><output data-probe="denied-action" /></AccessGuard><AccessLink capability="probe.denied" href="/denied-link-target" /><AccessLink capability="probe.granted" href="/granted-link-target" /></AccessProvider>;
+}
+`);
+const browserProbe=join(workspace,'apps/sample/src/app/access-browser-probe');await mkdir(browserProbe);
+await writeFile(join(browserProbe,'page.tsx'),`'use client';
+import { createAccessLoader } from '@mpfrontend/access-react/server';
+export default function AccessBrowserProbe() {
+  return <output data-probe={typeof createAccessLoader} />;
+}
 `);
 const overridePath=join(workspace,'apps/sample/src/features/catalog/model/overrides/index.ts');
 const authored=(await readFile(overridePath,'utf8'))+'\n// Consumer-authored preservation sentinel.\n';
@@ -311,8 +345,12 @@ const englishShown=html=>replacedEnglish.filter(text=>!text.includes('{')&&new R
 let detectedOnEnglish=0;
 // The English-only app: the first paint takes language, direction and theme from the shared preference
 // cookie; the fixture locale is not a built-in locale, and an unknown or crafted value is the default.
-await served(join(workspace,'apps/sample'),async page=>{
+await served(join(workspace,'apps/sample'),async(page,appOrigin)=>{
   const fixture=await page('lang='+RTL+'&theme=dark');
+  // The first paint of the access probe holds the granted action and link only.
+  const access=await (await fetch(appOrigin+'/access-check')).text();
+  assert.match(access,/data-probe="granted-action"/);assert.match(access,/href="\/granted-link-target"/);
+  assert.doesNotMatch(access,/data-probe="denied-action"|denied-link-target/,'ACCESS_DENIED_ENTRY_IN_FIRST_PAINT');
   assert.match(fixture,/<html lang="en" dir="ltr" data-brand="neutral" data-mode="dark"/);
   assert.match(fixture,/focus:start-4/);assert.match(fixture,/border-s-4/);
   assert.doesNotMatch(fixture,/\b(?:ml|mr|pl|pr|left|right)-\d/);
@@ -326,6 +364,14 @@ await served(join(workspace,'apps/sample'),async page=>{
   detectedOnEnglish=englishShown(english).length;
   assert.ok(detectedOnEnglish>=10,'ENGLISH_DETECTOR_FOUND:'+detectedOnEnglish);
 });
+// The browser bundle: the client probe's code is there, the server-only loader is not, and the client page that
+// imports the server entry received the refusal module instead.
+const staticCode=(await filesUnder(join(workspace,'apps/sample/.next/static'))).filter(path=>path.endsWith('.js'));
+const browserCode=(await Promise.all(staticCode.map(path=>readFile(path,'utf8')))).join('\n');
+assert.ok(browserCode.includes('denied-action'),'the scan reads the client code');
+assert.ok(!browserCode.includes('ACCESS_LOAD_TIMEOUT_REQUIRED'),'SERVER_ACCESS_LOADER_IN_BROWSER_BUNDLE');
+assert.ok(browserCode.includes('ACCESS_SERVER_ENTRY_IN_BROWSER'),'the browser condition resolves the server entry to its refusal');
+console.log(JSON.stringify({stage:'access-bindings',ok:true,firstPaint:'granted-only',serverLoaderInBrowserBundle:false,browserConditionRefusal:true}));
 console.log(JSON.stringify({stage:'served-english',ok:true,default:'en',fixtureLocale:'not-built-in',firstPaintTheme:'dark',unknown:'default-en',invalidPreference:'ignored-not-echoed',englishMessagesDetected:detectedOnEnglish}));
 // The product-only app: its locale is the default and the only locale, the document is right to left on the
 // first visit, the layout is logical, and no English text replaces a message that the product supplied.
@@ -504,7 +550,7 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 console.log(JSON.stringify({ok:true,profile:'fresh-independent-packed-consumer',workspace,reportedVersion,
   dependencyAudit:onlineAudit?'passed':'not-run',
   checks:['actual-executable-cohort-version','two-mode-init/public-template-refusal','init-dry-run/destination-refusal','eighteen-workflow-dual-agent-install','design-source-attach/status','seven-packed-design-lifecycle-commands/synthetic-review/refusal','skills-drift/collision-refusal','existing-destination-refusal','authored-preservation','frozen-install',
-    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
+    ...(onlineAudit?['dependency-audit']:[]),'packed-security-refresh-outage/12-tests','packed-browser-recovery/5-tests','packed-realtime-admission-floor/60750ms','nx-build/clean-dependent-library-order','typecheck','workspace-check/format-lint-typecheck-test-build-generated','lint-negative/app-import-raw-colour-handwritten-css-feature-entry-literal-text-physical-side-in-class-name-and-stylesheet','feature-route-package-generators/dry-run/refusal/formatted','built-css/tailwind-structural-classes/theme-after-fallback','served-english-default/fixture-locale-not-built-in/unknown-locale-default','product-only-rtl-locale/no-english-fallback/generator-follows-registry','served-transfer-relay/8MiB-both-ways/streamed','access-first-paint/granted-only/server-loader-not-in-browser-bundle','catalog-check/negative-control','request-client-route-bundle','explicit-202/read-request-validation','explicit-204/empty-response-validation','explicit-bodyless/undefined-only-validation','explicit-optional-json/absent-null-object-validation','required-boolean-false','ftg-negative-drift','prepared-swagger-assets']}));
 // The check removes its own temporary area when it passes; a failure stops before this line and leaves it, at the
 // path printed first, for diagnosis. No other file is deleted.
 await rm(temporary,{recursive:true,force:true});

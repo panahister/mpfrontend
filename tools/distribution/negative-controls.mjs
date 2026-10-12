@@ -1,4 +1,4 @@
-import {cp,mkdir,mkdtemp,readFile,writeFile,symlink,rm} from 'node:fs/promises';
+import {cp,mkdir,mkdtemp,readFile,realpath,writeFile,symlink,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -7,7 +7,8 @@ import {promisify} from 'node:util';
 import assert from 'node:assert/strict';
 
 const exec=promisify(execFile),root=fileURLToPath(new URL('../../',import.meta.url));
-const sandbox=await mkdtemp(join(tmpdir(),'mpfrontend-negative-controls-'));
+// The real path: tsx matches a configuration to files by path, and the temporary folder may be behind a symlink.
+const sandbox=await realpath(await mkdtemp(join(tmpdir(),'mpfrontend-negative-controls-')));
 const mutations=[
   {name:'shared-session-quota',package:'security-bff',test:'redis.integration.ts',file:'session-store.ts',
     before:" or redis.call('ZCARD',KEYS[2])>=tonumber(ARGV[3]) then return 0 end; ",
@@ -164,7 +165,78 @@ const mutations=[
     expected:'an upload of several megabytes streams to the BFF'},
   {name:'presentation-shared-tickets',package:'presentation-server',test:'production.test.ts',file:'index.ts',
     before:"  if(config.production?.ticketStore?.shared!==true)refusals.push('SHARED_TICKET_STORE_REQUIRED');\n",after:'',
-    expected:'refuses each missing condition by name and has no memory default'}
+    expected:'refuses each missing condition by name and has no memory default'},
+  // An access snapshot is validated before use, and every entry it does not grant stays closed.
+  {name:'access-snapshot-shape',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"if(!plainObject(value)||!exactKeys(value,SNAPSHOT_KEYS))return refuse('MALFORMED');",after:"if(!plainObject(value))return refuse('MALFORMED');",
+    expected:'a malformed snapshot is refused whole'},
+  {name:'access-snapshot-plain-objects',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:'capabilities:Object.freeze(Object.fromEntries(grants))',after:'capabilities:Object.freeze(Object.assign(Object.create(null),Object.fromEntries(grants)))',
+    expected:'a validated or picked snapshot is made of plain objects'},
+  {name:'access-snapshot-prototype-key',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"&&value!=='__proto__'",after:'',expected:'a validated or picked snapshot is made of plain objects'},
+  {name:'access-snapshot-expiry',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"if(expiresAt<=(expected.now??Date.now()))return refuse('EXPIRED');",after:'',
+    expected:'an expired snapshot, a snapshot of another context'},
+  {name:'access-snapshot-context',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"if(expected.contextRef!==undefined&&expected.contextRef!==contextRef)return refuse('CONTEXT_MISMATCH');",after:'',
+    expected:'an expired snapshot, a snapshot of another context'},
+  {name:'access-snapshot-known-keys',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"return refuse('UNKNOWN_KEY');",after:'void 0;',
+    expected:'an expired snapshot, a snapshot of another context'},
+  {name:'access-field-busy-stays-disabled',package:'access-core',test:'snapshot.test.ts',file:'snapshot.ts',
+    before:"return field.edit&&!state.disabled&&!state.busy?'enabled':'disabled';",after:"return field.edit?'enabled':'disabled';",
+    expected:'a disabled or busy control stays disabled'},
+  {name:'access-navigation-parent-grants-no-child',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:'if(!group||!can(access,group.menu,now))return undefined;',after:'if(!group)return undefined;',
+    expected:'a parent grants no child'},
+  {name:'access-navigation-prunes-empty-group',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:"return children.length?Object.freeze({kind:'group',id,children:Object.freeze(children)}):undefined;",
+    after:"return Object.freeze({kind:'group',id,children:Object.freeze(children)});",expected:'a parent grants no child'},
+  {name:'access-navigation-page-capability',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:'page.menu&&can(access,page.menu,now)&&can(access,page.page,now)',after:'page.menu&&can(access,page.menu,now)',
+    expected:'navigation shows a page only when its menu and its page are granted'},
+  {name:'access-manifest-duplicate-id',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:"if(seen.has(id))problems.push({code:'DUPLICATE_ID',id});",after:'',expected:'fails on a duplicate id'},
+  {name:'access-manifest-unregistered-id',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:"if(!registered.has(id))problems.push({code:'UNREGISTERED_ID',id});",after:'void id;',expected:'fails on a duplicate id'},
+  {name:'access-manifest-unlisted-route',package:'access-core',test:'manifest.test.ts',file:'manifest.ts',
+    before:"if(!routes.has(route))problems.push({code:'UNLISTED_ROUTE',id:route});",after:'void route;',expected:'fails on a duplicate id'},
+  {name:'access-guard-closed-by-default',package:'access-react',test:'server-render.test.ts',file:'index.tsx',
+    before:'return granted?props.children:(props.fallback??null);',after:'return props.children;',
+    expected:'renders only the first on the server'},
+  {name:'access-link-no-anchor',package:'access-react',test:'server-render.test.ts',file:'index.tsx',
+    before:'if(!granted)return fallback??null;',after:'',expected:'a denied link renders no anchor'},
+  {name:'access-provider-expiry-timer',package:'access-react',test:'browser.test.ts',file:'index.tsx',
+    before:'    check();\n',after:'\n',expected:'an expired snapshot closes every entry on an idle screen'},
+  {name:'access-provider-replaces-whole',package:'access-react',test:'browser.test.ts',file:'index.tsx',
+    before:'state={source:snapshot,current:evaluate(snapshot)};',
+    after:"state={source:snapshot,current:{status:'granted',snapshot:{...evaluate(snapshot).snapshot!,capabilities:{...held.current.snapshot?.capabilities,...evaluate(snapshot).snapshot?.capabilities}}}};",
+    expected:'replaces the snapshot whole'},
+  {name:'access-provider-fences-revision',package:'access-react',test:'browser.test.ts',file:'index.tsx',
+    before:'fence.current.update(identity);',after:'fence.current.update(useRef(identity).current);',
+    expected:'a revision change during a pending request'},
+  {name:'access-provider-drops-late-reload',package:'access-react',test:'browser.test.ts',file:'index.tsx',
+    before:'setHeld(previous=>previous===startedWith?{source:previous.source,current:evaluateRef.current(value)}:previous);',
+    after:'setHeld(previous=>({source:previous.source,current:evaluateRef.current(value)}));',expected:'a late answer for a replaced one is dropped'},
+  {name:'access-loader-memoized-per-request',package:'access-react',test:'server.test.ts',file:'server.ts',
+    before:'if(!pending){pending=read(request);memo.set(request,pending);}',after:'pending=read(request);',
+    expected:'memoizes it once per request object',options:['--test-name-pattern=memoizes']},
+  {name:'access-loader-context-required',package:'access-react',test:'server.test.ts',file:'server.ts',
+    before:"if(contextRef===undefined)return {ok:false,reason:'CONTEXT_MISMATCH'};",after:'',
+    expected:'a failed load and a slow load grant nothing',options:['--test-name-pattern=grant nothing']},
+  {name:'ui-table-column-access',package:'ui',test:'index.test.ts',file:'index.tsx',
+    before:'const columns=access?fields.filter(field=>access.field(field.key).view):fields;',after:'const columns=fields;',
+    expected:'removes a column the person may not view'},
+  {name:'ui-form-hidden-field',package:'ui',test:'index.test.ts',file:'index.tsx',
+    before:'const shown=access?editable.filter(field=>access.field(field.key).view):editable;',after:'const shown=editable;',
+    expected:'leaves out a hidden field'},
+  {name:'ui-form-edit-access',package:'ui',test:'index.test.ts',file:'index.tsx',
+    before:'const locked=(field:DisplayField)=>disabled||(access?!access.field(field.key).edit:false);',after:'const locked=(field:DisplayField)=>disabled||field.key===\'\';',
+    expected:'disables a field it may not edit'},
+  {name:'ui-form-dirty-patch',package:'ui',test:'index.test.ts',file:'index.tsx',
+    before:'onSubmit(access.patch(original,',after:'onSubmit(((_original:unknown,draft:Record<string,unknown>)=>draft)(original,',
+    expected:'a save sends only the changed fields the person may edit'}
 ];
 try{
   await symlink(join(root,'node_modules'),join(sandbox,'node_modules'),'dir');
@@ -173,6 +245,9 @@ try{
     await cp(join(root,'packages',mutation.package,'src'),join(directory,'src'),{recursive:true});
     await cp(join(root,'packages',mutation.package,'tests',mutation.test),join(directory,'tests',mutation.test));
     await writeFile(join(directory,'package.json'),JSON.stringify({type:'module'}));
+    // tsx applies a configuration only to the files below it: the copy gets its own, which extends the root one, so
+    // that JSX compiles with the repository's settings.
+    await writeFile(join(directory,'tsconfig.json'),JSON.stringify({extends:join(root,'tsconfig.base.json')}));
     await symlink(join(root,'packages',mutation.package,'node_modules'),join(directory,'node_modules'),'dir');
     const path=join(directory,'src',mutation.file),original=await readFile(path,'utf8');
     assert.ok(original.includes(mutation.before),'mutation must match the actual implementation');
@@ -182,7 +257,7 @@ try{
     await writeFile(path,original.replace(mutation.before,mutation.after));
     let result;
     try{result=await exec(process.execPath,['--import','tsx','--test','--test-reporter=spec',...(mutation.options??[]),join(directory,'tests',mutation.test)],{
-      cwd:root,timeout:30000,maxBuffer:1048576,env:{...process.env,TSX_TSCONFIG_PATH:join(root,'tsconfig.base.json')}
+      cwd:root,timeout:30000,maxBuffer:1048576,env:{...process.env,TSX_TSCONFIG_PATH:join(directory,'tsconfig.json')}
     });}catch(error){result=error;}
     assert.ok(Number.isInteger(result.code)&&result.code!==0,'disabled guard must fail the real test, not timeout');
     // The spec reporter lists the failed tests, each with its error, after "failing tests:". The control counts only

@@ -11,24 +11,27 @@ Every count in this section was recomputed from uncached runs with Node 24.19.0 
 (`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
 `pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis` and
 `pnpm public:verify`), on the tree of the commit that records it. A commit cannot name itself: the commit
-before this one is `397a29a`, and the public verification line was run again on the tree that includes this
+before this one is `76bd8de`, and the public verification line was run again on the tree that includes this
 document.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.1.0-dev.19` | 33/33 |
-| `@mpfrontend/nx-plugin` | `0.1.0-dev.18` | 24/24 |
+| `@mpfrontend/ftg-cli` | `0.1.0-dev.20` | 33/33 |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.19` | 24/24 |
 | `@mpfrontend/ftg-core` | `0.1.0-dev.6` | 8/8 source tests, and the consumer gate |
-| `@mpfrontend/ai-skills` | `0.1.0-dev.12` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/ai-skills` | `0.1.0-dev.13` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/access-core` | `0.1.0-dev.3` | 19/19 |
+| `@mpfrontend/access-react` | `0.1.0-dev.0` | 19/19 source tests, and the installed consumer's first paint and browser bundle |
+| `@mpfrontend/ui` | `0.1.0-dev.6` | 26/26 |
 | `@mpfrontend/workspace-config` | `0.1.0-dev.0` | 109/109 |
 | `@mpfrontend/app-layout` | `0.1.0-dev.0` | 6/6 |
 | `@mpfrontend/presentation-server` | `0.1.0-dev.4` | 21/21 |
 | `@mpfrontend/security-bff` | `0.1.0-dev.7` | 62/62 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
 | `@mpfrontend/realtime-core` | `0.1.0-dev.6` | 11/11 source tests, 5/5 installed consumer assertions |
-| Complete Nx workspace | fifteen projects: fourteen packages and the distribution tooling | 57/57 lint, typecheck, test, and build tasks, 334 source tests |
-| Local package cohort | fourteen archives | 14/14 pack and manifest verification |
-| Distribution negative controls | forty-nine controls | 49/49 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=55 files=310` |
+| Complete Nx workspace | sixteen projects: fifteen packages and the distribution tooling | 61/61 lint, typecheck, test, and build tasks, 371 source tests |
+| Local package cohort | fifteen archives | 15/15 pack and manifest verification |
+| Distribution negative controls | seventy-four controls | 74/74 expected failures observed |
+| Public repository verification | one script over the working tree | `documents=56 files=326` |
 
 A package's version moves when anything it packs changes, so that one file name never stands for two
 different archives. Packing is deterministic: the same tree packs to the same bytes. The archives a consumer
@@ -41,16 +44,18 @@ package a consumer could hold therefore moved by one: `access-core` `0.1.0-dev.2
 `workspace-config` are new, were never packed for a consumer, and stay at `0.1.0-dev.0`. The OpenAPI
 generator stamp (`GENERATOR_VERSION`, `0.1.0-dev.6`) is not a package version and did not move, because the
 generator code did not change. `CHANGELOG.md` lists the change of each package, and
-`docs/releases/2026-10-12-package-cohort.md` lists the SHA-256 of each archive.
+`docs/releases/2026-10-12-package-cohort.md` lists the SHA-256 of each archive. A package whose packed files changed
+after that cohort has moved again and is listed under Unreleased in `CHANGELOG.md`; its release notes are written
+when it is packed for a consumer.
 
 The `files` figure of the public verification is a walk of the working tree, not a count of tracked files:
 the script visits every file below the repository root except the folders `.git`, `node_modules`, `.nx`,
 `.next`, `dist` and `artifacts`, so an untracked file counts and a tracked file inside one of those folders
-would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 309
+would not. `documents` is the number of Markdown files found by the same walk. Here the walk found 325
 tracked files and one untracked local progress note that this clone keeps out of Git through its own exclude
-file, so a fresh clone of the same commit prints `files=309`.
+file, so a fresh clone of the same commit prints `files=325`.
 
-Fresh independent consumer `mpfrontend-packed-consumer-YXQcUt` (the run on the tree of this commit) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-qQ6SoX` (the run on the tree of this commit) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators
@@ -63,8 +68,10 @@ whose only locale is a right-to-left private-use fixture locale (right to left o
 the product's text everywhere and no English fallback), six lint rules observed refusing a planted case
 (module boundaries, raw colour, hand-written CSS, a feature's public entry, literal text, and physical left or
 right in a class name, an inline style and a stylesheet), the app-to-package tag constraint refused when on
-and accepted when off, four catalog-check negative controls, generated-contract checks, and authored-file
-preservation. Dependency audit was explicitly not run in that local fixture.
+and accepted when off, four catalog-check negative controls, generated-contract checks, authored-file
+preservation, and the access bindings: the served first paint of a server component that loads a snapshot through
+the server-only loader holds only the granted action and link, the built browser code holds no server-only loader
+code, and a client page that imports the server entry receives its refusal module. Dependency audit was explicitly not run in that local fixture.
 
 ## Capability status
 
@@ -82,6 +89,7 @@ preservation. Dependency audit was explicitly not run in that local fixture.
 | OpenID Connect back-channel logout | Implemented | Signed logout-token validation (issuer keys, `iss`, `aud`, `iat`, `exp`, event, `sid` or `sub`, no `nonce`), `jti` replay refusal, revocation by `sid` then `sub` through a hashed vault index, 400 for invalid tokens and 503 during a store outage; source tests, the Redis integration gate and negative controls; not run against a real identity provider |
 | Production profiles of the Security BFF and the presentation server | Implemented | Typed profiles that refuse startup with named reasons (https origins, durable TLS-authenticated vault with a host key ring, client authentication, Secure cookies; shared tickets and connection budget), 503 readiness without memory fallback, and negative controls for each condition; no production deployment was run |
 | Streamed request and response bodies | Implemented | A route of the BFF allowlist may declare `stream` (request and response media types, a maximum request size, the response headers it passes from a closed set, idle and total timeouts and a session check interval; no defaults). Content-Length is required (411 without it, 413 above the maximum, 415 for another media type, each before any upstream call); bodies stream with backpressure in both directions, with a bounded window of at most about 256 KiB per transfer in the BFF; an answer of another media type is refused with 502; the session is read again at the route's interval and when the body ends; idle and total timeouts and client cancellation abort the upstream call. `@mpfrontend/presentation-server/relay` and the template's transfer route relay it as streams. Source tests with several megabytes each way, twelve negative controls, a generated-app test and the packed consumer's `next start` transfer of 8 MiB each way; not run against a real gateway, backend or browser |
+| Access bindings for React | Implemented | Run-time snapshot validation (shape, context reference and revision, expiry, expected context, known keys), a provider read during server rendering (a new snapshot replaces the old one whole, expiry closes every entry on an idle screen, the loader is asked again on focus, stale work is fenced), hooks for a capability and a field, a guard, a link, a page manifest with navigation and a test check of duplicate ids, unregistered ids and unlisted routes, a server-only loader memoized per request, and field access in `ResourceTable` and `ResourceForm`; source tests with server rendering and happy-dom, negative controls, and the packed consumer's first paint and browser bundle; not run in a real browser or against a real access endpoint |
 | Realtime admission and recovery | Implemented | Bounded tickets, quotas, replay/snapshot, reconnect, and stale-authority controls |
 | English built in; LTR/RTL foundations | Implemented | English is the only built-in locale. A configurable registry where a product registers its own locales with direction and digits, next to English or as its default and only locale; an allowlisted upstream Accept-Language in the Security BFF (English by default); i18n, BFF and generator tests with a right-to-left private-use fixture locale; the packed consumer serves a product whose only locale is that fixture, right to left with logical CSS and without English fallback. Every other language belongs to the product |
 | Claim projection and preference cookie | Implemented | `contextClaims` from the ID token (refreshed ID token at refresh) or, by choice, the access token, bounded to 4 KiB and token-free; the preference-cookie contract for `ui_locales` and the first paint; BFF and i18n tests; the packed consumer's first paint follows the cookie and ignores an invalid value without echoing it |

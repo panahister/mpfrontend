@@ -40,3 +40,13 @@ virtualized at a fixed `rowHeight` inside a `height` viewport: ten thousand node
 view, and the focused row stays rendered. Each item carries `aria-level`, `aria-setsize`, `aria-posinset`
 and `aria-expanded`, and its accessible name includes its state label.
 
+
+## Field access in tables and forms
+
+`ResourceTable` and `ResourceForm` take `access`, a reader of `@mpfrontend/access-core` (from `useAccess()` of
+`@mpfrontend/access-react`). A column whose field may not be viewed is removed with its header. A form field that
+may not be viewed is not rendered, with its label, `helpers` text and `errors` text, and leaves validation and the
+submitted values; a field that may not be edited is disabled; a save passes `onSubmit` only the changed fields that
+may be edited, compared with `original` (`dirtyPatch`), and a changed field that may not be edited throws
+`FORBIDDEN_FIELD` instead of being sent. Without `access` both components behave as before. A hidden field is a
+presentation; the server still refuses a field the person may not write.

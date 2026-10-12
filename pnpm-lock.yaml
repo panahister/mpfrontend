@@ -71,6 +71,22 @@ importers:
 
   packages/access-core: {}
 
+  packages/access-react:
+    dependencies:
+      '@mpfrontend/access-core':
+        specifier: workspace:*
+        version: link:../access-core
+      react:
+        specifier: ^19.3.0
+        version: 19.3.0
+    devDependencies:
+      '@happy-dom/global-registrator':
+        specifier: 20.14.5
+        version: 20.14.5
+      happy-dom:
+        specifier: 20.14.5
+        version: 20.14.5
+
   packages/ai-skills: {}
 
   packages/app-layout:
@@ -167,6 +183,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@mpfrontend/access-core':
+        specifier: workspace:*
+        version: link:../access-core
       '@mpfrontend/primitives':
         specifier: workspace:*
         version: link:../primitives

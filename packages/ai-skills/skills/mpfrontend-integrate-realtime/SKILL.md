@@ -5,7 +5,7 @@ description: Integrate an approved realtime event contract with MP Frontend tick
 
 # Integrate an approved realtime stream
 
-Requires the reviewed MP Frontend CLI `0.1.0-dev.19` cohort and `@mpfrontend/realtime-core`. Read the
+Requires the reviewed MP Frontend CLI `0.1.0-dev.20` cohort and `@mpfrontend/realtime-core`. Read the
 consumer instructions plus the approved event/topic schema, ordering/idempotency rules, admission
 policy and snapshot endpoint. Stop rather than inventing event names, replay guarantees or recovery
 semantics.

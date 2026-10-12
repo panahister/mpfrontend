@@ -5,7 +5,7 @@ description: Implement one approved MP Frontend feature slice across an existing
 
 # Implement an approved feature slice
 
-Requires the reviewed MP Frontend CLI `0.1.0-dev.19` cohort. Read repository instructions, the approved
+Requires the reviewed MP Frontend CLI `0.1.0-dev.20` cohort. Read repository instructions, the approved
 story and acceptance criteria before editing. Stop when the API contract, permission, tenant rule,
 business transition or DLS behavior is absent or contradictory; never invent it to complete a screen.
 
@@ -36,8 +36,12 @@ as states of the slice. Never read a whole file into memory to send it, and neve
 media type or size that the BFF's approved stream policy does not declare.
 
 Use `mpfrontend-integrate-openapi`, `form-from-api` or `table-from-api` only for selected finite contract
-shapes. Publish protected asynchronous results through `@mpfrontend/access-core` `AuthorityFence` and
-keep backend/BFF authorization authoritative. Compose `@mpfrontend/ui` primitives through the
+shapes. Every new route gets one entry in the app's page manifest (`definePageManifest`) with the capability its
+page and menu entry need and its elements and fields, and the manifest test (`assertPageManifest` with
+`appRoutes`) stays green. Present access from the server's snapshot with `@mpfrontend/access-react`
+(`AccessProvider`, `AccessGuard`, `AccessLink`, `useCapability`, `useFieldState`) as `mpfrontend-apply-access`
+describes; never from a role name. Publish protected asynchronous results through `@mpfrontend/access-core`
+`AuthorityFence` (`useAccessCapture()` inside a provider) and keep backend/BFF authorization authoritative. Compose `@mpfrontend/ui` primitives through the
 consumer DLS adapter; do not copy sample branding into neutral code.
 
 Implement loading, empty, success, validation, denied and recoverable error states required by the

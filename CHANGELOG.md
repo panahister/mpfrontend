@@ -4,6 +4,23 @@ The change of each package, newest cohort first. A package's version moves when 
 so one file name never stands for two different archives. The SHA-256 of each archive of a cohort is in its
 release notes under `docs/releases/`.
 
+## Unreleased
+
+Changes since the cohort of 2026-10-12. Not packed for a consumer yet; the release notes with the SHA-256 of each
+archive are written when this cohort is packed. Not published to a registry.
+
+| Package | Version | Change |
+|---|---|---|
+| `@mpfrontend/access-core` | `0.1.0-dev.2` to `0.1.0-dev.3` | Run-time validation of an access snapshot (shape, context reference and revision, expiry, the expected context, known keys), a field state (hidden, disabled or enabled), a snapshot reader, and a typed page manifest with its navigation and its test check. `can`, `fieldAccess`, `projectFields` and `dirtyPatch` are unchanged |
+| `@mpfrontend/access-react` | new, `0.1.0-dev.0` | React bindings for access: a provider read during server rendering that replaces a snapshot whole, closes at expiry and asks again on focus; hooks for a capability and a field; a guard; a link; navigation; a server-only loader entry that a browser bundle cannot include; the route list of an app for the manifest test |
+| `@mpfrontend/ai-skills` | `0.1.0-dev.12` to `0.1.0-dev.13` | The access, form, table and feature procedures use the access bindings and the page manifest. They require CLI `0.1.0-dev.20` |
+| `@mpfrontend/ftg-cli` | `0.1.0-dev.19` to `0.1.0-dev.20` | No source change. It depends on the moved AI procedures and Nx plugin, and its design-sync document names the new version |
+| `@mpfrontend/nx-plugin` | `0.1.0-dev.18` to `0.1.0-dev.19` | A generated workspace pins CLI `0.1.0-dev.20` and Nx plugin `0.1.0-dev.19`; the app template pins UI `0.1.0-dev.6` |
+| `@mpfrontend/ui` | `0.1.0-dev.5` to `0.1.0-dev.6` | `ResourceTable` and `ResourceForm` take field access: a column or field the person may not view is not rendered, a field they may not edit is disabled, and a save passes only the changed fields they may edit. `ResourceForm` takes helper and error texts per field |
+
+What a product notices when it upgrades: nothing changes until it passes `access` to `ResourceTable` or
+`ResourceForm`; with `access`, `ResourceForm` calls `onSubmit` with the patch.
+
 ## 2026-10-12
 
 Release notes: [docs/releases/2026-10-12-package-cohort.md](docs/releases/2026-10-12-package-cohort.md).
