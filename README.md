@@ -546,7 +546,7 @@ The published source checkpoint currently records:
 |---|---:|
 | Complete Nx workspace | 66/66 uncached lint, typecheck, test, build, and API-check targets |
 | Package cohort | 16/16 archives, manifests, digests, and export checks |
-| Distribution negative controls | 88/88 expected failures observed |
+| Distribution negative controls | 93/93 expected failures observed |
 | AI procedure format validation | 18/18 procedures |
 | Installed independent-consumer security assertions | 12/12 |
 | Installed independent-consumer realtime assertions | 5/5 |

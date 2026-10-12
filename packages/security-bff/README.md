@@ -177,7 +177,9 @@ requirement. Then:
   is refused with 502 `UPSTREAM_MEDIA_TYPE_REJECTED` and none of its body is read; an answer without a
   body (204, 205, 304, or a Content-Length of 0) needs no type. An upstream `Set-Cookie` or any unnamed
   header never crosses. When the upstream answer is content-encoded, fetch decodes it and its
-  Content-Length is not passed. An RFC 9470 challenge becomes the same typed step-up as on other routes.
+  Content-Length is not passed. An upstream that answers an upload before reading it whole gets its answer
+  through with `Connection: close`, and the rest of the body is never read. An RFC 9470 challenge becomes the
+  same typed step-up as on other routes.
 - **The session stays checked.** The session record is read again every `sessionCheckMs` and once more
   when the request body ends, before its last chunk goes upstream. A session that has ended (logout from
   another request, back-channel logout, a rotated session id or its absolute expiry) ends the transfer:

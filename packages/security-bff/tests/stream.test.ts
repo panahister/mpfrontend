@@ -73,9 +73,10 @@ async function harness(extra:Partial<BffConfig>={}){
     {method:'POST',pattern:/^\/v1\/strong$/,origin,authentication:{acr:['strong']},stream:upload},
     {method:'POST',pattern:/^\/v1\/json$/,origin},
   ];
-  const vault=createMemorySessionVault(),expired=new Set<string>();
-  // The test can end a session's absolute lifetime while a body streams.
+  const vault=createMemorySessionVault(),expired=new Set<string>(),failing=new Set<string>();
+  // The test can end a session's absolute lifetime while a body streams, or make a read of it fail.
   const sessionVault:SessionVault={...vault,read:async<T>(kind:'session'|'transaction',id:string)=>{
+    if(kind==='session'&&failing.has(id))throw new Error('VAULT_UNAVAILABLE');
     const record=await vault.read<T>(kind,id);
     return record&&kind==='session'&&expired.has(id)?{...record,value:{...record.value,absoluteExpires:Date.now()-1}}:record;
   }};
@@ -120,7 +121,7 @@ async function harness(extra:Partial<BffConfig>={}){
     return {client,response};
   };
   const close=async()=>{for(const server of [bff,provider,upstream])server.closeAllConnections();await Promise.all([bff,provider,upstream].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));};
-  return {base,calls,inbound,pulled,expired,signIn,open,close,setUpstream:(next:Upstream)=>{handler=next;}};
+  return {base,calls,inbound,pulled,expired,failing,signIn,open,close,setUpstream:(next:Upstream)=>{handler=next;}};
 }
 /** Writes one chunk and waits while the connection asks the writer to wait. */
 const send=(client:ClientRequest,chunk:Uint8Array)=>new Promise<void>((resolve,reject)=>{
@@ -406,6 +407,97 @@ test('a session that ends while a body streams ends the transfer, and an ended s
     h.expired.add(reader.id);
     await within(closed.promise,3000,'the upstream download was not ended');
     await assert.rejects(async()=>{for(;;){const {done}=await stream.read();if(done)return;}},'the download does not complete');
+  }finally{await h.close();}
+});
+
+test('a session read that fails in the middle of a transfer ends it with 503, and the upstream never completes it',{timeout:30000},async()=>{
+  const h=await harness();
+  try{
+    // The read at the route's interval fails during an upload: the client gets 503 and the upstream call is aborted.
+    const session=await h.signIn();
+    const firstByte=signal();
+    h.setUpstream(async(req,res)=>{try{for await(const chunk of req){void chunk;firstByte.resolve();}}catch{return;}res.writeHead(201,{'content-type':'application/json'});res.end('{}');});
+    const upload=h.open('/v1/files/report',writeHeaders(session,{'content-type':'application/octet-stream','content-length':String(8*MB)}));
+    for(let offset=0;offset<MB;offset+=64*KB)await send(upload.client,Buffer.alloc(64*KB));
+    await within(firstByte.promise,5000,'no upstream bytes');
+    h.failing.add(session.id);
+    const ended=await within(upload.response,3000,'the transfer did not end');
+    assert.equal(ended.status,503);assert.equal(JSON.parse(ended.body.toString()).title,'SESSION_STORE_UNAVAILABLE');
+    await within(h.calls[0]!.ended,3000,'the upstream call was not ended');
+    assert.equal(h.calls[0]!.complete,false);
+
+    // The read when the body ends fails, between two interval checks: the upstream never sees the end of the body.
+    const quiet=await h.signIn();
+    const quietFirst=signal();
+    h.setUpstream(async(req,res)=>{try{for await(const chunk of req){void chunk;quietFirst.resolve();}}catch{return;}res.writeHead(201,{'content-type':'application/json'});res.end('{}');});
+    const late=h.open('/v1/quiet',writeHeaders(quiet,{'content-type':'application/octet-stream','content-length':String(2*MB)}));
+    await send(late.client,Buffer.alloc(MB));
+    await within(quietFirst.promise,5000,'no upstream bytes');
+    h.failing.add(quiet.id);
+    late.client.end(Buffer.alloc(MB));
+    const lateAnswer=await within(late.response,3000,'the transfer did not end');
+    assert.equal(lateAnswer.status,503);assert.equal(JSON.parse(lateAnswer.body.toString()).title,'SESSION_STORE_UNAVAILABLE');
+    await within(h.calls[1]!.ended,3000,'the upstream call was not ended');
+    assert.equal(h.calls[1]!.complete,false,'the upstream never saw the end of the body');
+
+    // During a download the answer has started, so a failing read cuts the connection and ends the upstream call.
+    const reader=await h.signIn();
+    const closed=signal();
+    h.setUpstream(async(_req,res)=>{
+      res.on('close',()=>closed.resolve());
+      res.writeHead(200,{'content-type':'application/octet-stream'});
+      while(!res.destroyed){res.write(Buffer.alloc(16*KB));await pause(20);}
+    });
+    const response=await fetch(h.base+'/v1/files/report',{headers:{cookie:reader.cookie}});
+    const stream=response.body!.getReader();
+    await stream.read();
+    h.failing.add(reader.id);
+    await within(closed.promise,3000,'the upstream download was not ended');
+    await assert.rejects(async()=>{for(;;){const {done}=await stream.read();if(done)return;}},'the download does not complete');
+  }finally{await h.close();}
+});
+
+test('an upstream that answers before it reads the upload gets its answer through, and the rest of the body is not read',{timeout:30000},async()=>{
+  const h=await harness();
+  try{
+    const session=await h.signIn();
+    // The upstream refuses the upload at once, without reading it.
+    h.setUpstream((_req,res)=>{res.writeHead(409,{'content-type':'application/json'});res.end('{"title":"CONFLICT"}');});
+    const total=16*MB;
+    const upload=h.open('/v1/files/report',writeHeaders(session,{'content-type':'application/octet-stream','content-length':String(total)}));
+    // The client sends the start of the body only, and waits for the answer.
+    for(let offset=0;offset<256*KB;offset+=64*KB)await send(upload.client,Buffer.alloc(64*KB));
+    const answer=await within(upload.response,5000,'the early answer did not reach the client');
+    assert.equal(answer.status,409);assert.equal(answer.body.toString(),'{"title":"CONFLICT"}');
+    assert.equal(answer.headers.connection,'close','the connection closes, so the unread rest is never read');
+    upload.client.destroy();
+    assert.ok((h.pulled.get(h.inbound.at(-1)!)??0)<total,'the BFF did not read the whole body');
+  }finally{await h.close();}
+});
+
+test('an empty answer passes with its status and no body, and an encoded answer arrives decoded without its encoded length',{timeout:30000},async()=>{
+  const h=await harness();
+  try{
+    const session=await h.signIn();
+    // No content: no type is needed and none is invented.
+    h.setUpstream((_req,res)=>{res.writeHead(204);res.end();});
+    const none=await fetch(h.base+'/v1/files/report',{headers:{cookie:session.cookie}});
+    assert.equal(none.status,204);assert.equal(await none.text(),'');assert.equal(none.headers.get('content-type'),null);
+    h.setUpstream(async(req,res)=>{for await(const chunk of req)void chunk;res.writeHead(200,{'content-length':'0'});res.end();});
+    const stored=h.open('/v1/files/report',writeHeaders(session,{'content-type':'application/octet-stream','content-length':'4'}));
+    stored.client.end('data');
+    const storedAnswer=await within(stored.response,5000,'no answer');
+    assert.equal(storedAnswer.status,200);assert.equal(storedAnswer.body.length,0);
+    // An answer with a content encoding: fetch decodes it, so the encoded length must not be passed with the decoded bytes.
+    const {gzipSync}=await import('node:zlib');
+    const original=pattern(3*MB+7),encoded=gzipSync(original);
+    h.setUpstream((_req,res)=>{res.writeHead(200,{'content-type':'application/octet-stream','content-encoding':'gzip','content-length':String(encoded.length)});res.end(encoded);});
+    const decoded=await fetch(h.base+'/v1/files/report',{headers:{cookie:session.cookie}});
+    assert.equal(decoded.status,200);
+    assert.equal(decoded.headers.get('content-encoding'),null);assert.notEqual(decoded.headers.get('content-length'),String(encoded.length));
+    let bytes=Buffer.alloc(0);
+    await assert.doesNotReject(async()=>{bytes=Buffer.from(await decoded.arrayBuffer());},'the decoded answer arrives whole');
+    assert.equal(digest(bytes),digest(original));
   }finally{await h.close();}
 });
 
