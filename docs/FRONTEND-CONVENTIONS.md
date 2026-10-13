@@ -180,8 +180,10 @@ forward move through it. `listUrlState` of `@mpfrontend/data-react/shared` defin
 render (`read`) the same way the browser does (`useTableUrlState`); an invalid value falls back to its default, and a
 sort or a filter on a column the person may not view is dropped and removed from the URL on load, when a valid
 snapshot says so; a closed or expired snapshot says nothing and leaves the URL as it was linked. Each change is a
-new history entry, and a new size, sort or filter starts at the first page. The scope, a token, a secret or a
-personal value never enters the URL; a filter on personal data is sent in a request body, not in URL state.
+new history entry, and a new size, sort or filter starts at the first page. The scope, a token and a secret never
+enter the URL. A declared filter does: its value is in the URL the person sees and, as the backend's parameter, in the
+query of the request, so a filter on personal data (an identifier of a person) is not declared. No list read that
+carries a filter in a request body is shipped.
 
 ### Backend paging, sorting and filtering
 
