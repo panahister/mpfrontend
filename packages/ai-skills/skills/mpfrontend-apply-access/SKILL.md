@@ -24,7 +24,8 @@ snapshot in a server component with `createAccessLoader` of `@mpfrontend/access-
 endpoint through the BFF, the request's context reference, `manifestKeys`, an explicit `timeoutMs`) and pass
 `clientSnapshot(result, pageKeys(manifest, page))` to an `AccessProvider`. Present with `AccessGuard`,
 `AccessLink`, `useCapability`, `useFieldState`, `useNavigation` and the `access` property of `ResourceTable` and
-`ResourceForm`. Denied is hidden by default; use a guard's `fallback` or `whenDenied="disabled"` only where the
+`ResourceForm`; a `ResourceForm` with `access` also needs `original`, the values the person started from (an empty
+object for a new record), which its type requires. Denied is hidden by default; use a guard's `fallback` or `whenDenied="disabled"` only where the
 approved UX says so, never by guessing.
 
 Wrap protected asynchronous reads in `AuthorityFence`: inside a provider, capture with `useAccessCapture()` before
