@@ -286,7 +286,7 @@ const mutations=[
     before:'const locked=(field:DisplayField)=>disabled||(access?!access.field(field.key).edit:false);',after:'const locked=(field:DisplayField)=>disabled||field.key===\'\';',
     expected:'disables a field it may not edit'},
   {name:'ui-form-dirty-patch',package:'ui',test:'index.test.ts',file:'core.tsx',
-    before:'onSubmit(access.patch(original,',after:'onSubmit(((_original:unknown,draft:Record<string,unknown>)=>draft)(original,',
+    before:'onSubmit(access.patch(original??{},',after:'onSubmit(((_original:unknown,draft:Record<string,unknown>)=>draft)(original??{},',
     expected:'a save sends only the changed fields the person may edit'},
   // A list sends only what its operation declares; its URL state, its server reads and its table keep their rules.
   {name:'list-protocol-undeclared-parameter',package:'ftg-core',test:'list-protocol.test.ts',file:'list-protocol.ts',
