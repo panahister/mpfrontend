@@ -9,8 +9,8 @@ const {act,createElement,useState}=await import('react');
 const {createRoot}=await import('react-dom/client');
 const {QueryClient,QueryClientProvider}=await import('@tanstack/react-query');
 const {NuqsAdapter}=await import('nuqs/adapters/react');
-const {AccessProvider}=await import('@mpfrontend/access-react');
-const {QueryScope,useScopedQuery,useScopedMutation,useListUrlState}=await import('../src/index.js');
+const {AccessProvider,useAccess}=await import('@mpfrontend/access-react');
+const {QueryScope,useScopedQuery,useScopedMutation,useListUrlState,useTableUrlState}=await import('../src/index.js');
 const {listUrlState,inScope}=await import('../src/shared.js');
 
 const snapshot=(contextRef:string,revision:string,fields:Record<string,{view:boolean;edit:boolean}>={})=>
@@ -128,6 +128,16 @@ async function list(search:string,canView?:(field:string)=>boolean){
   await settle(80);
   return {...view,state:()=>JSON.parse(view.host.textContent??'{}') as Record<string,unknown>,change:async(value:Record<string,unknown>)=>{await act(async()=>{change(value);});await settle(80);}};
 }
+async function tableList(search:string,first:unknown){
+  window.history.replaceState(null,'','/orders'+search);
+  function Table(){
+    const table=useTableUrlState(urlState,{access:useAccess()});
+    return createElement('p',null,JSON.stringify({sort:table.sort,filters:table.filters}));
+  }
+  const view=await mount(()=>createElement(Table),first);
+  await settle(80);
+  return {...view,state:()=>JSON.parse(view.host.textContent??'{}') as Record<string,unknown>};
+}
 const travel=async(direction:'back'|'forward')=>{await act(async()=>{window.history[direction]();});await settle(80);};
 
 test('back and forward move through pages and filters, and a link or a refresh restores them',async()=>{
@@ -161,4 +171,26 @@ test('an invalid value falls back to its default, and a sort or a filter on a fi
     assert.deepEqual(hidden.state(),{page:2,size:10,filters:{search:'blue',owner:''}});
     assert.equal(window.location.search,'?page=2&search=blue');
   }finally{await hidden.unmount();}
+});
+
+test('a sort or a filter leaves the URL only when a valid snapshot says the person may not view its field, not when the snapshot is closed or expired',async()=>{
+  const search='?sort=cost.asc&owner=me&search=blue';
+  const granted=snapshot('ctx-1','r1',{name:{view:true,edit:false},cost:{view:false,edit:false}});
+  // A valid snapshot that does not grant `cost` and `owner`: the sort and the owner filter are dropped from the URL.
+  const open=await tableList(search,granted);
+  try{
+    assert.deepEqual(open.state(),{filters:{search:'blue',owner:''}});
+    assert.equal(window.location.search,'?search=blue');
+  }finally{await open.unmount();}
+  // No snapshot (closed) and an expired one say nothing: the URL keeps the state it was linked with.
+  for(const [name,first] of [['closed',null],['expired',{...granted,expiresAt:Date.now()-1}]] as const){
+    const view=await tableList(search,first);
+    try{
+      assert.deepEqual(view.state(),{sort:{field:'cost',direction:'asc'},filters:{search:'blue',owner:'me'}},name);
+      assert.equal(window.location.search,search,name+': the URL is unchanged');
+      // The valid snapshot arrives later: now it can say the person may not view them.
+      await view.render(granted);await settle(80);
+      assert.equal(window.location.search,'?search=blue',name+' then granted');
+    }finally{await view.unmount();}
+  }
 });

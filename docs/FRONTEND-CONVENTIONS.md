@@ -178,7 +178,8 @@ Paging, sorting and filtering of a list are URL state, so a link or a refresh re
 forward move through it. `listUrlState` of `@mpfrontend/data-react/shared` defines typed keys (`page`, `size`,
 `sort` and one per declared filter) with defaults and limits, over nuqs parsers. The server reads them for the first
 render (`read`) the same way the browser does (`useTableUrlState`); an invalid value falls back to its default, and a
-sort or a filter on a column the person may not view is dropped and removed from the URL on load. Each change is a
+sort or a filter on a column the person may not view is dropped and removed from the URL on load, when a valid
+snapshot says so; a closed or expired snapshot says nothing and leaves the URL as it was linked. Each change is a
 new history entry, and a new size, sort or filter starts at the first page. The scope, a token, a secret or a
 personal value never enters the URL; a filter on personal data is sent in a request body, not in URL state.
 

@@ -200,6 +200,10 @@ const mutations=[
   {name:'scoped-initial-data-one-scope',package:'data-react',test:'browser.test.ts',file:'core.tsx',
     before:'const seed=options.initialData!==undefined&&key!==undefined&&key===mountedIn;',after:'const seed=options.initialData!==undefined;',
     expected:'server data seeds the scope it was read in and no other',options:['--test-name-pattern=server data seeds the scope']},
+  // Only a valid snapshot can say that a person may not view a field; a closed or expired one leaves the URL as it was.
+  {name:'table-url-state-needs-a-valid-snapshot',package:'data-react',test:'browser.test.ts',file:'core.tsx',
+    before:"useListUrlState(urlState,access&&status==='granted'?{canView:key=>access.field(key).view}:{})",after:'useListUrlState(urlState,access?{canView:key=>access.field(key).view}:{})',
+    expected:'a sort or a filter leaves the URL only when a valid snapshot says',options:['--test-name-pattern=leaves the URL only when a valid snapshot']},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},

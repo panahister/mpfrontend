@@ -27,5 +27,6 @@ with defaults and limits. Only the sort fields and filters that the protocol dec
 falls back to its default; values equal to their defaults are left out of the URL. `read(searchParams)` gives the
 state on the server for the first render; `useListUrlState` and `useTableUrlState` give it in the browser, where each
 change is a new history entry and a new size, sort or filter starts at the first page. With field access, a sort or
-a filter on a field the person may not view is dropped and removed from the URL on load. The scope never enters the
+a filter on a field the person may not view is dropped and removed from the URL on load, when a valid snapshot says so;
+a closed or expired snapshot says nothing and leaves the URL as it was linked. The scope never enters the
 URL. `scopedQueryKey` and `inScope` are the key functions of the convention.

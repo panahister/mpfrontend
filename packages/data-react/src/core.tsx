@@ -2,7 +2,7 @@
 import {useEffect,useState,type ReactNode} from 'react';
 import {useMutation,useQuery,useQueryClient,type UseMutationResult,type UseQueryResult} from '@tanstack/react-query';
 import {useQueryStates} from 'nuqs';
-import {useAccessCapture,useAccessScope} from '@mpfrontend/access-react';
+import {useAccessCapture,useAccessScope,useAccessStatus} from '@mpfrontend/access-react';
 import type {ListSort,ListState} from '@mpfrontend/ftg-core';
 import {inScope,scopedQueryKey,type ListUrlState,type ViewCheck} from './shared.js';
 
@@ -122,11 +122,12 @@ export function useListUrlState(urlState:ListUrlState,options:Readonly<{canView?
 export type FieldView=Readonly<{field:(key:string)=>Readonly<{view:boolean}>}>;
 /**
  * The controlled values and change events of a ResourceTable bound to the URL: page, size, sort and filters.
- * With `access`, a sort or a filter on a column the person may not view is dropped.
+ * With `access`, a sort or a filter on a column the person may not view is dropped, and removed from the URL, when a valid
+ * snapshot says so. A closed, missing or expired snapshot says nothing: the URL keeps the state it was linked with.
  */
 export function useTableUrlState(urlState:ListUrlState,options:Readonly<{access?:FieldView}>={}){
-  const access=options.access;
-  const [state,change]=useListUrlState(urlState,access?{canView:key=>access.field(key).view}:{});
+  const access=options.access,status=useAccessStatus();
+  const [state,change]=useListUrlState(urlState,access&&status==='granted'?{canView:key=>access.field(key).view}:{});
   return {
     page:state.page,size:state.size,sort:state.sort,filters:state.filters??{},
     onPageChange:(page:number)=>change({page}),
