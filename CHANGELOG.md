@@ -37,10 +37,15 @@ lists every change since `0.1.0` in the packages, the behaviour changes first. O
 
 An entry point named `internal` is outside the compatibility guarantee: the API report does not hold it, README
 "Versioning" says so, and a test and the packed-consumer check fail if a template, a generator or a generated file
-imports one. Nothing was removed: 51 exports that no template, generator or reference app imports moved to the
+imports one. Nothing was removed: 44 exports that no template, generator or reference app imports moved to the
 `internal` entry of their package, and a need that comes later is a request for an additive public export in a minor
 version. 31 other exports that only cohort packages import stay public, because a public declaration names them or the
-documents offer them to a consumer.
+documents offer them to a consumer. Seven exports of the Security BFF stay public as well: the types `ApiRoute`,
+`SessionPolicy` and `StepUpChallenge` and the values `productionRefusals` and `CLIENT_ASSERTION_LIFETIME_SECONDS`, exported
+from `@mpfrontend/security-bff`, because the first three are the shape of the public `BffConfig` and of the step-up answer
+and the package's README offers the other two; and `createMemorySessionVault` and `redisVaultSecurity`, exported from
+`@mpfrontend/security-bff/session-store`, where the README places them. A count of public exports in this repository counts
+every key of each entry of `api-report.json`.
 
 - `@mpfrontend/ai-skills`: `SKILLS_VERSION` and `SKILLS_CLI_VERSION` are typed `string`, because their literal type moved
   the API with every version. To `internal`: `installSkills`, `checkSkills`, `skillCatalog`, `SkillsError`.
@@ -54,10 +59,8 @@ documents offer them to a consumer.
 - `@mpfrontend/nx-plugin`: to `internal`: `diskReader`, `planFeature`, `planPackage`, `planRoute`, `workspaceFormatter`.
 - `@mpfrontend/presentation-server`: to `internal`: `presentationProductionRefusals`, `SocketContext`.
 - `@mpfrontend/realtime-core`: to `internal`: `RealtimeContext`, `reconnectDelay`, `SnapshotRecovery`.
-- `@mpfrontend/security-bff`: to `internal`: `ApiRoute`, `CLIENT_ASSERTION_LIFETIME_SECONDS`, `clientAssertion`,
-  `defaultApiLocales`, `defaultAuthorizationClaims`, `productionRefusals`, `projectClaims`, `SESSION_LIMITS`,
-  `SessionPolicy`, `StepUpChallenge`, `createMemorySessionVault` and `redisVaultSecurity` (formerly of the
-  `./session-store` entry).
+- `@mpfrontend/security-bff`: to `internal`: `clientAssertion`, `defaultApiLocales`, `defaultAuthorizationClaims`,
+  `projectClaims`, `SESSION_LIMITS`. The seven above stay public.
 - `@mpfrontend/ui`: to `internal`: `nextFocus`, `treeKey`, `visibleRows`. The props of `ResourceForm` are a union: with
   `access`, `original` is required (see the behaviour changes).
 - `@mpfrontend/workspace-config`: to `internal`: `codeFiles`, `globalEntryAtRules`, `styleFiles`, `visibleTextAttributes`

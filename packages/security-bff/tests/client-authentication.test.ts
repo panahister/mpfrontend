@@ -2,8 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer,type IncomingHttpHeaders} from 'node:http';
 import {generateKeyPairSync,sign,verify} from 'node:crypto';
-import {createBff,type ClientAuthentication,type ProductionBffConfig} from '../src/index.js';import {clientAssertion,productionRefusals,CLIENT_ASSERTION_LIFETIME_SECONDS} from '../src/internal.js';
-import {type SessionVault} from '../src/session-store.js';import {createMemorySessionVault} from '../src/internal.js';
+import {createBff,type ClientAuthentication,type ProductionBffConfig,productionRefusals,CLIENT_ASSERTION_LIFETIME_SECONDS} from '../src/index.js';import {clientAssertion} from '../src/internal.js';
+import {type SessionVault,createMemorySessionVault} from '../src/session-store.js';
 
 const signer=generateKeyPairSync('rsa',{modulusLength:2048});
 const nextSigner=generateKeyPairSync('ec',{namedCurve:'P-256'});

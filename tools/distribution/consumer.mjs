@@ -275,7 +275,7 @@ await run('pnpm',['install','--offline','--frozen-lockfile']);
 // Execute the real outage assertions against the installed export, never the checkout implementation.
 const securityProofDirectory=join(workspace,'verification');await mkdir(securityProofDirectory);
 let securityProof=await readFile(join(root,'packages/security-bff/tests/refresh-outage.test.ts'),'utf8');
-for(const [source,target]of [["'../src/index.js'","'@mpfrontend/security-bff'"],["'../src/internal.js'","'@mpfrontend/security-bff/internal'"]]){
+for(const [source,target]of [["'../src/index.js'","'@mpfrontend/security-bff'"],["'../src/session-store.js'","'@mpfrontend/security-bff/session-store'"]]){
   assert.ok(securityProof.includes(source));securityProof=securityProof.replace(source,target);
 }
 assert.ok(!securityProof.includes('../src/'));

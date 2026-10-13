@@ -85,6 +85,17 @@ export function policyProblems(base,current,difference=compareReports(base,curre
   return [];
 }
 const describe=difference=>JSON.stringify(difference);
+/**
+ * What the check says about a package's built API against the report recorded in the source: nothing when they are equal;
+ * at the recorded version, any difference (record it, or move the version); at another version, the versioning policy.
+ */
+export function recordedProblems(base,report){
+  const difference=compareReports(base,report);
+  if(!difference.added.length&&!difference.removed.length&&!difference.changed.length)return [];
+  if(base.version===report.version)
+    return ['API_REPORT_CHANGED:'+report.package+' '+describe(difference)+': if '+report.version+' is not published yet, record the change with pnpm api:update; otherwise move the version as README "Versioning" says'];
+  return policyProblems(base,report,difference);
+}
 
 async function packageDirectories(root){
   return (await readdir(join(root,'packages'))).sort().map(name=>join(root,'packages',name));
@@ -163,13 +174,7 @@ async function main(args){
       try{base=JSON.parse(await readFile(join(directory,'api-report.json'),'utf8'));}
       catch{problems.push('API_REPORT_MISSING:'+report.package+': run pnpm api:update');continue;}
       compared++;
-      const difference=compareReports(base,report);
-      if(!difference.added.length&&!difference.removed.length&&!difference.changed.length)continue;
-      if(base.version===report.version){
-        problems.push('API_REPORT_CHANGED:'+report.package+' '+describe(difference)+': if '+report.version+' is not published yet, record the change with pnpm api:update; otherwise move the version as README "Versioning" says');
-        continue;
-      }
-      problems.push(...policyProblems(base,report,difference));
+      problems.push(...recordedProblems(base,report));
     }
     // Every build also compares the API with the last published version, whose archives the baseline file names.
     const baseline=JSON.parse(await readFile(join(root,'tools/distribution/api-baseline.json'),'utf8'));

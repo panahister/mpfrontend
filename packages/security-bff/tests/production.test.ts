@@ -1,8 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
-import {createBff,type ProductionBffConfig} from '../src/index.js';import {productionRefusals} from '../src/internal.js';
-import {createVaultTicketStore,type SessionVault,type VaultSecurity} from '../src/session-store.js';import {createMemorySessionVault,redisVaultSecurity} from '../src/internal.js';
+import {createBff,type ProductionBffConfig,productionRefusals} from '../src/index.js';
+import {createVaultTicketStore,type SessionVault,type VaultSecurity,createMemorySessionVault,redisVaultSecurity} from '../src/session-store.js';
 
 /** A shared-vault double: the memory implementation, described as durable, TLS and authenticated. */
 function sharedVault(security:Partial<VaultSecurity>={}){

@@ -33,7 +33,7 @@ document.
 | Release tooling | the cohort's guards, record, API reports and registry install | 23/23 source tests, the guards' self-test, the dry run of `npm publish` on one archive, and the local registry install with its two seeded controls |
 | Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 424 source tests |
 | Local package cohort | sixteen archives | 16/16 pack and manifest verification |
-| Distribution negative controls | ninety-nine controls | 99/99 expected failures observed |
+| Distribution negative controls | one hundred controls | 100/100 expected failures observed |
 | Public repository verification | one script over the working tree | `documents=59 files=394` |
 
 From `0.1.0` on, one version names the whole cohort: the root `package.json` declares it, every package carries

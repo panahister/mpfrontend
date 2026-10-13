@@ -353,6 +353,25 @@ try{
     assert.match(failing,/AssertionError|Expected values/,'failure must be an assertion, not a missing dependency');
     console.log(JSON.stringify({negativeControl:mutation.name,expectedAssertionFailure:true,workingSourceUntouched:true}));
   }
+  // A control on the API check itself. A type that the public configuration of the Security BFF names (ApiRoute) is changed in
+  // a copy of the package, its declarations are built, and the check against the recorded report must refuse the change.
+  {
+    const name='api-check-sees-api-route',directory=join(sandbox,name);
+    await cp(join(root,'packages/security-bff/src'),join(directory,'src'),{recursive:true});
+    await cp(join(root,'packages/security-bff/package.json'),join(directory,'package.json'));
+    await symlink(join(root,'packages/security-bff/node_modules'),join(directory,'node_modules'),'dir');
+    await writeFile(join(directory,'tsconfig.json'),JSON.stringify({extends:join(root,'tsconfig.base.json'),compilerOptions:{rootDir:'src',outDir:'dist'},include:['src/**/*.ts']}));
+    const core=join(directory,'src/core.ts'),original=await readFile(core,'utf8'),before='export type ApiRoute={method:string;';
+    assert.ok(original.includes(before),'mutation must match the actual implementation');
+    await writeFile(core,original.replace(before,'export type ApiRoute={controlOnly?:true;method:string;'));
+    await exec(process.execPath,[join(root,'node_modules/typescript/bin/tsc'),'-p',join(directory,'tsconfig.json')],{cwd:root,timeout:120000});
+    const {apiReport,recordedProblems}=await import('./api-report.mjs');
+    const recorded=JSON.parse(await readFile(join(root,'packages/security-bff/api-report.json'),'utf8'));
+    const problems=recordedProblems(recorded,apiReport(directory,JSON.parse(await readFile(join(directory,'package.json'),'utf8'))));
+    if(!problems.some(problem=>problem.startsWith('API_REPORT_CHANGED:@mpfrontend/security-bff')&&problem.includes('. ApiRoute')))
+      throw new Error('NEGATIVE_CONTROL_SETUP_FAILURE:'+name+':'+JSON.stringify(problems));
+    console.log(JSON.stringify({negativeControl:name,expectedAssertionFailure:true,workingSourceUntouched:true}));
+  }
 }finally{
   // Only this script-owned, newly created temporary fixture is removed.
   await rm(sandbox,{recursive:true,force:true});
