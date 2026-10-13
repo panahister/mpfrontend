@@ -4,23 +4,80 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
-## Unreleased
+## 1.0.0 (not yet released)
 
-The changes since `0.1.0`, the last release. Nothing between `0.1.0` and `1.0.0` is published: these become the
-notes of `1.0.0`. The version the tree declares meanwhile is a working version and is never published.
+The first stable version. From it on README "Versioning" holds: only a major version breaks the public API, and every
+build compares the API with the last published version. Nothing between `0.1.0` and `1.0.0` was published; this section
+lists every change since `0.1.0` in the packages, the behaviour changes first. One version names all sixteen packages.
 
-| Package | Version | Change |
-|---|---|---|
-| `@mpfrontend/security-bff` | since `0.1.0` | A streamed answer that a browser would run as a document (HTML, XHTML, SVG, XML or script) is refused whole with a 502 unless the upstream sent an attachment disposition or a Content-Security-Policy with the sandbox directive. Before, the startup check only proved that the route could pass both headers, and an answer without them was served inline |
-| `@mpfrontend/access-react` | since `0.1.0` | The server entry throws `ACCESS_SERVER_ENTRY_IN_BROWSER` when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot run it in a browser |
-| `@mpfrontend/nx-plugin` | since `0.1.0` | A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the framework packages at the cohort version |
-| `@mpfrontend/ai-skills` | since `0.1.0` | The procedures require the CLI of the cohort. `SKILLS_VERSION` and `SKILLS_CLI_VERSION` are typed `string`: their literal type moved the API with every version. `installSkills`, `checkSkills`, `skillCatalog` and `SkillsError`, which only the CLI uses, move to `@mpfrontend/ai-skills/internal` |
-| `@mpfrontend/ftg-cli` | since `0.1.0` | Its design-sync document names the new version |
-| `@mpfrontend/primitives` | since `0.1.0` | `buttonState`, `fieldState` and `isControlUnavailable`, which only `ui` uses, move to `@mpfrontend/primitives/internal`; the two state types stay |
-| `@mpfrontend/ftg-core` | since `0.1.0` | `normalizeRequests`, `normalizeResources` and `resolveSchema`, which only the CLI uses, move to `@mpfrontend/ftg-core/internal` |
-| The other nine packages | since `0.1.0` | Version only |
+### Behaviour changes
 
-An entry point named `internal` is outside the compatibility guarantee: the API report does not hold it, README "Versioning" says so, and a test and the packed-consumer check fail if a template, a generator or a generated file imports one. These moves are changes against `0.1.0`, which is why the notes of `1.0.0` list them. Every build now compares the API with the archives of the last published version.
+- **Security BFF.** A streamed answer of a type that a browser would run as a document (HTML, XHTML, SVG, XML or
+  script) is refused whole with a 502 (`UPSTREAM_INLINE_SCRIPT_REFUSED`) unless the upstream sent
+  `Content-Disposition: attachment` or a `Content-Security-Policy` with the `sandbox` directive. Before, the startup
+  check only proved that the route could pass both headers, and an answer without them was served inline. To move: have
+  the upstream send one of the two.
+- **React access bindings.** The server entry `@mpfrontend/access-react/server` throws `ACCESS_SERVER_ENTRY_IN_BROWSER`
+  when it loads where a `document` exists, so a bundler that does not read the `browser` export condition still cannot
+  run it in a browser. To move: import it only from server code; a test environment that defines `document` must not
+  load it.
+- **Server data (`@mpfrontend/data-react`).** `useScopedQuery`'s `initialData` seeds only the scope the hook mounted in.
+  Before, after a change of scope with no new server render, the old scope's page seeded the new scope's key and was
+  treated as fresh; now the new scope reads for itself. A hook that mounts without a valid snapshot is not seeded.
+- **URL state (`@mpfrontend/data-react`).** `useTableUrlState` drops a sort or a filter on a field the person may not
+  view from the URL only while the provider's status is `granted`. Before, a closed, missing or expired snapshot also
+  made the reader say "may not view", and a linked URL lost its sort and filters on a screen that had merely expired.
+- **Forms (`@mpfrontend/ui`).** `ResourceForm` with `access` requires `original`, in its type (the props are a union) and
+  at run time, where a caller the types do not reach gets `RESOURCE_FORM_ORIGINAL_REQUIRED`. Before, a missing `original`
+  made every shown field count as changed and the save sent them all. This is the choice that fails closed, in the
+  type and at run time. A form for a new record passes an empty `original`. To move: pass `original` wherever `access`
+  is passed.
+
+### API changes against `0.1.0`
+
+An entry point named `internal` is outside the compatibility guarantee: the API report does not hold it, README
+"Versioning" says so, and a test and the packed-consumer check fail if a template, a generator or a generated file
+imports one. Nothing was removed: 51 exports that no template, generator or reference app imports moved to the
+`internal` entry of their package, and a need that comes later is a request for an additive public export in a minor
+version. 31 other exports that only cohort packages import stay public, because a public declaration names them or the
+documents offer them to a consumer.
+
+- `@mpfrontend/ai-skills`: `SKILLS_VERSION` and `SKILLS_CLI_VERSION` are typed `string`, because their literal type moved
+  the API with every version. To `internal`: `installSkills`, `checkSkills`, `skillCatalog`, `SkillsError`.
+- `@mpfrontend/ftg-core`: to `internal`: `normalizeRequests`, `normalizeResources`, `resolveSchema`, `fieldsFor`,
+  `validateRead`, `validListState`.
+- `@mpfrontend/primitives`: to `internal`: `buttonState`, `fieldState`, `isControlUnavailable`; the two state types stay.
+- `@mpfrontend/access-core`: to `internal`: `DENIED`, `elementCapability`.
+- `@mpfrontend/data-react`: to `internal`: `QueryKeyScope`.
+- `@mpfrontend/ftg-cli`: to `internal`: `GeneratorConfig`, `InputError`, `loadContract`.
+- `@mpfrontend/i18n`: to `internal`: `builtInLocales`, `MessageError`, `MessageValue`.
+- `@mpfrontend/nx-plugin`: to `internal`: `diskReader`, `planFeature`, `planPackage`, `planRoute`, `workspaceFormatter`.
+- `@mpfrontend/presentation-server`: to `internal`: `presentationProductionRefusals`, `SocketContext`.
+- `@mpfrontend/realtime-core`: to `internal`: `RealtimeContext`, `reconnectDelay`, `SnapshotRecovery`.
+- `@mpfrontend/security-bff`: to `internal`: `ApiRoute`, `CLIENT_ASSERTION_LIFETIME_SECONDS`, `clientAssertion`,
+  `defaultApiLocales`, `defaultAuthorizationClaims`, `productionRefusals`, `projectClaims`, `SESSION_LIMITS`,
+  `SessionPolicy`, `StepUpChallenge`, `createMemorySessionVault` and `redisVaultSecurity` (formerly of the
+  `./session-store` entry).
+- `@mpfrontend/ui`: to `internal`: `nextFocus`, `treeKey`, `visibleRows`. The props of `ResourceForm` are a union: with
+  `access`, `original` is required (see the behaviour changes).
+- `@mpfrontend/workspace-config`: to `internal`: `codeFiles`, `globalEntryAtRules`, `styleFiles`, `visibleTextAttributes`
+  (formerly of the `./eslint` entry).
+
+### Documents
+
+The conventions said that a filter on personal data is sent in a request body. No list read does that: a declared filter
+is in the URL and in the query of the backend request, so a filter on personal data is not declared, and no body-based
+list read is shipped. The conventions and the data package's README say what the URL state does with a closed or an
+expired snapshot.
+
+### Versions
+
+Every package moves to `1.0.0`. A generated workspace pins the CLI, the Nx plugin, the workspace configuration and the
+framework packages at `1.0.0`; the AI procedures require CLI `1.0.0`; `@mpfrontend/ftg-cli`'s design-sync document names
+the version. The other changes since `0.1.0` are in the release tooling, not in the packages: the release workflow passes
+no npm token, checks the npm and Node of its publish job and makes a dry run of `npm publish` on one archive in every
+run, the record reads the changelog section of the version, the audit step of the registry check no longer fails on a
+peer conflict, and every build compares the API with the published archives.
 
 ## 0.1.0 (2026-10-12)
 
