@@ -5,7 +5,7 @@ description: Integrate an existing consumer with the MP Frontend server-side OID
 
 # Integrate server-side authentication
 
-Requires the reviewed MP Frontend CLI `0.2.0` cohort and `@mpfrontend/security-bff`. Read the
+Requires the reviewed MP Frontend CLI `1.0.0` cohort and `@mpfrontend/security-bff`. Read the
 consumer instructions and obtain approved issuer, client, callback/logout URLs, audiences, route policy,
 cookie domain and supported UI locales. Missing provider metadata or secret ownership is a prerequisite,
 not permission to create identity data.

@@ -5,7 +5,7 @@ description: Plan and apply reviewed light/dark/system token updates from an MP 
 
 # Synchronize declared consumer tokens
 
-Requires the reviewed CLI 0.2.0 cohort, an attached design source and a supplied/imported candidate. Read consumer instructions,
+Requires the reviewed CLI 1.0.0 cohort, an attached design source and a supplied/imported candidate. Read consumer instructions,
 installed CLI `DESIGN-SYNC.md`, source provenance and the current accepted binding. The installed
 import procedure describes acquisition; no Figma write or automatic watcher is part of this workflow.
 Run `design status` first and stop on pending, disabled or drifted source state; do not bypass source

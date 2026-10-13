@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/security-bff",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "entries": {
     ".": {
       "ApiLocales": "export type ApiLocales = Readonly<{ supported: readonly string[]; defaultLocale: string; }>;",

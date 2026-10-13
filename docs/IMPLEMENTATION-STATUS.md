@@ -17,30 +17,30 @@ document.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
-| `@mpfrontend/ftg-cli` | `0.2.0` | 33/33 |
-| `@mpfrontend/nx-plugin` | `0.2.0` | 25/25 |
-| `@mpfrontend/ftg-core` | `0.2.0` | 14/14 source tests, and the consumer gate |
-| `@mpfrontend/ai-skills` | `0.2.0` | 8/8 plus 18/18 procedure format validation |
-| `@mpfrontend/access-core` | `0.2.0` | 19/19 |
-| `@mpfrontend/access-react` | `0.2.0` | 20/20 source tests, and the installed consumer's first paint and browser bundle |
-| `@mpfrontend/ui` | `0.2.0` | 31/31 |
-| `@mpfrontend/data-react` | `0.2.0` | 11/11 source tests, and the installed consumer's served list |
-| `@mpfrontend/workspace-config` | `0.2.0` | 109/109 |
-| `@mpfrontend/app-layout` | `0.2.0` | 6/6 |
-| `@mpfrontend/presentation-server` | `0.2.0` | 21/21 |
-| `@mpfrontend/security-bff` | `0.2.0` | 67/67 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
-| `@mpfrontend/realtime-core` | `0.2.0` | 11/11 source tests, 5/5 installed consumer assertions |
-| Release tooling | the cohort's guards, record, API reports and registry install | 15/15 source tests, the guards' self-test, and the local registry install with its two seeded controls |
-| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 413 source tests |
+| `@mpfrontend/ftg-cli` | `1.0.0` | 33/33 |
+| `@mpfrontend/nx-plugin` | `1.0.0` | 25/25 |
+| `@mpfrontend/ftg-core` | `1.0.0` | 14/14 source tests, and the consumer gate |
+| `@mpfrontend/ai-skills` | `1.0.0` | 8/8 plus 18/18 procedure format validation |
+| `@mpfrontend/access-core` | `1.0.0` | 19/19 |
+| `@mpfrontend/access-react` | `1.0.0` | 20/20 source tests, and the installed consumer's first paint and browser bundle |
+| `@mpfrontend/ui` | `1.0.0` | 32/32, and the type test of `ResourceForm` |
+| `@mpfrontend/data-react` | `1.0.0` | 13/13 source tests, and the installed consumer's served list |
+| `@mpfrontend/workspace-config` | `1.0.0` | 109/109 |
+| `@mpfrontend/app-layout` | `1.0.0` | 6/6 |
+| `@mpfrontend/presentation-server` | `1.0.0` | 21/21 |
+| `@mpfrontend/security-bff` | `1.0.0` | 67/67 source tests, 15/15 Redis integration, 12/12 installed consumer assertions |
+| `@mpfrontend/realtime-core` | `1.0.0` | 11/11 source tests, 5/5 installed consumer assertions |
+| Release tooling | the cohort's guards, record, API reports and registry install | 23/23 source tests, the guards' self-test, the dry run of `npm publish` on one archive, and the local registry install with its two seeded controls |
+| Complete Nx workspace | seventeen projects: sixteen packages and the distribution tooling | 66/66 lint, typecheck, test, build and API-check tasks, 424 source tests |
 | Local package cohort | sixteen archives | 16/16 pack and manifest verification |
-| Distribution negative controls | ninety-six controls | 96/96 expected failures observed |
-| Public repository verification | one script over the working tree | `documents=59 files=363` |
+| Distribution negative controls | ninety-nine controls | 99/99 expected failures observed |
+| Public repository verification | one script over the working tree | `documents=59 files=394` |
 
 From `0.1.0` on, one version names the whole cohort: the root `package.json` declares it, every package carries
 it, and every pin of a framework package (the app template, the Nx plugin's workspace cohort, the AI procedures)
 equals it; the release guard and a test refuse a pin that differs. The declared version is the next one to publish,
 and a version the registry already holds is never built again, so a change after a publication moves the version.
-`0.1.0` is published ([release record](releases/0.1.0.md)); the version the tree declares, `0.2.0`, is a working version on the way to `1.0.0` and is never published. Before `0.1.0`, each package's version moved when anything it packed changed: the cohort
+`0.1.0` is published ([release record](releases/0.1.0.md)); the version the tree declares, `1.0.0`, is the next to publish. Nothing between `0.1.0` and `1.0.0` was published. Before `0.1.0`, each package's version moved when anything it packed changed: the cohort
 of 2026-10-12 is listed with its SHA-256 in `docs/releases/2026-10-12-package-cohort.md`, and `CHANGELOG.md` lists
 the change of each package since then under its version. The OpenAPI generator stamp (`GENERATOR_VERSION`,
 `0.1.0-dev.6`) is not a package version and did not move, because the generator code did not change.
@@ -51,7 +51,7 @@ the script visits every file below the repository root except the folders `.git`
 would not. `documents` is the number of Markdown files found by the same walk. The figure recorded is the one a
 fresh clone of the commit prints; a working tree with an untracked file prints more.
 
-Fresh independent consumer `mpfrontend-packed-consumer-dlmBR2` (the run on the tree of this commit) executed the packed
+Fresh independent consumer `mpfrontend-packed-consumer-ENxkov` (the run on the tree of this commit) executed the packed
 CLI rather than the source workspace. It passed code-first and consumer-owned design initialization, explicit
 refusal of the removed public-template mode, private attachment and drift checks, all eighteen AI procedures,
 seven design lifecycle commands, security and realtime assertions, the feature, route and package generators

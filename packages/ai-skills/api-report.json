@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/ai-skills",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "entries": {
     ".": {
       "SKILLS_CLI_VERSION": "export declare const SKILLS_VERSION: string, SKILLS_CLI_VERSION: string;",

@@ -1,6 +1,6 @@
 # Reviewed export synchronization
 
-CLI 0.2.0 implements explicit source onboarding plus a **finite normalized local export** profile. It does not call Figma, infer
+CLI 1.0.0 implements explicit source onboarding plus a **finite normalized local export** profile. It does not call Figma, infer
 missing behavior, run an LLM, execute test commands, publish or monitor for updates. The caller must
 have implementation authority for the named consumer and separate human review for promotion.
 The baseline covers only the declared export, never an assertion that the entire Figma DLS is implemented.

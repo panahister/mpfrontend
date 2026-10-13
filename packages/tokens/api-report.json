@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/tokens",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "entries": {
     "./styles.css": {
       "file": "./src/styles.css"

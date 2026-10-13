@@ -4,7 +4,7 @@ export type DesignSource='none'|'existing';
 export type WorkspaceOptions={name:string;directory:string;designSource?:DesignSource;dryRun?:boolean};
 const json=(value:unknown)=>JSON.stringify(value,null,2)+'\n';
 /** The cohort a new workspace pins; the quality profile is upgraded with it, never copied into the workspace. */
-export const COHORT={cli:'0.2.0',nxPlugin:'0.2.0',workspaceConfig:'0.2.0'} as const;
+export const COHORT={cli:'1.0.0',nxPlugin:'1.0.0',workspaceConfig:'1.0.0'} as const;
 /** The scope of the framework packages, bound to the registry that publishes them. */
 export const NPMRC='@mpfrontend:registry=https://registry.npmjs.org/\nsave-exact=true\n';
 /** Tool versions the quality profile is verified with. */
