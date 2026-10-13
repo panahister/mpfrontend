@@ -495,8 +495,8 @@ application template write that exact version, never a range, and a test fails o
   `tools/distribution/api-baseline.json` names with the integrity of their bytes: a change needs a new version, a
   build that cannot fetch the published archives fails, and nothing is skipped.
 - An entry point named `internal` (`@mpfrontend/<package>/internal`) is for the cohort's own packages: it is outside the
-  compatibility guarantee, the API report does not hold it, and it may change in any version. No template, generator or
-  reference app imports one, and a test and the packed-consumer check fail if one does.
+  compatibility guarantee, the API report does not hold it, and it may change in any version. No template or generator
+  imports one: a test reads the templates and the generators, and the packed-consumer check reads the files they write.
 - From 1.0.0 a breaking change (a removed or renamed export, a changed declaration, a changed documented behavior)
   waits for the next major version. A minor version only adds, and a patch changes no export.
 - An export is marked deprecated for at least one minor version before it goes, with the version that removes it and
