@@ -3,12 +3,15 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,cp,readFile,writeFile,readdir,rm} from 'node:fs/promises';
 import {join,dirname,isAbsolute} from 'node:path';
 import {tmpdir} from 'node:os';
+import {execFile as execFileCallback} from 'node:child_process';
+import {promisify} from 'node:util';
 import {fileURLToPath} from 'node:url';
-import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,trustedPublishingProblems,workflowTokenProblems,
+import {branchProblems,distTag,cohortProblems,readCohort,unpublishedProblems,registryVersion,publishPlan,publishOrder,publishArguments,dryRunArguments,dryRunPublish,trustedPublishingProblems,workflowTokenProblems,
   integrityOf,recordMarkdown,unreleasedChanges,releaseChanges,sumsText,selfTest} from './release.mjs';
 import {setCohortVersion} from './set-cohort-version.mjs';
 import {apiReport,compareReports,policyProblems} from './api-report.mjs';
 
+const execFile=promisify(execFileCallback);
 const root=fileURLToPath(new URL('../../',import.meta.url));
 const {declared}=await readCohort(root);
 // A copy of exactly the files the cohort guard reads, where a test can plant a wrong value.
@@ -120,6 +123,29 @@ test('the workflow publishes by trusted publishing: no npm token reaches a step,
   assert.deepEqual(workflowTokenProblems(workflow.replace('id-token: write','id-token: none')),['WORKFLOW_WITHOUT_OIDC_GRANT']);
   assert.deepEqual(workflowTokenProblems(workflow.replace('environment: npm','environment: other')),['WORKFLOW_WITHOUT_ENVIRONMENT']);
   assert.deepEqual(workflowTokenProblems(workflow.replace('# No npm token is stored','# NODE_AUTH_TOKEN is not stored')),[],'a comment is not a token');
+});
+
+test('the rehearsal calls the command of the publication on one archive and publishes nothing',async()=>{
+  const args=dryRunArguments('release','mpfrontend-a-1.0.0.tgz','latest');
+  assert.ok(isAbsolute(args[1]),'the same absolute path as the publication');
+  assert.deepEqual([args[0],...args.slice(2)],['publish','--access','public','--tag','latest','--dry-run']);
+  assert.ok(!args.includes('--provenance'),'provenance needs the identity of the publishing job');
+  // The real command, on a real archive: npm reads the path, packs it and prints the line it would publish; nothing is sent.
+  const directory=await mkdtemp(join(tmpdir(),'mpfrontend-dry-run-'));
+  try{
+    await mkdir(join(directory,'package/dist'),{recursive:true});
+    await writeFile(join(directory,'package/package.json'),JSON.stringify({name:'@mpfrontend/x',version:'1.0.0',exports:{'.':{types:'./dist/index.d.ts',import:'./dist/index.js'}},publishConfig:{access:'public'}}));
+    await writeFile(join(directory,'package/dist/index.js'),'export const a=1;\n');await writeFile(join(directory,'package/dist/index.d.ts'),'export declare const a: number;\n');
+    await execFile('tar',['-czf',join(directory,'x.tgz'),'-C',directory,'package']);
+    assert.match(await dryRunPublish(directory,'x.tgz','latest'),/\+ @mpfrontend\/x@1\.0\.0/);
+    await assert.rejects(dryRunPublish(directory,'missing.tgz','latest'),/missing\.tgz|ENOENT|Command failed/,'an archive that is not there fails the dry run');
+  }finally{await rm(directory,{recursive:true,force:true});}
+  // The workflow makes the dry run in every run, before the archives are uploaded; the control: without the step it does not.
+  const workflow=await readFile(join(root,'.github/workflows/release.yml'),'utf8');
+  const step=/- name: A dry run of npm publish on one archive\n\s+run: node tools\/distribution\/release\.mjs dry-run --dir "artifacts\/release\/\$VERSION"/;
+  assert.match(workflow,step);
+  assert.ok(workflow.search(step)<workflow.indexOf('actions/upload-artifact@v7'),'before the upload');
+  assert.doesNotMatch(workflow.replace(step,''),step);
 });
 
 test('npm CLI 11.5.1 and Node 22.14.0 are the least that publish by trusted publishing',()=>{

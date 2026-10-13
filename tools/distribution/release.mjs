@@ -143,6 +143,19 @@ export function publishArguments(directory,file,tag){
   return ['publish',resolve(directory,file),'--access','public','--provenance','--tag',tag];
 }
 
+/**
+ * The arguments of the dry run that the rehearsal makes: the publication's own command and path, with --dry-run, and no
+ * --provenance, which needs the OpenID Connect identity that only the publishing job holds. The first publication of the
+ * cohort stopped on the path of an archive, which a run that never called `npm publish` could not show.
+ */
+export function dryRunArguments(directory,file,tag){
+  return [...publishArguments(directory,file,tag).filter(argument=>argument!=='--provenance'),'--dry-run'];
+}
+/** Runs `npm publish --dry-run` on one archive; resolves with what npm printed, rejects when npm fails. */
+export async function dryRunPublish(directory,file,tag,{npm='npm',env=process.env}={}){
+  const {stdout,stderr}=await promisify(execFile)(npm,dryRunArguments(directory,file,tag),{env,maxBuffer:4*1024*1024});
+  return stdout+stderr;
+}
 const atLeast=(version,minimum)=>{
   const have=version.split('.').map(Number),need=minimum.split('.').map(Number);
   for(let index=0;index<3;index++)if((have[index]??0)!==need[index])return (have[index]??0)>need[index];
@@ -265,6 +278,16 @@ async function main(args){
     await writeFile(join(out,'SHA256SUMS.txt'),sumsText(record));
     await writeFile(join(out,version+'.md'),recordMarkdown(record,releaseChanges(await readFile(join(root,'CHANGELOG.md'),'utf8'),version)));
     console.log(JSON.stringify({ok:true,version,commit,archives:record.packages.length}));
+  }else if(command==='dry-run'){
+    // The rehearsal calls the command of the publication on the first archive of the order of publication, and publishes nothing.
+    const directory=option(args,'dir');
+    if(!directory)throw new Error('USAGE: dry-run --dir <release directory>');
+    const record=JSON.parse(await readFile(join(directory,'release.json'),'utf8')),{packages}=await readCohort(root);
+    const first=publishOrder(packages)[0],entry=record.packages.find(item=>item.name===first);
+    if(!entry)fail(['RECORD_MISSING:'+first]);
+    const output=await dryRunPublish(directory,entry.file,distTag(record.version));
+    if(!output.includes('+ '+entry.name+'@'+entry.version))fail(['DRY_RUN_UNEXPECTED_OUTPUT:'+entry.name]);
+    console.log(JSON.stringify({ok:true,dryRun:true,package:entry.name,version:entry.version,tag:distTag(record.version)}));
   }else if(command==='publish'){
     const directory=option(args,'dir'),ref=option(args,'ref');
     if(!directory||!ref)throw new Error('USAGE: publish --dir <release directory> --ref <git ref>');
@@ -282,6 +305,6 @@ async function main(args){
       await run('npm',publishArguments(directory,entry.file,tag));
       console.log(JSON.stringify({package:name,version:entry.version,published:true,tag}));
     }
-  }else throw new Error('USAGE: release.mjs guard|self-test|toolchain|record|publish');
+  }else throw new Error('USAGE: release.mjs guard|self-test|toolchain|record|dry-run|publish');
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])await main(process.argv.slice(2));

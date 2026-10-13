@@ -76,6 +76,9 @@ jobs:
         run: pnpm public:verify
       - name: Record the archives and the commit they were built from
         run: node tools/distribution/release.mjs record --version "$VERSION" --commit "$GITHUB_SHA" --out "artifacts/release/$VERSION"
+      # The command of the publication on one archive, without publishing: a path that npm cannot read as a file stops it here.
+      - name: A dry run of npm publish on one archive
+        run: node tools/distribution/release.mjs dry-run --dir "artifacts/release/$VERSION"
       - uses: actions/upload-artifact@v7
         with:
           name: release-${{ inputs.version }}

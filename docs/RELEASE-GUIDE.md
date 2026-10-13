@@ -24,7 +24,10 @@ The owner starts the workflow by hand with a version. Nothing else starts it: no
    registries (scope binding and exact pins); the public repository boundary.
 3. **The record.** `release.mjs record` writes, for the commit it built, `release.json`, `SHA256SUMS.txt` and the
    draft record `<version>.md` (every archive with its version, SHA-256 and integrity, and the changes from
-   `CHANGELOG.md`), and uploads them with the sixteen archives as the run's artifact.
+   `CHANGELOG.md`). `release.mjs dry-run` then runs `npm publish --dry-run` on the first archive of the order of
+   publication, with the publication's own command and path and without provenance, which needs the publishing job's
+   identity; a path that npm cannot read as a file, which stopped the first attempt at `0.1.0`, stops the rehearsal
+   here. The record and the sixteen archives are then uploaded as the run's artifact.
 4. **The publication**, only with the `publish` input: a second job in the GitHub environment `npm`, which waits
    for the owner's approval. On a GitHub-hosted runner, with `id-token: write`, it checks that the archives are the
    ones verified (`shasum -c`), that its npm is 11.5.1 or later and its Node 22.14.0 or later (the minimums on npm's
