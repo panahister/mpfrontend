@@ -48,7 +48,9 @@ and `aria-expanded`, and its accessible name includes its state label.
 may not be viewed is not rendered, with its label, `helpers` text and `errors` text, and leaves validation and the
 submitted values; a field that may not be edited is disabled; a save passes `onSubmit` only the changed fields that
 may be edited, compared with `original` (`dirtyPatch`), and a changed field that may not be edited throws
-`FORBIDDEN_FIELD` instead of being sent. Without `access` both components behave as before. A hidden field is a
+`FORBIDDEN_FIELD` instead of being sent. With `access`, `ResourceForm` requires `original`, in its type and at run time
+(`RESOURCE_FORM_ORIGINAL_REQUIRED`): without it every shown field would count as changed and be sent. A form for a new
+record passes an empty `original`. Without `access` both components behave as before. A hidden field is a
 presentation; the server still refuses a field the person may not write.
 
 ## Paging, sorting and filtering

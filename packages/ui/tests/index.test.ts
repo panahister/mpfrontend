@@ -47,7 +47,7 @@ test('a table with field access removes a column the person may not view, with i
   assert.doesNotMatch(closed,/Visible|<th[ >]/);
 });
 test('a form with field access leaves out a hidden field with its label, helper and error, and disables a field it may not edit',()=>{
-  const html=renderToStaticMarkup(createElement(ResourceForm,{...formBase,fields:accessFields,values:{name:'a',note:'n',cost:5},
+  const html=renderToStaticMarkup(createElement(ResourceForm,{...formBase,fields:accessFields,values:{name:'a',note:'n',cost:5},original:{},
     labels:{name:'Name label',note:'Note label',cost:'Cost label'},helpers:{cost:'Cost helper',note:'Note helper'},errors:{cost:'Cost error'},
     access:reader({name:{view:true,edit:true},note:{view:true,edit:false}})}));
   assert.doesNotMatch(html,/Cost label|Cost helper|Cost error|name="cost"/);
@@ -64,13 +64,25 @@ test('a save sends only the changed fields the person may edit; a hidden field n
     access:reader({name:{view:true,edit:true},note:{view:true,edit:false}}),onSubmit:()=>{patches.push('sent');}}));
   assert.throws(tampered,/FORBIDDEN_FIELD/);assert.equal(patches.length,1);
 });
+test('a form with access must say what the person started from: without `original` it refuses, with an empty one it sends what was entered',()=>{
+  const patches:unknown[]=[];
+  const access=reader({name:{view:true,edit:true},note:{view:true,edit:true}});
+  // Without `original` every shown field would count as changed and be sent: the form refuses, for callers the types do not reach.
+  assert.throws(()=>ResourceForm({...formBase,fields:accessFields,values:{name:'a',note:'n'},access} as never),/RESOURCE_FORM_ORIGINAL_REQUIRED/);
+  assert.throws(()=>renderToStaticMarkup(createElement(ResourceForm,{...formBase,fields:accessFields,values:{name:'a'},access} as never)),/RESOURCE_FORM_ORIGINAL_REQUIRED/);
+  // A new record starts from nothing: an explicit empty original sends the fields that were filled in.
+  submitOf(ResourceForm({...formBase,fields:accessFields,original:{},values:{name:'a',note:'n'},access,onSubmit:(patch?:Record<string,unknown>)=>{patches.push(patch);}}))();
+  assert.deepEqual(patches,[{name:'a',note:'n'}]);
+  // Without access nothing is asked.
+  assert.doesNotThrow(()=>ResourceForm({...formBase,fields:accessFields,values:{}}));
+});
 test('a closed reader or an existing disabled state keeps the form unavailable; without access nothing changes',()=>{
   let calls=0;
-  const closed=ResourceForm({...formBase,fields:accessFields,access:accessReader(undefined),onSubmit:()=>{calls++;}});
+  const closed=ResourceForm({...formBase,fields:accessFields,original:{},access:accessReader(undefined),onSubmit:()=>{calls++;}});
   submitOf(closed)();assert.equal(calls,0);assert.doesNotMatch(renderToStaticMarkup(closed),/<input/);assert.match(renderToStaticMarkup(closed),/<button[^>]*disabled/);
-  const busy=ResourceForm({...formBase,fields:accessFields,disabled:true,access:reader({name:{view:true,edit:true}}),onSubmit:()=>{calls++;}});
+  const busy=ResourceForm({...formBase,fields:accessFields,original:{},disabled:true,access:reader({name:{view:true,edit:true}}),onSubmit:()=>{calls++;}});
   submitOf(busy)();assert.equal(calls,0);assert.match(inputTag(renderToStaticMarkup(busy),'name'),/ disabled=""/);
-  const readOnly=ResourceForm({...formBase,fields:accessFields,access:reader({name:{view:true,edit:false}}),onSubmit:()=>{calls++;}});
+  const readOnly=ResourceForm({...formBase,fields:accessFields,original:{},access:reader({name:{view:true,edit:false}}),onSubmit:()=>{calls++;}});
   submitOf(readOnly)();assert.equal(calls,0);
   const received:unknown[]=[];
   const plain=ResourceForm({...formBase,fields:accessFields,values:{name:'a',note:'b',cost:1},onSubmit:(...args:unknown[])=>{received.push(args.length);}});

@@ -109,10 +109,13 @@ export function ResourceTable({fields,rows,caption,format,labels={},detail,rowKe
 /**
  * With `access`, a field that may not be viewed is not rendered (its label, helper and error with it) and leaves
  * validation and the submitted values; a field that may not be edited is disabled; a save passes `onSubmit` only the
- * changed fields that may be edited, compared with `original` (dirtyPatch). Without `access`, every editable field
- * shows and `onSubmit` receives nothing, as before.
+ * changed fields that may be edited, compared with `original` (dirtyPatch); `original` is required with `access`, in the
+ * type and at run time (`RESOURCE_FORM_ORIGINAL_REQUIRED`), because without it every shown field would count as changed
+ * and be sent; a new record passes an empty one. Without `access`, every editable field shows and `onSubmit` receives
+ * nothing, as before.
  */
-export function ResourceForm({fields,values,onChange,onSubmit,labels={},saveLabel,disabled=false,access,original={},helpers={},errors={}}:{fields:readonly DisplayField[];values:Readonly<Record<string,unknown>>;onChange:(key:string,value:unknown)=>void;onSubmit:(patch?:Record<string,unknown>)=>void;labels?:Readonly<Record<string,string>>;saveLabel:string;disabled?:boolean;access?:AccessReader;original?:Readonly<Record<string,unknown>>;helpers?:Readonly<Record<string,string>>;errors?:Readonly<Record<string,string>>}) {
+export function ResourceForm({fields,values,onChange,onSubmit,labels={},saveLabel,disabled=false,access,original,helpers={},errors={}}:{fields:readonly DisplayField[];values:Readonly<Record<string,unknown>>;onChange:(key:string,value:unknown)=>void;onSubmit:(patch?:Record<string,unknown>)=>void;labels?:Readonly<Record<string,string>>;saveLabel:string;disabled?:boolean;helpers?:Readonly<Record<string,string>>;errors?:Readonly<Record<string,string>>}&(Readonly<{access?:undefined;original?:Readonly<Record<string,unknown>>}>|Readonly<{access:AccessReader;original:Readonly<Record<string,unknown>>}>)) {
+  if(access&&original===undefined)throw new Error('RESOURCE_FORM_ORIGINAL_REQUIRED');
   const editable=fields.filter(field=>field.editable);
   if(editable.some(field=>!['string','boolean','number','integer'].includes(field.type)))throw new Error('UNSUPPORTED_FORM_FIELD');
   const shown=access?editable.filter(field=>access.field(field.key).view):editable;
@@ -123,7 +126,7 @@ export function ResourceForm({fields,values,onChange,onSubmit,labels={},saveLabe
     if(!access){onSubmit();return;}
     // Only the fields shown are compared, so a hidden field never leaves; a changed field that may not be edited
     // throws FORBIDDEN_FIELD instead of being sent.
-    onSubmit(access.patch(original,Object.fromEntries(shown.filter(field=>Object.hasOwn(values,field.key)).map(field=>[field.key,values[field.key]]))));
+    onSubmit(access.patch(original??{},Object.fromEntries(shown.filter(field=>Object.hasOwn(values,field.key)).map(field=>[field.key,values[field.key]]))));
   };
   return <form className="mp-form grid gap-4" onSubmit={event=>{event.preventDefault();submit();}}>{shown.map(field=><Field key={field.key} label={labels[field.key] ?? field.key} name={field.key} required={field.required&&field.type!=='boolean'} disabled={locked(field)} {...(helpers[field.key]!==undefined?{helper:helpers[field.key]}:{})} {...(errors[field.key]!==undefined?{error:errors[field.key]}:{})} type={field.type==='boolean'?'checkbox':field.type==='number'||field.type==='integer'?'number':'text'} step={field.type==='number'?'any':field.type==='integer'?1:undefined} checked={field.type==='boolean'?values[field.key]===true:undefined} value={field.type==='boolean'?undefined:String(values[field.key] ?? '')} onChange={event=>onChange(field.key,field.type==='boolean'?event.target.checked:field.type==='number'||field.type==='integer'?event.target.valueAsNumber:event.target.value)} />)}<Button disabled={unavailable} type="submit" tone="secondary">{saveLabel}</Button></form>;
 }

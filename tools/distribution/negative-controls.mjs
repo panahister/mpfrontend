@@ -204,6 +204,10 @@ const mutations=[
   {name:'table-url-state-needs-a-valid-snapshot',package:'data-react',test:'browser.test.ts',file:'core.tsx',
     before:"useListUrlState(urlState,access&&status==='granted'?{canView:key=>access.field(key).view}:{})",after:'useListUrlState(urlState,access?{canView:key=>access.field(key).view}:{})',
     expected:'a sort or a filter leaves the URL only when a valid snapshot says',options:['--test-name-pattern=leaves the URL only when a valid snapshot']},
+  // A form with access must be told what the person started from; without it every shown field would be sent.
+  {name:'form-access-needs-original',package:'ui',test:'index.test.ts',file:'core.tsx',
+    before:"if(access&&original===undefined)throw new Error('RESOURCE_FORM_ORIGINAL_REQUIRED');",after:'',
+    expected:'a form with access must say what the person started from',options:['--test-name-pattern=must say what the person started from']},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},
