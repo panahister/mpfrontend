@@ -53,6 +53,29 @@ test('a change of scope while a query is pending cancels it, drops its late answ
   }finally{await view.unmount();}
 });
 
+test('server data seeds the scope it was read in and no other: after a change of scope the new scope reads for itself',async()=>{
+  const reads:Array<(value:string)=>void>=[];
+  function Orders(){
+    const query=useScopedQuery({operation:'orders.list',params:{page:1},initialData:'server page',staleTime:30000,
+      read:()=>new Promise<string>(resolve=>{reads.push(resolve);})});
+    return createElement('p',null,query.data??'loading');
+  }
+  const view=await mount(()=>createElement(Orders),snapshot('ctx-1','r1'));
+  try{
+    await settle();
+    assert.equal(view.host.textContent,'server page','the scope the page was rendered in shows the server data');
+    assert.equal(reads.length,0,'and reads nothing while that data is fresh');
+    await view.render(snapshot('ctx-1','r2'));await settle();
+    assert.doesNotMatch(view.host.textContent??'',/server page/,'the server data is not shown under another scope');
+    assert.equal(reads.length,1,'the new scope reads under its own key');
+    reads[0]!('new scope data');await settle();
+    assert.equal(view.host.textContent,'new scope data');
+    await view.render(snapshot('ctx-2','r1'));await settle();
+    assert.doesNotMatch(view.host.textContent??'',/server page|new scope data/);
+    assert.equal(reads.length,2);
+  }finally{await view.unmount();}
+});
+
 test('without a valid snapshot no read runs, and data of a closed scope never shows',async()=>{
   let reads=0;
   function Orders(){

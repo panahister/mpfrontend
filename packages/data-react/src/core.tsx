@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,type ReactNode} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {useMutation,useQuery,useQueryClient,type UseMutationResult,type UseQueryResult} from '@tanstack/react-query';
 import {useQueryStates} from 'nuqs';
 import {useAccessCapture,useAccessScope} from '@mpfrontend/access-react';
@@ -33,6 +33,10 @@ export type ScopedQueryOptions<Params extends JsonParams,Data>=Readonly<{
   params:Params;
   /** Reads through the app's own route or the BFF, never a backend directly, and passes the signal on. */
   read:(params:Params,signal:AbortSignal)=>Promise<Data>;
+  /**
+   * The data the server read for the first render. It seeds the query of the scope the hook mounted in, and no other: a
+   * change of scope reads for itself. A hook that mounts without a valid snapshot is not seeded.
+   */
   initialData?:Data;
   enabled?:boolean;
   staleTime?:number;
@@ -43,6 +47,10 @@ export type ScopedQueryOptions<Params extends JsonParams,Data>=Readonly<{
  */
 export function useScopedQuery<Params extends JsonParams,Data>(options:ScopedQueryOptions<Params,Data>):UseQueryResult<Data>{
   const scope=useAccessScope(),capture=useAccessCapture();
+  const key=scope?scope.contextRef+'\n'+scope.revision:undefined;
+  const [mountedIn]=useState(key);
+  // Data read for one scope must never stand in for another's: it seeds only the scope the hook mounted in.
+  const seed=options.initialData!==undefined&&key!==undefined&&key===mountedIn;
   return useQuery<Data>({
     queryKey:scope?scopedQueryKey(scope,options.operation,options.params):['mpfrontend-closed',options.operation],
     enabled:scope!==undefined&&(options.enabled??true),
@@ -52,7 +60,7 @@ export function useScopedQuery<Params extends JsonParams,Data>(options:ScopedQue
       work.assertCurrent();
       return data;
     },
-    ...(options.initialData!==undefined?{initialData:options.initialData}:{}),
+    ...(seed?{initialData:options.initialData as Data}:{}),
     ...(options.staleTime!==undefined?{staleTime:options.staleTime}:{}),
   });
 }

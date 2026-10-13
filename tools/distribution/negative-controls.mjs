@@ -196,6 +196,10 @@ const mutations=[
   {name:'access-server-entry-in-a-document',package:'access-react',test:'server.test.ts',file:'server.ts',
     before:"if(typeof (globalThis as {document?:unknown}).document!=='undefined')",after:'if(false)',
     expected:'refuses to load where a document exists'},
+  // Server data seeds the scope it was read in and no other.
+  {name:'scoped-initial-data-one-scope',package:'data-react',test:'browser.test.ts',file:'core.tsx',
+    before:'const seed=options.initialData!==undefined&&key!==undefined&&key===mountedIn;',after:'const seed=options.initialData!==undefined;',
+    expected:'server data seeds the scope it was read in and no other',options:['--test-name-pattern=server data seeds the scope']},
   {name:'relay-session-cookie-only',package:'presentation-server',test:'relay.test.ts',file:'relay.ts',
     before:"if(session!==undefined)headers.set('cookie',options.sessionCookie+'='+session);",after:"if(session!==undefined)headers.set('cookie',request.headers.get('cookie')!);",
     expected:'an upload of several megabytes streams to the BFF'},
