@@ -1,8 +1,7 @@
 # ADR-001: Nx, pnpm, independent consumers, and one cohort from a registry
 
 Date: 2026-10-06, revised for 1.0 on 2026-10-12
-Status: Proposed for 1.0. The owner accepts it at the audit of 1.0, and it then reads "Accepted for 1.0". The
-acceptance of 2026-10-06 (for the proof of concept) covered the decisions below that are unchanged.
+Status: Accepted for 1.0, on 2026-10-13, by the owner (decision GNJ-OD-756, recorded by the methodology).
 
 ## Context
 
