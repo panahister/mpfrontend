@@ -11,7 +11,7 @@ product ownership, or human review to generators or AI agents.
 [![License](https://img.shields.io/badge/license-Apache--2.0-4f46e5.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-24.19.0-0891b2.svg)](.node-version)
 [![pnpm](https://img.shields.io/badge/pnpm-11.25.0-0f766e.svg)](package.json)
-[![Status](https://img.shields.io/badge/status-public%20POC-7c3aed.svg)](#maturity-and-scope)
+[![Version](https://img.shields.io/badge/version-1.0.0-7c3aed.svg)](#versioning)
 
 [Start here](#choose-your-starting-point) ·
 [Conventions](docs/FRONTEND-CONVENTIONS.md) ·
@@ -33,12 +33,12 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is currently a verified **public source proof of concept**. Its sixteen packages share one
-> version under the [Versioning](#versioning) policy and are released to the public npm registry by a release
-> workflow; `0.1.0` is published ([release record](docs/releases/0.1.0.md)). The supported
-> evaluation path is this source repository plus the immutable, hash-checked cohort in the
-> [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference). See
-> [Maturity and scope](#maturity-and-scope) before choosing it for production.
+> MP Frontend is a verified public source project at **version 1.0.0**, its first stable major version: from it on,
+> only a major version breaks the public API ([Versioning](#versioning)). Its sixteen packages share one version and
+> are released to the public npm registry by a release workflow; `0.1.0` is published
+> ([release record](docs/releases/0.1.0.md)), and every build compares the API with its archives. The
+> [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference) still uses its own vendored,
+> hash-checked development cohort. See [Maturity and scope](#maturity-and-scope) before choosing it for production.
 
 ## What MP Frontend is
 
@@ -284,7 +284,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, a fresh independent consumer, a release workflow and install tests against local registries | The first publication waits for the owner; compatibility is a declared policy with API reports, not yet a published record |
+| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, a fresh independent consumer, a release workflow and install tests against local registries | `0.1.0` is published with provenance; every build compares the API with its archives, and a break waits for the next major version |
 
 ## OpenAPI contract generation
 
@@ -486,8 +486,8 @@ public npm registry with the `@mpfrontend` scope bound to it in `.npmrc`, every 
 MP Frontend releases its sixteen packages as one cohort under one version. The CLI, the Nx generators and the
 application template write that exact version, never a range, and a test fails on a pin that differs from it.
 
-- Versions are semantic. While the major version is 0, a minor version may break, and its release notes say how
-  to move; a patch never breaks. From 1.0.0 on, only a major version breaks.
+- Versions are semantic. From 1.0.0 on, only a major version breaks, and its release notes say how to move; a patch
+  never breaks. Before 1.0.0, while the major version was 0, a minor version could break.
 - The public API is the exports of each package's entry points (the `exports` of its `package.json`): their names
   and declarations. Anything a package does not export, a file reached by a deep import, and a package that is not
   one of the sixteen are not public, and may change in any version. `packages/<name>/api-report.json` records the
@@ -631,8 +631,8 @@ production-certified platform.
 
 ### Not shipped or not claimed
 
-- A published npm release: the release workflow is in place and the first publication waits for the owner.
-- A stable major version: while the major version is 0, a minor version may break, as [Versioning](#versioning) says.
+- `1.0.0` on npm: this tree declares it, and the release workflow publishes it when the owner starts and approves the
+  run; `0.1.0` is the version on npm today.
 - A public MP Frontend Figma Community library.
 - Automatic Figma extraction, watching, mutation, or publication.
 - Arbitrary OpenAPI support or automatic screen generation.

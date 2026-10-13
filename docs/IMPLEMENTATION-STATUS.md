@@ -1,9 +1,9 @@
 # Implementation status
 
-Updated: 2026-10-12.
+Updated: 2026-10-13.
 
-MP Frontend is a verified public proof of concept. This document separates what the current source proves
-from the work required for a stable package and production deployment.
+MP Frontend declares 1.0.0, its first stable major version; `0.1.0` is published. This document separates what the
+current source proves from the work still required for production deployment.
 
 ## Verified source cohort
 
@@ -11,9 +11,7 @@ Every count in this section was recomputed from uncached runs with Node 24.19.0 
 (`pnpm check --skip-nx-cache`, `pnpm pack:local`, `pnpm exec nx run distribution:consumer-check`,
 `pnpm exec nx run distribution:negative-controls`, `pnpm exec nx run security-bff:test-redis`,
 `pnpm public:verify` and `pnpm exec nx run distribution:registry-install`), on the tree of the commit that records
-it. A commit cannot name itself: the commit
-before this one is `94b7692`, and the public verification line was run again on the tree that includes this
-document.
+it. The public verification figure is the one a fresh clone of that commit prints.
 
 | Component | Version | Latest focused evidence |
 |---|---:|---:|
@@ -100,7 +98,7 @@ own check, against a contract that declares the list's query parameters. Depende
 | Public MP Frontend Figma library | Not shipped | Deliberately outside the MVP scope |
 | Repository-scoped AI procedures | Implemented | Fourteen Base and four optional Design procedures |
 | Registry package distribution | Published, `0.1.0` | The release workflow (started by hand; guards before the build, the complete gate, a record of SHA-256 and integrity, publication by an approved job in the environment `npm` on main with npm provenance, `latest` never given to a prerelease), its guards' source tests and self-test, and an install from two throw-away local registries: the generated scope binding keeps a decoy registry from serving `@mpfrontend`, exact pins keep a newer version out, each with a seeded control observed failing. The workflow ran on GitHub on 2026-10-12: a rehearsal, two attempts that stopped before any package reached the registry (a path that npm read as a repository, a token without the box that bypasses two-factor authentication), and the re-run that published all sixteen. `npm audit signatures` over the published cohort verified 190 packages with 0 invalid and 0 missing, and each of the sixteen carries a provenance attestation naming the release commit. The audit step of the registry-install script first failed on an npm peer conflict when it installed the sixteen into a bare folder; it was repaired for 0.1.1 and now passes against the published cohort |
-| Public API and compatibility policy | Declared | README "Versioning": semantic versions, a minor version may break while the major version is 0 and a patch never breaks, a deprecated export stays for a minor version; one `api-report.json` per package compared on every check, and with the last published version at a release; no version is published yet, so no published baseline exists |
+| Public API and compatibility policy | Enforced | README "Versioning": from 1.0.0 only a major version breaks, a minor version only adds, a patch changes no export, a deprecated export stays for at least one minor version, and an entry named `internal` is outside the guarantee; one `api-report.json` per package compared on every check, and every build compares the API with the published `0.1.0` archives that `tools/distribution/api-baseline.json` names with the integrity of their bytes |
 
 ## Reference implementation
 
