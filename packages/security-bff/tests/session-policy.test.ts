@@ -2,8 +2,8 @@ import {test,mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {generateKeyPairSync,sign} from 'node:crypto';
-import {createBff,SESSION_LIMITS,type BffConfig} from '../src/index.js';
-import {createMemorySessionVault,type SessionVault} from '../src/session-store.js';
+import {createBff,type BffConfig} from '../src/index.js';import {SESSION_LIMITS} from '../src/internal.js';
+import {type SessionVault} from '../src/session-store.js';import {createMemorySessionVault} from '../src/internal.js';
 
 type Harness=Awaited<ReturnType<typeof harness>>;
 /** A provider whose refreshed tokens can carry other roles, and a BFF over it. */

@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {setTimeout as delay} from 'node:timers/promises';
-import {SnapshotRecovery} from '../src/index.js';
+import {SnapshotRecovery} from '../src/internal.js';
 
 test('recovery waits for snapshots and drains bounded invalidations received during the read',async()=>{
   const batches:string[][]=[],states:string[]=[],releases:Array<()=>void>=[];

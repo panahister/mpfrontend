@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { builtInLocales, createLocaleRegistry, direction, formatNumber, formatValue, locale, locales, negotiateLocale, translator, type LocaleOf } from '../src/index.js';
+import {createLocaleRegistry,direction,formatNumber,formatValue,locale,locales,negotiateLocale,translator,type LocaleOf} from '../src/index.js';import {builtInLocales} from '../src/internal.js';
 
 // A test fixture, never a built-in locale: a private-use pseudo-locale tag (BCP 47 reserves the language
 // subtags qaa to qtz for private use), written right to left. Its text is English, marked, so that a

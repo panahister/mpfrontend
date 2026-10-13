@@ -52,8 +52,16 @@ test('a baseline that cannot be had is a failure, never a skip: other bytes, no 
   assert.match((await problems({version:'1.0.0',packages:{'@mpfrontend/x':{integrity:'sha512-other'}}})).join(),/API_BASELINE_UNAVAILABLE:@mpfrontend\/x@1.0.0: BASELINE_INTEGRITY_MISMATCH/);
   assert.match((await problems({version:'1.0.1',packages:{'@mpfrontend/x':{integrity}}})).join(),/BASELINE_ARCHIVE_ANSWER:404/);
   assert.deepEqual(await problems({version:'1.0.0',packages:{}}),['API_BASELINE_MISSING:@mpfrontend/x']);
-  const offline=await baselineProblems({version:'1.0.0',packages:{'@mpfrontend/x':{integrity}}},[report],{fetchImpl:async()=>{throw new Error('offline');}});
+  const offline=await baselineProblems({version:'1.0.0',packages:{'@mpfrontend/x':{integrity}}},[report],{fetchImpl:async()=>{throw new Error('offline');},retryDelayMs:1});
   assert.match(offline.join(),/API_BASELINE_UNAVAILABLE:.*offline/);
+  // One dropped connection or one 5xx answer is tried again; the archive then arrives and the build passes. A 404 is not retried.
+  let calls=0;
+  const flaky=async url=>{calls++;if(calls===1)throw new Error('fetch failed');if(calls===2)return {status:503,arrayBuffer:async()=>new ArrayBuffer(0)};return registry(files)(url);};
+  assert.deepEqual(await baselineProblems({version:'1.0.0',packages:{'@mpfrontend/x':{integrity}}},[current('1.0.0',[['a','export declare const a: string;']])],{fetchImpl:flaky,retryDelayMs:1}),[]);
+  assert.equal(calls,3);
+  let missing=0;
+  await baselineProblems({version:'1.0.1',packages:{'@mpfrontend/x':{integrity}}},[report],{fetchImpl:async url=>{missing++;return registry(files)(url);},retryDelayMs:1});
+  assert.equal(missing,1,'a 404 is not retried');
 });
 
 test('the baseline file names every package of the cohort at one published version, and the check runs in every build',async()=>{

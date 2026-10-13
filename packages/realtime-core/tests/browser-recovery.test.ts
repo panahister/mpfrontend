@@ -16,7 +16,7 @@ const harness=await import(hooksUrl) as {states:string[];flush():Array<()=>void>
 const source=await readFile(new URL('../src/react.ts',import.meta.url),'utf8');
 const output=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText
   .replace(/from ['"]react['"]/,`from ${JSON.stringify(hooksUrl)}`)
-  .replace(/from ['"]\.\/index\.js['"]/,`from ${JSON.stringify(new URL('../src/index.ts',import.meta.url).href)}`);
+  .replace(/from ['"]\.\/core\.js['"]/,`from ${JSON.stringify(new URL('../src/core.ts',import.meta.url).href)}`);
 const {useRealtime}=await import('data:text/javascript;base64,'+Buffer.from(output).toString('base64')) as typeof import('../src/react.js');
 
 test('real browser hook recovers snapshot failures with a valid client close and fenced lifecycle',async t=>{

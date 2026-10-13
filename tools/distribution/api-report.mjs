@@ -112,9 +112,17 @@ async function reportOfArchive(bytes){
  * The report of one published version, from its archive on the registry, whose bytes must be the ones the baseline
  * file records. An archive that cannot be fetched or that differs is an error, never a version to skip.
  */
-export async function baselineReport(name,version,integrity,{registry=REGISTRY,fetchImpl=fetch}={}){
+export async function baselineReport(name,version,integrity,{registry=REGISTRY,fetchImpl=fetch,retryDelayMs=1500}={}){
   const url=registry.replace(/\/$/,'')+'/'+name+'/-/'+name.split('/').pop()+'-'+version+'.tgz';
-  const response=await fetchImpl(url,{signal:AbortSignal.timeout(60000)});
+  // A dropped connection or a 5xx answer is tried again, twice, so that one network hiccup does not fail a build; a build
+  // that still cannot have the archive fails. An answer that is not 200 for another reason (404) is not retried.
+  let response,failure;
+  for(let attempt=0;attempt<3;attempt++){
+    if(attempt>0)await new Promise(resolve=>setTimeout(resolve,retryDelayMs*attempt));
+    try{response=await fetchImpl(url,{signal:AbortSignal.timeout(60000)});failure=undefined;if(response.status<500)break;failure=new Error('BASELINE_ARCHIVE_ANSWER:'+response.status);}
+    catch(error){failure=error;}
+  }
+  if(failure)throw failure;
   if(response.status!==200)throw new Error('BASELINE_ARCHIVE_ANSWER:'+response.status);
   const bytes=Buffer.from(await response.arrayBuffer());
   if(integrityOf(bytes)!==integrity)throw new Error('BASELINE_INTEGRITY_MISMATCH');

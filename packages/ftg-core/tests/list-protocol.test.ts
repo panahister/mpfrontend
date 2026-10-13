@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {checkListProtocol,listSearchParams,listPage,validListState,type ListProtocol,type OpenApiDocument} from '../src/index.js';
+import {checkListProtocol,listSearchParams,listPage,type ListProtocol,type OpenApiDocument} from '../src/index.js';import {validListState} from '../src/internal.js';
 
 const contract=(parameters:unknown[],overrides:Record<string,unknown>={}):OpenApiDocument=>({openapi:'3.1.0',paths:{'/orders':{get:{operationId:'listOrders',parameters,
   responses:{'200':{content:{'application/json':{schema:{type:'object',properties:{

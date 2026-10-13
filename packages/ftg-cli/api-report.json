@@ -6,10 +6,7 @@
     ".": {
       "digest": "export declare const digest: (value: string) => string;",
       "generate": "export declare function generate(configPath: string, { check, dryRun }?: { check?: boolean; dryRun?: boolean; }): Promise<{ ok: boolean; contractHash: string; resources: number; requests: number; changed: string[]; dryRun: boolean; check: boolean; }>;",
-      "GENERATOR_VERSION": "export declare const GENERATOR_VERSION = \"0.1.0-dev.6\";",
-      "GeneratorConfig": "export type GeneratorConfig = { openapi: string; output: string; resources: ResourceSelection[]; requests?: RequestSelection[]; };",
-      "InputError": "export declare class InputError extends Error { readonly exitCode: number; constructor(message: string, exitCode?: number); }",
-      "loadContract": "export declare function loadContract(path: string): Promise<{ document: OpenApiDocument; bytes: string; hash: string; }>;"
+      "GENERATOR_VERSION": "export declare const GENERATOR_VERSION = \"0.1.0-dev.6\";"
     }
   }
 }

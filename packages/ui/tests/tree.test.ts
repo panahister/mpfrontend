@@ -9,7 +9,8 @@ const actWarnings:string[]=[],report=console.error;
 console.error=(...values:unknown[])=>{if(String(values[0]).includes('not wrapped in act'))actWarnings.push(String(values[0]));else report(...values);};
 const {act,createElement,useState}=await import('react');
 const {createRoot}=await import('react-dom/client');
-const {Tree,treeKey,visibleRows,descendantIds}=await import('../src/index.js');
+const {Tree,descendantIds}=await import('../src/index.js');
+const {treeKey,visibleRows}=await import('../src/internal.js');
 type Node={id:string;label:string;children?:Node[]};
 
 function freeze<T>(value:T):T{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;}

@@ -7,7 +7,8 @@ GlobalRegistrator.register({url:'http://localhost/'});
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 const {act,createElement,useState}=await import('react');
 const {createRoot}=await import('react-dom/client');
-const {Dialog,OneTimeCodeField,ConfirmWithCode,codeDigits,nextFocus}=await import('../src/index.js');
+const {Dialog,OneTimeCodeField,ConfirmWithCode,codeDigits}=await import('../src/index.js');
+const {nextFocus}=await import('../src/internal.js');
 
 async function mount(element:ReturnType<typeof createElement>,direction:'ltr'|'rtl'='ltr'){
   const host=document.createElement('div');host.setAttribute('dir',direction);document.body.append(host);

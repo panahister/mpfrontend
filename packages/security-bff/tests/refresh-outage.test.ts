@@ -4,7 +4,7 @@ import {createServer} from 'node:http';
 import {generateKeyPairSync,sign} from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
 import {createBff} from '../src/index.js';
-import {createMemorySessionVault} from '../src/session-store.js';
+import {createMemorySessionVault} from '../src/internal.js';
 
 test('identity refresh outages fail closed without discarding recoverable server-only state',async t=>{
   const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});

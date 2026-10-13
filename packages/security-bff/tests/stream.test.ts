@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createServer,request,type IncomingHttpHeaders,type IncomingMessage,type ServerResponse,type ClientRequest} from 'node:http';
 import {createHash,generateKeyPairSync,sign} from 'node:crypto';
 import {createRelay} from '@mpfrontend/presentation-server/relay';
-import {createBff,type ApiRoute,type BffConfig,type StreamPolicy} from '../src/index.js';
-import {createMemorySessionVault,type SessionVault} from '../src/session-store.js';
+import {createBff,type BffConfig,type StreamPolicy} from '../src/index.js';import {type ApiRoute} from '../src/internal.js';
+import {type SessionVault} from '../src/session-store.js';import {createMemorySessionVault} from '../src/internal.js';
 
 const MB=1024*1024,KB=1024;
 const publicOrigin='http://localhost:4401';

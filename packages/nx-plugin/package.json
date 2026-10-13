@@ -16,7 +16,11 @@
       "import": "./dist/index.js"
     },
     "./package.json": "./package.json",
-    "./generators.json": "./generators.json"
+    "./generators.json": "./generators.json",
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
+    }
   },
   "files": [
     "dist",

@@ -16,7 +16,11 @@
       "import": "./dist/index.js"
     },
     "./styles.css": "./src/styles.css",
-    "./tailwind.css": "./src/tailwind.css"
+    "./tailwind.css": "./src/tailwind.css",
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
+    }
   },
   "files": [
     "dist",

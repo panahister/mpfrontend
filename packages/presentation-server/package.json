@@ -18,6 +18,10 @@
     "./relay": {
       "types": "./dist/relay.d.ts",
       "import": "./dist/relay.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
     }
   },
   "files": [

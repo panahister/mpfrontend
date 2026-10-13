@@ -8,7 +8,6 @@
       "ListStateChange": "export type ListStateChange = Readonly<{ page?: number; size?: number; sort?: ListSort | undefined; filters?: Readonly<Record<string, string>>; }>;",
       "ListUrlOptions": "export type ListUrlOptions = Readonly<{ size: number; sizes?: readonly number[]; sort?: ListSort; maxPage?: number; }>;",
       "ListUrlState": "export type ListUrlState = Readonly<{ protocol: ListProtocol; parsers: ParserMap; defaults: ListState; read: (search: LoaderInput, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; fromValues: (values: Readonly<Record<string, unknown>>, options?: Readonly<{ canView?: ViewCheck; }>) => ListState; hidden: (values: Readonly<Record<string, unknown>>, canView: ViewCheck | undefined) => string[]; serialize: (state: ListState) => string; }>;",
-      "QueryKeyScope": "export type QueryScope = Readonly<{ contextRef: string; revision: string; }>;",
       "QueryScope": "export declare function QueryScope({ children }: Readonly<{ children?: ReactNode; }>): ReactNode;",
       "ScopedMutationOptions": "export type ScopedMutationOptions<Variables, Result> = Readonly<{ operation: string; write: (variables: Variables, signal: AbortSignal) => Promise<Result>; invalidates: readonly string[]; }>;",
       "ScopedQueryOptions": "export type ScopedQueryOptions<Params extends JsonParams, Data> = Readonly<{ operation: string; params: Params; read: (params: Params, signal: AbortSignal) => Promise<Data>; initialData?: Data; enabled?: boolean; staleTime?: number; }>;",

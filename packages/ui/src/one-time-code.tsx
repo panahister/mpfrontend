@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useId,useRef,useState,type FormEvent,type ReactNode} from 'react';
-import {Button} from './index.js';
+import {Button} from './core.js';
 import {Dialog} from './dialog.js';
 
 const decimalDigit=/^\p{Nd}$/u;

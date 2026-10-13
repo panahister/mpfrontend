@@ -19,7 +19,6 @@
       "createRoute": "export declare function createRoute(request: RouteRequest & CreateOptions): Promise<{ dryRun: boolean; formatted: boolean; untranslated?: string[]; files: string[]; kept: string[]; ok: boolean; path: string; }>;",
       "createWorkspace": "export declare function createWorkspace(options: WorkspaceOptions): Promise<{ ok: boolean; name: string; directory: string; files: string[]; dryRun: boolean; runtimeProfile: string; designSource: DesignSource; }>;",
       "DesignSource": "export type DesignSource = 'none' | 'existing';",
-      "diskReader": "export declare function diskReader(root: string): WorkspaceReader;",
       "featureFiles": "export declare function featureFiles(name: string, options?: { resource?: string; operationId?: string; generatedOutput?: string; locales?: AppLocales; }): Promise<Record<string, string>>;",
       "FeatureKind": "export type FeatureKind = 'screen' | 'list';",
       "FeatureRequest": "export type FeatureRequest = Readonly<{ app: string; name: string; resource?: string; }>;",
@@ -28,13 +27,9 @@
       "PackageRequest": "export type PackageRequest = Readonly<{ name: string; directory?: string; runtime?: PackageRuntime; }>;",
       "PackageRuntime": "export type PackageRuntime = 'universal' | 'client' | 'server';",
       "Plan": "export type Plan = Readonly<{ files: Record<string, string>; kept: string[]; untranslated?: string[]; }>;",
-      "planFeature": "export declare function planFeature(reader: WorkspaceReader, request: FeatureRequest): Promise<Plan>;",
-      "planPackage": "export declare function planPackage(reader: WorkspaceReader, request: PackageRequest): Promise<Plan>;",
-      "planRoute": "export declare function planRoute(reader: WorkspaceReader, request: RouteRequest): Promise<Plan>;",
       "routeFiles": "export declare function routeFiles(path: string, feature: string, screen: string): Record<string, string>;",
       "RouteRequest": "export type RouteRequest = Readonly<{ app: string; path: string; feature: string; screen?: string; }>;",
       "workspaceFiles": "export declare function workspaceFiles(name: string, designSource?: DesignSource): Record<string, string>;",
-      "workspaceFormatter": "export declare function workspaceFormatter(root: string): Promise<Formatter | undefined>;",
       "WorkspaceOptions": "export type WorkspaceOptions = { name: string; directory: string; designSource?: DesignSource; dryRun?: boolean; };",
       "WorkspaceReader": "export type WorkspaceReader = Readonly<{ exists: (path: string) => Promise<boolean>; read: (path: string) => Promise<string | undefined>; }>;"
     }

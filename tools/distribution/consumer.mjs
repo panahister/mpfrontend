@@ -275,7 +275,7 @@ await run('pnpm',['install','--offline','--frozen-lockfile']);
 // Execute the real outage assertions against the installed export, never the checkout implementation.
 const securityProofDirectory=join(workspace,'verification');await mkdir(securityProofDirectory);
 let securityProof=await readFile(join(root,'packages/security-bff/tests/refresh-outage.test.ts'),'utf8');
-for(const [source,target]of [["'../src/index.js'","'@mpfrontend/security-bff'"],["'../src/session-store.js'","'@mpfrontend/security-bff/session-store'"]]){
+for(const [source,target]of [["'../src/index.js'","'@mpfrontend/security-bff'"],["'../src/internal.js'","'@mpfrontend/security-bff/internal'"]]){
   assert.ok(securityProof.includes(source));securityProof=securityProof.replace(source,target);
 }
 assert.ok(!securityProof.includes('../src/'));
@@ -283,14 +283,14 @@ await writeFile(join(securityProofDirectory,'refresh-outage.test.ts'),securityPr
 await run(process.execPath,['--import','tsx','--test','verification/refresh-outage.test.ts']);
 let realtimeProof=await readFile(join(root,'packages/realtime-core/tests/browser-recovery.test.ts'),'utf8');
 for(const [source,target]of [["'../src/react.ts'","'../node_modules/@mpfrontend/realtime-core/dist/react.js'"],
-  ["'../src/index.ts'","'../node_modules/@mpfrontend/realtime-core/dist/index.js'"],
+  ["'../src/core.ts'","'../node_modules/@mpfrontend/realtime-core/dist/core.js'"],
   ["'../src/react.js'","'@mpfrontend/realtime-core/react'"]]){
   assert.ok(realtimeProof.includes(source));realtimeProof=realtimeProof.replace(source,target);
 }
 assert.ok(!realtimeProof.includes('../src/'));
 await writeFile(join(securityProofDirectory,'browser-recovery.test.ts'),realtimeProof);
 await run(process.execPath,['--import','tsx','--test','verification/browser-recovery.test.ts']);
-const {reconnectDelay}=await import(join(workspace,'node_modules/@mpfrontend/realtime-core/dist/index.js'));
+const {reconnectDelay}=await import(join(workspace,'node_modules/@mpfrontend/realtime-core/dist/internal.js'));
 const earliestTenthAdmission=Array.from({length:9},(_,attempt)=>reconnectDelay(attempt,()=>0)).reduce((sum,value)=>sum+value,0);
 assert.equal(earliestTenthAdmission,60750);
 if(onlineAudit)await run('pnpm',['audit','--audit-level=moderate']);
@@ -567,7 +567,8 @@ assert.ok((await readFile(join(workspace,'apps/sample/runtime-assets/swagger/swa
 async function generatedFiles(directory){
   const result=[];
   for(const entry of await readdir(directory,{withFileTypes:true})){
-    if(['node_modules','.nx','.next','dist','.pnpm-store','.cache','runtime-assets'].includes(entry.name))continue;
+    // `verification` holds the check's own proofs of the installed packages, which are not written by a generator.
+    if(['node_modules','.nx','.next','dist','.pnpm-store','.cache','runtime-assets','verification'].includes(entry.name))continue;
     const path=join(directory,entry.name);
     if(entry.isDirectory())result.push(...await generatedFiles(path));else result.push(path);
   }

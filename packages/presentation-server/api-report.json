@@ -10,10 +10,8 @@
       "createPresentationRealtime": "export declare function createPresentationRealtime(config: SocketConfig): { handleHttp: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>; attach: (server: Server) => void; close: () => void; };",
       "DevelopmentSocketConfig": "export type DevelopmentSocketConfig = CommonSocketConfig & { development: true; production?: never; ticketStore?: AdmissionTicketStore; connectionBudget?: ConnectionBudget; };",
       "PresentationProductionProfile": "export type PresentationProductionProfile = Readonly<{ ticketStore: AdmissionTicketStore; connectionBudget: ConnectionBudget; }>;",
-      "presentationProductionRefusals": "export declare function presentationProductionRefusals(config: ProductionSocketConfig): string[];",
       "ProductionSocketConfig": "export type ProductionSocketConfig = CommonSocketConfig & { production: PresentationProductionProfile; development?: never; };",
-      "SocketConfig": "export type SocketConfig = DevelopmentSocketConfig | ProductionSocketConfig;",
-      "SocketContext": "export type SocketContext = { subject: string; tenant: string | null; roles: string[]; csrf: string; };"
+      "SocketConfig": "export type SocketConfig = DevelopmentSocketConfig | ProductionSocketConfig;"
     },
     "./relay": {
       "createRelay": "export declare function createRelay(options: RelayOptions): Relay;",

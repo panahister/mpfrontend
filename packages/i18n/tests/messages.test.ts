@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkCatalogs, coreMessages, createMessages, defineMessages, messageArguments, MessageError, translator, type Catalog } from '../src/index.js';
+import {checkCatalogs,coreMessages,createMessages,defineMessages,messageArguments,translator,type Catalog} from '../src/index.js';import {MessageError} from '../src/internal.js';
 
 // Test fixtures, never built-in locales: private-use pseudo-locale tags (BCP 47 reserves the language
 // subtags qaa to qtz for private use). Their text is English, marked, so that it cannot be mistaken for a

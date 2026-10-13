@@ -22,7 +22,6 @@
       "DisplayField": "export type DisplayField = Readonly<{ key: string; type: string; required: boolean; editable: boolean; nullable: boolean; }>;",
       "Field": "export declare function Field({ label, helper, error, ...props }: FieldProps): import(\"react\").JSX.Element;",
       "FieldProps": "export type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string; helper?: string; error?: string; };",
-      "nextFocus": "export declare function nextFocus<T>(elements: readonly T[], current: T | null, backwards: boolean): T | undefined;",
       "OneTimeCodeField": "export declare function OneTimeCodeField({ label, value, onChange, length, helper, error, disabled, name }: OneTimeCodeFieldProps): import(\"react\").JSX.Element;",
       "OneTimeCodeFieldProps": "export type OneTimeCodeFieldProps = { label: string; value: string; onChange: (value: string) => void; length?: number; helper?: string; error?: string; disabled?: boolean; name?: string; };",
       "ResourceForm": "export declare function ResourceForm({ fields, values, onChange, onSubmit, labels, saveLabel, disabled, access, original, helpers, errors }: { fields: readonly DisplayField[]; values: Readonly<Record<string, unknown>>; onChange: (key: string, value: unknown) => void; onSubmit: (patch?: Record<string, unknown>) => void; labels?: Readonly<Record<string, string>>; saveLabel: string; disabled?: boolean; access?: AccessReader; original?: Readonly<Record<string, unknown>>; helpers?: Readonly<Record<string, string>>; errors?: Readonly<Record<string, string>>; }): import(\"react\").JSX.Element;",
@@ -34,12 +33,10 @@
       "TableText": "export type TableText = Readonly<{ pagination: string; previous: string; next: string; page: (page: number, count: number | undefined) => string; size?: string; apply?: string; filters?: string; }>;",
       "Tree": "export declare function Tree<T, S extends string = string>({ label, nodes, expanded, onExpandedChange, states, stateLabels, onActivate, columns, labelHeader, rowHeight, height, direction }: TreeProps<T, S>): import(\"react\").JSX.Element;",
       "TreeColumn": "export type TreeColumn<T = unknown> = Readonly<{ key: string; header: ReactNode; cell: (node: TreeNode<T>) => ReactNode; }>;",
-      "treeKey": "export declare function treeKey<T>(rows: readonly TreeRow<T>[], current: string | undefined, key: string, direction: 'ltr' | 'rtl'): TreeMove | undefined;",
       "TreeMove": "export type TreeMove = Readonly<{ focus?: string; expand?: string; collapse?: string; activate?: string; }>;",
       "TreeNode": "export type TreeNode<T = unknown> = Readonly<{ id: string; label: string; children?: readonly TreeNode<T>[]; data?: T; }>;",
       "TreeProps": "export type TreeProps<T, S extends string> = { label: string; nodes: readonly TreeNode<T>[]; expanded: ReadonlySet<string>; onExpandedChange: (next: ReadonlySet<string>) => void; states?: Readonly<Record<string, S | undefined>>; stateLabels?: Readonly<Record<S, string>>; onActivate?: (node: TreeNode<T>) => void; columns?: readonly TreeColumn<T>[]; labelHeader?: ReactNode; rowHeight?: number; height?: number; direction?: 'ltr' | 'rtl'; };",
-      "TreeRow": "export type TreeRow<T = unknown> = Readonly<{ node: TreeNode<T>; level: number; setSize: number; position: number; parentId?: string; expandable: boolean; expanded: boolean; }>;",
-      "visibleRows": "export declare function visibleRows<T>(nodes: readonly TreeNode<T>[], expanded: ReadonlySet<string>): TreeRow<T>[];"
+      "TreeRow": "export type TreeRow<T = unknown> = Readonly<{ node: TreeNode<T>; level: number; setSize: number; position: number; parentId?: string; expandable: boolean; expanded: boolean; }>;"
     }
   }
 }

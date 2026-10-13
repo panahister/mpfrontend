@@ -19,7 +19,11 @@
     },
     "./tsconfig/base.json": "./tsconfig/base.json",
     "./tsconfig/next.json": "./tsconfig/next.json",
-    "./tsconfig/library.json": "./tsconfig/library.json"
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
+    }
   },
   "files": [
     "dist",

@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {RealtimeContext,SnapshotRecovery,reconnectDelay,type ConnectionState,type Invalidation} from './index.js';
+import {RealtimeContext,SnapshotRecovery,reconnectDelay,type ConnectionState,type Invalidation} from './core.js';
 
 export type RealtimeSession={subject:string;tenant:string|null;roles:readonly string[];csrf:string};
 export type RealtimeUnavailable=Readonly<{phase:'ticket'|'transport'|'snapshot';status?:number}>;

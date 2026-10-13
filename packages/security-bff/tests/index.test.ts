@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {generateKeyPairSync,sign} from 'node:crypto';
-import {createBff,defaultApiLocales} from '../src/index.js';
+import {createBff} from '../src/index.js';import {defaultApiLocales} from '../src/internal.js';
 
 // A test fixture, never a built-in locale: a private-use pseudo-locale tag.
 const RTL='qps-plocm';

@@ -1,5 +1,5 @@
 import { formatFiles, type Tree } from '@nx/devkit';
-import { applicationFiles } from './index.js';
+import { applicationFiles } from './core.js';
 import { writeTree } from './nx-tree.js';
 /** `nx g @mpfrontend/nx-plugin:application`: the same files as `mpfrontend create app`. */
 export default async function applicationGenerator(tree:Tree,options:{name:string;directory:string}){

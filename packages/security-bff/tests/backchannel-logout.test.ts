@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {generateKeyPairSync,randomUUID,sign} from 'node:crypto';
 import {createBff} from '../src/index.js';
-import {createMemorySessionVault,type SessionVault} from '../src/session-store.js';
+import {type SessionVault} from '../src/session-store.js';import {createMemorySessionVault} from '../src/internal.js';
 
 const event={'http://schemas.openid.net/event/backchannel-logout':{}};
 

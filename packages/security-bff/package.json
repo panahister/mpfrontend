@@ -18,6 +18,10 @@
     "./session-store": {
       "types": "./dist/session-store.d.ts",
       "import": "./dist/session-store.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
     }
   },
   "dependencies": {

@@ -13,18 +13,14 @@
       "file": "./tsconfig/next.json"
     },
     "./eslint": {
-      "codeFiles": "export declare const codeFiles: readonly string[];",
       "default": "export declare function workspaceConfig(options?: WorkspaceConfigOptions): Linter.Config[];",
       "defaultDepConstraints": "export declare const defaultDepConstraints: readonly DepConstraint[];",
       "defaultGlobalStyleEntries": "export declare const defaultGlobalStyleEntries: readonly string[];",
       "defaultIgnores": "export declare const defaultIgnores: readonly string[];",
       "defaultThemeFiles": "export declare const defaultThemeFiles: readonly string[];",
       "DepConstraint": "export type DepConstraint = Readonly<{ sourceTag: string; onlyDependOnLibsWithTags?: readonly string[]; notDependOnLibsWithTags?: readonly string[]; }>;",
-      "globalEntryAtRules": "export declare const globalEntryAtRules: ReadonlySet<string>;",
       "PhysicalAllowance": "export type PhysicalAllowance = Readonly<{ value: string; reason: string; }>;",
       "plugin": "export declare const plugin: ESLint.Plugin;",
-      "styleFiles": "export declare const styleFiles: readonly string[];",
-      "visibleTextAttributes": "export declare const visibleTextAttributes: readonly string[];",
       "workspaceConfig": "export declare function workspaceConfig(options?: WorkspaceConfigOptions): Linter.Config[];",
       "WorkspaceConfigOptions": "export type WorkspaceConfigOptions = Readonly<{ depConstraints?: readonly DepConstraint[]; themeFiles?: readonly string[]; globalStyleEntries?: readonly string[]; ignores?: readonly string[]; translators?: readonly string[]; allowedText?: readonly string[]; allowedPhysical?: readonly PhysicalAllowance[]; }>;"
     },

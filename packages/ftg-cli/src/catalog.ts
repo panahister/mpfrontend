@@ -2,7 +2,7 @@ import {readdir,readFile} from 'node:fs/promises';
 import {dirname,join,resolve,relative,sep} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {checkCatalogs,type Catalog,type CatalogProblem} from '@mpfrontend/i18n';
-import {InputError} from './index.js';
+import {InputError} from './core.js';
 
 type Registry={locales:readonly string[];defaultLocale:string};
 type CatalogSet={path:string;scope:string;locales:Record<string,string>};

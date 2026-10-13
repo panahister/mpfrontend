@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createPresentationRealtime,presentationProductionRefusals,type AdmissionTicket,type ConnectionBudget,type ProductionSocketConfig} from '../src/index.js';
+import {createPresentationRealtime,type AdmissionTicket,type ConnectionBudget,type ProductionSocketConfig} from '../src/index.js';import {presentationProductionRefusals} from '../src/internal.js';
 
 const records=new Map<string,AdmissionTicket>();
 // A store over a Redis vault describes the vault it keeps its tickets in; the production profile refuses a shared store that does not.

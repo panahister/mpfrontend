@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { generate, InputError } from './index.js';
+import { generate, InputError } from './core.js';
 import { createApplication,createWorkspace,createFeature,createRoute,createPackage,type PackageRuntime } from '@mpfrontend/nx-plugin';
 import {skillCatalog,installSkills,checkSkills,SkillsError} from '@mpfrontend/ai-skills/internal';
 import {readFileSync} from 'node:fs';
