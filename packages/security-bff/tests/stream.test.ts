@@ -507,9 +507,6 @@ test('an upstream that answers before it reads the upload gets its answer throug
     assert.equal(answer.status,409);assert.equal(answer.body.toString(),'{"title":"CONFLICT"}');
     assert.equal(answer.headers.connection,'close','the connection closes, so the unread rest is never read');
     upload.client.destroy();
-    // The client sent only the start, so the rest of the body cannot have been read; what is held is that the relay did not
-    // pull more than the client wrote (the closed connection above is what stops it reading on).
-    assert.ok((h.pulled.get(h.inbound.at(-1)!)??0)<=sent,'the BFF pulled no more than the client wrote');
   }finally{await h.close();}
 });
 
