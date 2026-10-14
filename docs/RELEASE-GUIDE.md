@@ -6,7 +6,8 @@ prepared, rehearsed and published, what the owner does on npmjs.com and GitHub, 
 corrected. [README "Versioning"](../README.md#versioning) states the version and compatibility policy.
 
 `0.1.0` is the first release: one stable cohort version that ranks above every `0.1.0-dev.N` archive packed before it.
-It was published on 2026-10-12; its record is [releases/0.1.0.md](releases/0.1.0.md).
+It was published on 2026-10-12; its record is [releases/0.1.0.md](releases/0.1.0.md). `1.0.0`, the first stable major
+version, was published on 2026-10-14 by trusted publishing, with no token; its record is [releases/1.0.0.md](releases/1.0.0.md).
 
 ## What the workflow does
 
@@ -148,6 +149,11 @@ same.
   to `minimumReleaseAgeExclude` and says so. A consumer that installs a release on its first day sees that message.
 
 ## Points the documentation did not settle
+
+Settled by a run: the first publication by trusted publishing, `1.0.0` on 2026-10-14 (run 38564788228), published all
+sixteen packages with the OpenID Connect identity of the job and no token, from npm 11.17.0 and Node 24.19.0; each package
+had been configured with `npm trust github <package> --file release.yml --repo panahister/mpfrontend --env npm
+--allow-publish`, which needs a logged-in npm and a two-factor confirmation per package.
 
 - Whether a trusted publisher can be configured for a package that has never been published: the npm page starts
   from the package's settings, which exist only after a first publication, so this guide publishes first with a

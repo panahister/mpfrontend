@@ -4,7 +4,7 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
-## 1.0.0 (not yet released)
+## 1.0.0 (2026-10-14)
 
 The first stable version. From it on README "Versioning" holds: only a major version breaks the public API, and every
 build compares the API with the last published version. Nothing between `0.1.0` and `1.0.0` was published; this section

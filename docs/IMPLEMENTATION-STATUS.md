@@ -38,7 +38,8 @@ From `0.1.0` on, one version names the whole cohort: the root `package.json` dec
 it, and every pin of a framework package (the app template, the Nx plugin's workspace cohort, the AI procedures)
 equals it; the release guard and a test refuse a pin that differs. The declared version is the next one to publish,
 and a version the registry already holds is never built again, so a change after a publication moves the version.
-`0.1.0` is published ([release record](releases/0.1.0.md)); the version the tree declares, `1.0.0`, is the next to publish. Nothing between `0.1.0` and `1.0.0` was published. Before `0.1.0`, each package's version moved when anything it packed changed: the cohort
+`1.0.0` is published ([release record](releases/1.0.0.md)), on 2026-10-14, after `0.1.0`
+([release record](releases/0.1.0.md)); nothing between the two was published. Before `0.1.0`, each package's version moved when anything it packed changed: the cohort
 of 2026-10-12 is listed with its SHA-256 in `docs/releases/2026-10-12-package-cohort.md`, and `CHANGELOG.md` lists
 the change of each package since then under its version. The OpenAPI generator stamp (`GENERATOR_VERSION`,
 `0.1.0-dev.6`) is not a package version and did not move, because the generator code did not change.

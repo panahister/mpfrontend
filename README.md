@@ -322,7 +322,7 @@ reviewable contract surface so product engineers can implement the behavior that
 | Realtime | Single-use tickets, bounded admission, reconnect, replay/snapshot coordination, revocation, and diagnostics | Current presentation relay is a validation profile, not a durable production event bus |
 | Design synchronization | Code-first `none` and consumer-owned `existing`, immutable candidates, diff/plan/apply/accept/check | No Figma API, extractor, watcher, Community library, or automatic React implementation |
 | AI procedures | Fourteen Base and four Design procedures for Codex and Claude Code | Format and workflow evidence do not guarantee identical model decisions |
-| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, a fresh independent consumer, a release workflow and install tests against local registries | `0.1.0` is published with provenance; every build compares the API with its archives, and a break waits for the next major version |
+| Distribution verification | Sixteen archives, manifest and digest checks, negative controls, a fresh independent consumer, a release workflow and install tests against local registries | `1.0.0` is published with provenance by trusted publishing; every build compares the API with the last published archives, and a break waits for the next major version |
 
 ## OpenAPI contract generation
 
