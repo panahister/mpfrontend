@@ -14,8 +14,10 @@ Every `@mpfrontend` package carries one cohort version; pin all of them, and the
 workspace configuration, at that exact version, never a range. Keep the scope bound to the public registry in
 `.npmrc` (`@mpfrontend:registry=https://registry.npmjs.org/`), so that no other registry can serve it. After the
 install, compare the lockfile's integrity of each package with the release record (`docs/releases/<version>.md`)
-and run `npm audit signatures` for the registry signatures and provenance. Read the release notes first: while the
-major version is 0 a minor version may break, and its notes say how to move; a patch never breaks. Offline, install
+and run `npm audit signatures` for the registry signatures and provenance. Read the release notes first: from 1.0.0
+only a major version breaks, and its notes say how to move; a minor version only adds and a patch never breaks.
+Before 1.0.0, while the major version was 0, a minor version could break. Exports of an entry named `internal` are
+outside the compatibility guarantee: never import one in a product. Offline, install
 the release's archives through pnpm overrides and lock the SHA-256 of the release record.
 
 Before mutation, record the current working-tree diff and runnable gates. Use `mpfrontend skills update

@@ -1,8 +1,10 @@
 # @mpfrontend/nx-plugin
 
-Local development package. Runtime: tooling. Public API is exported from src/index.ts and compiled
-into dist. Nx owns build, typecheck, lint and test targets. Consumer applications install packed artifacts.
-See ../../docs/IMPLEMENTATION-STATUS.md for observed evidence and remaining work.
+Part of [MP Frontend](https://github.com/panahister/mpfrontend), released to the public npm registry as one cohort: every `@mpfrontend`
+package at the same exact version. Runtime: tooling. Install it through a workspace that `mpfrontend init`
+created, which pins the cohort and binds the scope to the registry in `.npmrc`. [Versioning](https://github.com/panahister/mpfrontend#versioning)
+states the compatibility policy and [Implementation status](https://github.com/panahister/mpfrontend/blob/main/docs/IMPLEMENTATION-STATUS.md) the
+evidence.
 
 `createWorkspace`/`workspaceFiles` implement the CLI `init` shell. `createApplication`/`applicationFiles`
 implement the application template. `createFeature`/`featureFiles`, `createRoute`/`routeFiles` and
@@ -46,7 +48,7 @@ workspace's Prettier configuration (the CLI resolves Prettier from the workspace
 use `formatFiles`). Generated contracts default to `src/api/generated/<contract>`; an existing app's
 feature-local output stays valid. Init also writes `CODEOWNERS` with placeholder owners and
 `.agents/skills/README.md`; create app writes `.env.example` (names only) and `docs/`. See
-[the CLI guide](../../docs/CLI-GUIDE.md).
+[the CLI guide](https://github.com/panahister/mpfrontend/blob/main/docs/CLI-GUIDE.md).
 
 Every visible text of the application template is a catalog message: the app-wide set in
 `src/i18n/messages/<locale>.ts` and one set per feature in `model/messages/<locale>.ts`. The template ships

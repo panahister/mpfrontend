@@ -31,9 +31,10 @@ package declare, with every framework pin (the app template, the Nx plugin's coh
 `node tools/distribution/release.mjs guard --version <v> --ref <ref>` and its `self-test` prove this offline. A version
 the registry already holds is never built again: a corrected build takes the next version, and a bad version is
 deprecated, never unpublished. Check the API against the policy of README "Versioning" with `pnpm check` (the
-`api-check` of every package's `api-report.json`) and, once a version is published, `node
-tools/distribution/api-report.mjs registry`; while the major version is 0 a break needs a new minor version and
-release notes that say how to move. Run `pnpm exec nx run distribution:registry-install` for the scope binding and
+`api-check` of every package's `api-report.json` and of the published archives that
+`tools/distribution/api-baseline.json` names); from 1.0.0 a break needs a new major version and release notes that
+say how to move. After a release, move the baseline to it in a commit of its own with `node
+tools/distribution/api-report.mjs baseline --record <release.json>`. Run `pnpm exec nx run distribution:registry-install` for the scope binding and
 the exact pins against throw-away local registries. The owner then runs the release workflow
 (`.github/workflows/release.yml`) without `publish` as a rehearsal, and with it only on main, as
 docs/RELEASE-GUIDE.md describes.

@@ -1,8 +1,10 @@
 # @mpfrontend/ftg-cli
 
-Local development package. Runtime: tooling. Public API is exported from src/index.ts and compiled
-into dist. Nx owns build, typecheck, lint and test targets. Consumer applications install packed artifacts.
-See ../../docs/IMPLEMENTATION-STATUS.md for observed evidence and remaining work.
+Part of [MP Frontend](https://github.com/panahister/mpfrontend), released to the public npm registry as one cohort: every `@mpfrontend`
+package at the same exact version. Runtime: tooling. Install it through a workspace that `mpfrontend init`
+created, which pins the cohort and binds the scope to the registry in `.npmrc`. [Versioning](https://github.com/panahister/mpfrontend#versioning)
+states the compatibility policy and [Implementation status](https://github.com/panahister/mpfrontend/blob/main/docs/IMPLEMENTATION-STATUS.md) the
+evidence.
 
 ## Repository commands
 
@@ -22,14 +24,15 @@ ftg generate --config ./my-product/apps/customer/ftg.config.json --dry-run --jso
 ftg check --config ./my-product/apps/customer/ftg.config.json --json
 ```
 
-The [CLI guide](../../docs/CLI-GUIDE.md) describes every command: what it does, when to run it, what it
+The [CLI guide](https://github.com/panahister/mpfrontend/blob/main/docs/CLI-GUIDE.md) describes every command: what it does, when to run it, what it
 writes and what it refuses.
 
 `init` creates a neutral pinned Nx/pnpm shell in a **new** directory; an existing directory or symlink
 is refused. It does not install dependencies, run Git, access/modify Figma, deploy, publish or configure
 protected runtime authority. The catalog template requires an explicitly supplied approved OpenAPI
 contract. The generated README describes the sequence; a scaffold/build is not production acceptance.
-Development packages are not published: local validation supplies verified tarball overrides.
+The packages come from the public npm registry; without registry access, a workspace installs the archives of a
+release through pnpm overrides, as the [release guide](https://github.com/panahister/mpfrontend/blob/main/docs/RELEASE-GUIDE.md#the-offline-path) describes.
 
 Design-source selection is an explicit workspace contract:
 
@@ -44,7 +47,7 @@ Initialization records `disabled` or `pending` state in `.mpfrontend/design-sour
 captures or writes Figma. `design attach` changes only that root contract, is dry-run capable,
 exclusive and idempotent for the exact same attachment, and refuses source changes once attached.
 `design status` revalidates an attached consumer binding. It does not import or accept a design
-baseline. See [the design contract](./DESIGN-SYNC.md).
+baseline. See [the design contract](https://github.com/panahister/mpfrontend/blob/main/packages/ftg-cli/DESIGN-SYNC.md).
 
 All eighteen approved finite source procedures are available. Actual agent behavioral acceptance remains
 separate. Skill ownership
@@ -56,7 +59,7 @@ instead of silently overwriting it. A crashed writer can leave its marker/partia
 files and reconcile their manifest before an operator removes the stale marker. There is no force
 option or automatic age-based deletion. Multi-file output is not a crash-atomic filesystem transaction.
 
-FTG generator dev.6 emits selected full 200/201/202 JSON-response or explicit empty-204
+The FTG generator (stamp `0.1.0-dev.6` in each generated manifest, a version of the generator, not of a package) emits selected full 200/201/202 JSON-response or explicit empty-204
 `ReadModels`/`parseRead`, standalone CJS validators and
 declarations in the same owned output/manifest as resource field metadata. `responsePath` selects
 table fields only; it does not truncate the response reader. Validators are compiled during generation
@@ -86,7 +89,7 @@ An explicit response selection with `responseStatus: "204"` and `body: "none"` r
 204 response with no `content`, forbids `responsePath`, and emits an undefined-only read type/validator.
 JSON profiles never silently become empty. Other empty statuses, multipart, guarded PATCH, business
 rules and inferred widgets remain unsupported. See
-[request integration](../../docs/R4-GENERATED-REQUESTS.md) for its tested scope.
+[request integration](https://github.com/panahister/mpfrontend/blob/main/docs/R4-GENERATED-REQUESTS.md) for its tested scope.
 
 The executable reports its own packaged version, not the generator's version. Fresh packed-consumer
 validation checks this equality, thirty-six installed Codex/Claude procedure files, required-boolean false,
@@ -95,9 +98,9 @@ real client bundling, frozen installation and preservation controls. Advisory up
 Without it the report says `dependencyAudit: not-run`, never passed. Get authorization for metadata
 upload to the registry's advisory service before selecting that option.
 
-CLI dev.18 provides source `attach`/`status` plus the seven lifecycle `design` commands against a
+The CLI provides source `attach`/`status` plus the seven lifecycle `design` commands against a
 finite normalized local export:
-[reviewed export lifecycle and evidence contract](./DESIGN-SYNC.md). Base skills install twenty-eight
+[reviewed export lifecycle and evidence contract](https://github.com/panahister/mpfrontend/blob/main/packages/ftg-cli/DESIGN-SYNC.md). Base skills install twenty-eight
 files; the combined design profile installs thirty-six. An import never changes baseline, a generated
 component registry is not React implementation, and acceptance verifies reviewed artifact identities
 rather than executing or judging the reported tests. Actual reference design/visual acceptance remains

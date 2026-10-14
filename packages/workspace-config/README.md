@@ -1,6 +1,7 @@
 # @mpfrontend/workspace-config
 
-Local development package. Runtime: tooling. The shared quality profile of a consumer workspace: one
+Part of [MP Frontend](https://github.com/panahister/mpfrontend), released to the public npm registry as one cohort under one version.
+Runtime: tooling. The shared quality profile of a consumer workspace: one
 ESLint flat configuration, one Prettier profile and the TypeScript presets that every generated app and
 package extends. It is versioned with the rest of the MP Frontend cohort, so a workspace upgrades its
 rules by upgrading the cohort, never by copying configuration.

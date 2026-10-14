@@ -1,8 +1,10 @@
 # @mpfrontend/ftg-core
 
-Local development package. Runtime: universal. Public API is exported from src/index.ts and compiled
-into dist. Nx owns build, typecheck, lint and test targets. Consumer applications install packed artifacts.
-See ../../docs/IMPLEMENTATION-STATUS.md for observed evidence and remaining work.
+Part of [MP Frontend](https://github.com/panahister/mpfrontend), released to the public npm registry as one cohort: every `@mpfrontend`
+package at the same exact version. Runtime: universal. Install it through a workspace that `mpfrontend init`
+created, which pins the cohort and binds the scope to the registry in `.npmrc`. [Versioning](https://github.com/panahister/mpfrontend#versioning)
+states the compatibility policy and [Implementation status](https://github.com/panahister/mpfrontend/blob/main/docs/IMPLEMENTATION-STATUS.md) the
+evidence.
 
 Request selections are explicit: the default is a required finite closed JSON object. The opt-in
 `body: "none"` profile only accepts operations with no own OpenAPI requestBody property; it produces
@@ -11,7 +13,7 @@ no schema or fields and means the consumer will send no payload. The distinct op
 schema value plus `undefined`; it supports a finite closed object or an exact null/object union.
 Optional JSON, nullable JSON and an operation with no request body remain different contracts. Read
 contracts still require an explicit JSON success schema.
-See [request profiles](../../docs/R4-GENERATED-REQUESTS.md).
+See [request profiles](https://github.com/panahister/mpfrontend/blob/main/docs/R4-GENERATED-REQUESTS.md).
 
 ## List protocol
 
