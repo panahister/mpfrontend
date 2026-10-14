@@ -11,12 +11,19 @@ mitigation. Remove credentials, access tokens, session cookies, private URLs, pe
 design material from the report.
 
 The maintainer will acknowledge a complete report, investigate it, and coordinate disclosure after a
-fix or mitigation is available. No fixed response time is promised for this proof-of-concept project.
+fix or mitigation is available. No fixed response time is promised.
 
 ## Supported versions
 
-MP Frontend is currently a prerelease source project. Only the latest commit on `main` is evaluated for
-security fixes. No older prerelease line receives backports unless a release note says otherwise.
+| Version | Security fixes |
+|---|---|
+| 1.x | Yes: a fix ships in a new 1.x version of the whole cohort |
+| 0.x (0.1.0) | Security fixes and fixes of defects that lose data or break security, for 12 months from the release of 1.0.0, as below; upgrade to 1.x as README "Upgrading from 0.1.0" describes |
+
+When a new major version is released, the previous major version receives security fixes and fixes of defects that
+lose data or break security for 12 months, never past the end of support of the Node version it targets, as README
+"Versioning" says. A fix is never published again under an existing version: it takes the next version, and an
+affected version is deprecated on npm with a message.
 
 ## Security model
 

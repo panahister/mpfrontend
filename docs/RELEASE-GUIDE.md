@@ -134,7 +134,9 @@ account has two-factor authentication); an install of it then prints the message
 
 Without registry access, a consumer installs the archives of a release: download them from the GitHub Release (the
 sixteen archives and `SHA256SUMS.txt`), check them with `shasum -a 256 -c SHA256SUMS.txt`, force them through pnpm `overrides` (`file:` paths) and lock the
-same SHA-256 values as the release record. `pnpm pack:local` packs the same bytes from the same tree.
+same SHA-256 values as the release record. `pnpm pack:local` on Linux packs the same bytes from the same tree, as the release workflow does; on macOS the gzip
+header of each archive differs in one byte (the operating-system field, 13 against 03), while the tar contents are the
+same.
 
 ## Notes for consumers
 

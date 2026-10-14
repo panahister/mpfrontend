@@ -33,12 +33,13 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> MP Frontend is a verified public source project at **version 1.0.0**, its first stable major version: from it on,
-> only a major version breaks the public API ([Versioning](#versioning)). Its sixteen packages share one version and
-> are released to the public npm registry by a release workflow; `0.1.0` is published
-> ([release record](docs/releases/0.1.0.md)), and every build compares the API with its archives. The
+> **MP Frontend 1.0.0** is the first stable major version: from it on, only a major version breaks the public API
+> ([Versioning](#versioning)). Its sixteen packages share one version and are released to the public npm registry under
+> `@mpfrontend` by a release workflow, with npm provenance; every build compares the API with the last published
+> archives. Start a product with the [Quick start](#quick-start-a-new-product-workspace). The
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference) still uses its own vendored,
-> hash-checked development cohort. See [Maturity and scope](#maturity-and-scope) before choosing it for production.
+> hash-checked development cohort until it moves to 1.0.0. See [Maturity and scope](#maturity-and-scope) for what a
+> product still owns before production.
 
 ## What MP Frontend is
 
@@ -89,10 +90,47 @@ MP Frontend makes those boundaries explicit:
 | Your product has no existing design system | Initialize with design source `none`; own tokens and composition in your product repository |
 | Your product already has a Figma file or DLS | Initialize with `existing`; attach a reviewed normalized export without changing or publishing the source file |
 | You want AI assistance | Install the Base or Design procedure profile into the consumer repository; keep the same human review gates |
-| You need a registry package | Install the `@mpfrontend` cohort from the public npm registry at one exact version once a release is published, with the scope bound in `.npmrc`; read [Versioning](#versioning) |
+| You start a product | Follow the [Quick start](#quick-start-a-new-product-workspace): the CLI of `1.0.0` creates a workspace that pins the cohort from npm and binds the scope in `.npmrc` |
+| You have a workspace created by `0.1.0` | Read [Upgrading from 0.1.0](#upgrading-from-010) |
 
 For a guided source walkthrough, read [Getting started](docs/GETTING-STARTED.md). For the exact current
 capability and limitation matrix, read [Implementation status](docs/IMPLEMENTATION-STATUS.md).
+
+## Quick start: a new product workspace
+
+You need Node.js 24 and pnpm `11.25.0`. The CLI of a release creates the workspace; every `@mpfrontend` package is then
+pinned to that exact version and the scope is bound to the public npm registry in `.npmrc`:
+
+```bash
+pnpm --package=@mpfrontend/ftg-cli@1.0.0 dlx mpfrontend init --name my-product --directory ./my-product --design-source none
+cd my-product
+pnpm install
+pnpm exec mpfrontend create app --name customer --directory apps/customer
+pnpm install
+```
+
+`init` refuses a directory that exists and changes nothing else: it installs nothing, runs no Git command and calls no
+design tool. Use `--design-source existing` when your product already owns an approved Figma file or design system.
+The app's catalog example reads an approved OpenAPI contract that you supply under
+`contracts/openapi/presentation/customer/openapi.json` (the workspace's `contracts/README.md` says how); with it,
+`pnpm check` runs formatting, lint, type checks, tests, builds and the generated-code and catalog checks of every project.
+Until it is there, the catalog's contract test fails on purpose. The workspace's own README lists the next steps
+(features, routes, shared packages, the optional design source and AI procedures), and the [CLI guide](docs/CLI-GUIDE.md)
+describes every command.
+
+pnpm 11 resolves a version only after it has been published for a day; on the first day of a release it says so and adds
+the version to `minimumReleaseAgeExclude` in its default mode.
+
+## Upgrading from 0.1.0
+
+Set every `@mpfrontend/*` version of the workspace to `1.0.0` (they are exact pins in the root `package.json` and in
+each app and package), run `pnpm install`, then `pnpm check`. The [changelog](CHANGELOG.md), in its 1.0.0 section, lists
+every change since `0.1.0`, the behaviour changes first: a streamed answer that a browser would run as a document needs
+an attachment or a sandboxing policy; the server entry of the access bindings refuses to load where a `document` exists;
+server data seeds only the scope it was read in; the URL state keeps its sort and filters under a closed or expired
+snapshot; and `ResourceForm` with `access` needs `original`. Exports that moved to an `internal` entry are listed there by
+package; none of them is imported by a template or a generator. The `mpfrontend-upgrade-project` AI procedure follows the
+same steps.
 
 ## See the reference product running
 
@@ -618,7 +656,7 @@ production-certified platform.
 
 ## Maturity and scope
 
-### Implemented and verified in this source release
+### Implemented and verified in 1.0.0
 
 - Deterministic workspace/application scaffolding.
 - Selected finite OpenAPI read and mutation profiles.
@@ -631,8 +669,6 @@ production-certified platform.
 
 ### Not shipped or not claimed
 
-- `1.0.0` on npm: this tree declares it, and the release workflow publishes it when the owner starts and approves the
-  run; `0.1.0` is the version on npm today.
 - A public MP Frontend Figma Community library.
 - Automatic Figma extraction, watching, mutation, or publication.
 - Arbitrary OpenAPI support or automatic screen generation.
@@ -648,18 +684,20 @@ piece of evidence is missing.
 <details>
 <summary><strong>Is MP Frontend ready for production?</strong></summary>
 
-Not as a general production-certified platform. The source, package boundary, independent consumer, and
-Tiffin reference are verified. Registry stability, production HA/TLS/key custody, load qualification,
-formal accessibility acceptance, and independent security review remain separate gates.
+1.0.0 is a stable public API under a stated compatibility policy, with a verified source, package boundary, independent
+consumer and Tiffin reference. It is not a production-certified platform: production HA, TLS and key custody, load
+qualification, formal accessibility acceptance and an independent security review of a product remain that product's own
+gates.
 </details>
 
 <details>
 <summary><strong>Can I install the packages from npm?</strong></summary>
 
-Yes, from `0.1.0`: the cohort is on the public npm registry under `@mpfrontend`, published with provenance, and a
-generated workspace binds the scope to it. [`docs/releases/0.1.0.md`](docs/releases/0.1.0.md) lists the SHA-256 and the
-integrity of each archive. The Tiffin reference still uses its own vendored, hash-checked package cohort. Do not trust an
-arbitrary registry package using these names.
+Yes. Every `@mpfrontend` package is on the public npm registry at one version, published from the main branch by the
+release workflow with npm provenance; `npm audit signatures` verifies the registry signature and the provenance of each.
+A workspace that `mpfrontend init` created binds the scope to the registry and pins the cohort exactly. Each release has a
+record under [`docs/releases/`](docs/releases) with the SHA-256 and the integrity of every archive. The Tiffin reference
+still uses its own vendored, hash-checked package cohort. Do not trust an arbitrary registry package using these names.
 </details>
 
 <details>
