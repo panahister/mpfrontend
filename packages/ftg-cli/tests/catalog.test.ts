@@ -117,6 +117,22 @@ test('a nested catalog retains missing-default and unknown-locale checks',async(
   }finally{await rm(root,{recursive:true,force:true});}
 });
 
+test('short source filenames in routes and features named messages are not locales',async()=>{
+  const root=await app({
+    'src/app/messages/ui.ts':"export const title = t('title');\n",
+    'src/i18n/messages/en.ts':base({title:'Messages'}),
+    'src/i18n/messages/qps-plocm.ts':other({title:'x'}),
+    'src/features/messages/api.ts':"import { messages } from './model/messages';\nconst t = messages.translator('en');\nexport const heading = t('heading');\n",
+    'src/features/messages/model/messages/en.ts':base({heading:'Message text'}),
+    'src/features/messages/model/messages/qps-plocm.ts':other({heading:'y'}),
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.deepEqual(result.catalogs,['src/features/messages/model/messages','src/i18n/messages']);
+    assert.deepEqual(result.problems,[]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
 test('a nested catalog containing only the default locale still requires other registered locales',async()=>{
   const root=await app({
     'src/features/messages/model/messages/en.ts':base({heading:'Message text'}),

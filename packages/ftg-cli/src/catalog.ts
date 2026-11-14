@@ -1,5 +1,5 @@
 import {readdir,readFile} from 'node:fs/promises';
-import {basename,dirname,join,resolve,relative,sep} from 'node:path';
+import {dirname,join,resolve,relative,sep} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {checkCatalogs,type Catalog,type CatalogProblem} from '@mpfrontend/i18n';
 import {InputError} from './core.js';
@@ -39,7 +39,9 @@ function translatorKeys(file:string,source:string,sets:ReadonlySet<string>){
 
 /** Catalogs are locale files in `messages` directories. Visit neighboring sources without counting locale definitions as uses. */
 async function walk(root:string,directory:string,sets:CatalogSet[],sources:string[]){
-  const canContainCatalog=basename(directory)==='messages';
+  const parts=relative(root,directory).split(sep);
+  const structuralRoot=parts.length===2&&['app','features','entities'].includes(parts[0]!);
+  const canContainCatalog=parts.at(-1)==='messages'&&!structuralRoot;
   const files:CatalogFile[]=[];
   for(const entry of await readdir(directory,{withFileTypes:true})){
     const path=join(directory,entry.name);
@@ -54,7 +56,6 @@ async function walk(root:string,directory:string,sets:CatalogSet[],sources:strin
   }
   if(!files.length)return;
   // A feature's or an entity's catalog is used within that unit; the app catalog anywhere in src.
-  const parts=relative(root,directory).split(sep);
   const scope=parts[0]==='features'||parts[0]==='entities'?join(root,parts[0],parts[1]!):root;
   sets.push({path:directory,scope,files});
 }
