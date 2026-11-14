@@ -4,7 +4,7 @@ export type DesignSource='none'|'existing';
 export type WorkspaceOptions={name:string;directory:string;designSource?:DesignSource;dryRun?:boolean};
 const json=(value:unknown)=>JSON.stringify(value,null,2)+'\n';
 /** The cohort a new workspace pins; the quality profile is upgraded with it, never copied into the workspace. */
-export const COHORT={cli:'1.0.0',nxPlugin:'1.0.0',workspaceConfig:'1.0.0'} as const;
+export const COHORT={cli:'1.1.0',nxPlugin:'1.1.0',workspaceConfig:'1.1.0'} as const;
 /** The scope of the framework packages, bound to the registry that publishes them. */
 export const NPMRC='@mpfrontend:registry=https://registry.npmjs.org/\nsave-exact=true\n';
 /** Tool versions the quality profile is verified with. */
@@ -165,7 +165,7 @@ export function workspaceFiles(name:string,designSource:DesignSource='none'):Rec
     'package.json':json({name,private:true,type:'module',packageManager:'pnpm@11.25.0',engines:{node:'>=24 <25'},
       scripts:WORKSPACE_SCRIPTS,
       devDependencies:{'@mpfrontend/ftg-cli':COHORT.cli,'@mpfrontend/nx-plugin':COHORT.nxPlugin,'@mpfrontend/workspace-config':COHORT.workspaceConfig,eslint:QUALITY_TOOLS.eslint,nx:'23.2.1',prettier:QUALITY_TOOLS.prettier,tsx:QUALITY_TOOLS.tsx,typescript:'5.9.3','@types/node':'24.10.1','@types/react':'19.3.0','@types/react-dom':'19.2.3'}}),
-    'pnpm-workspace.yaml':'packages:\n  - apps/*\n  - packages/*\n  - themes/*\noverrides:\n  axios@1.18.1: 1.20.0\n  brace-expansion@5.0.9: 5.0.12\n  smol-toml@1.6.1: 1.9.0\nallowBuilds:\n  "@scarf/scarf": false\n  esbuild: true\n  nx: true\n  sharp: true\n  unrs-resolver: true\n',
+    'pnpm-workspace.yaml':'packages:\n  - apps/*\n  - packages/*\n  - themes/*\noverrides:\n  axios@1.18.1: 1.20.0\n  brace-expansion@5.0.9: 5.0.12\n  smol-toml@1.6.1: 1.9.0\n  fast-uri@3.1.8: 3.1.9\n  follow-redirects@1.16.0: 1.16.3\n  "minimatch@>=10.2.5 <11.0.1": 11.0.8\n  undici@8.11.2: 8.12.4\nallowBuilds:\n  "@scarf/scarf": false\n  esbuild: true\n  nx: true\n  sharp: true\n  unrs-resolver: true\n',
     'nx.json':nxJson,
     // The @mpfrontend scope is bound to the public npm registry, so that no other registry can serve it; dependencies
     // are saved at exact versions.

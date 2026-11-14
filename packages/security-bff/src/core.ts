@@ -39,6 +39,8 @@ export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:strin
 /** English only, MP Frontend's one built-in language; a product lists the locales its backends answer in. */
 export const defaultApiLocales:ApiLocales=Object.freeze({supported:Object.freeze(['en']),defaultLocale:'en'});
 type CommonConfig={publicOrigin:string;issuer:string;providerOrigin?:string;clientId:string;audience:string;cookieName:string;routes:readonly ApiRoute[];requireTenant?:boolean;tenantExemptRoles?:readonly string[];supportedUiLocales?:readonly string[];uiLocaleCookie?:string;apiLocales?:ApiLocales;contextClaims?:readonly string[];contextClaimSource?:'id'|'access';preferenceCookie?:PreferenceCookieContract;session?:SessionPolicy;
+  /** Absolute login transaction lifetime in seconds, 300 through 600. A step-up always keeps 300. */
+  ordinaryLoginTimeoutSeconds?:number;
   /** Enables POST /backchannel-logout (OpenID Connect Back-Channel Logout 1.0); expose it only on the provider's network path. */
   backChannelLogout?:boolean;
   /** The acr values a step-up may request; without this list a login cannot request an acr. */
@@ -192,6 +194,9 @@ export function createBff(config:BffConfig){
     if(refusals.length)throw new Error('PRODUCTION_PROFILE_REFUSED:'+refusals.join(','));
   }else if(config.development!==true||process.env.NODE_ENV==='production')throw new Error('DURABLE_SESSION_STORE_REQUIRED');
   const production='production' in config&&config.production!==undefined?config.production:undefined;
+  const ordinaryLoginTimeoutSeconds=config.ordinaryLoginTimeoutSeconds??300;
+  if(!Number.isSafeInteger(ordinaryLoginTimeoutSeconds)||ordinaryLoginTimeoutSeconds<300||ordinaryLoginTimeoutSeconds>600)
+    throw new Error('INVALID_ORDINARY_LOGIN_TIMEOUT');
   const publicOrigin=origin(config.publicOrigin),issuer=config.issuer.replace(/\/$/,'');
   const providerOrigin=config.providerOrigin?origin(config.providerOrigin):new URL(issuer).origin;
   if(!/^(?:__Host-)?[a-z][a-z0-9_]{1,60}$/.test(config.cookieName))throw new Error('INVALID_COOKIE_NAME');
@@ -558,7 +563,8 @@ export function createBff(config:BffConfig){
         if(acr&&(!acr.length||acr.length>8||acr.some(value=>!acrAllowlist.has(value))))fail(400,'INVALID_STEP_UP');
         const returnTo=returnPath(url.searchParams.get('return_to'));
         if(returnTo===null)fail(400,'INVALID_RETURN_PATH');
-        const state=opaque(),verifier=opaque(),nonce=opaque(),expires=Date.now()+300000;
+        const loginTimeoutSeconds=maxAge!==undefined||acr!==undefined?300:ordinaryLoginTimeoutSeconds;
+        const state=opaque(),verifier=opaque(),nonce=opaque(),expires=Date.now()+loginTimeoutSeconds*1000;
         await vault.create('transaction',state,{verifier,nonce,expires,...(maxAge!==undefined?{maxAge}:{}),...(acr?{acr}:{}),...(returnTo?{returnTo}:{})},expires);
         const redirect=new URL(issuer+'/protocol/openid-connect/auth');
         const parameters=new URLSearchParams({client_id:config.clientId,response_type:'code',prompt:'login',scope:'openid profile',redirect_uri:publicOrigin+'/api/session/callback',state,nonce,code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'});
@@ -568,7 +574,7 @@ export function createBff(config:BffConfig){
         const uiLocale=url.searchParams.get('ui_locales')??preferences?.read(req.headers.cookie).lang??(config.uiLocaleCookie?cookieValue(req.headers.cookie,config.uiLocaleCookie):undefined);
         if(uiLocale&&supportedUiLocales.has(uiLocale))parameters.set('ui_locales',uiLocale);
         redirect.search=parameters.toString();
-        res.writeHead(302,{'location':redirect.href,'set-cookie':cookie(transactionCookie,state,300),'cache-control':'no-store'});res.end();return;
+        res.writeHead(302,{'location':redirect.href,'set-cookie':cookie(transactionCookie,state,loginTimeoutSeconds),'cache-control':'no-store'});res.end();return;
       }
       if(url.pathname==='/callback'&&method==='GET'){
         const state=url.searchParams.get('state')??'',saved=cookieValue(req.headers.cookie,transactionCookie)??'';

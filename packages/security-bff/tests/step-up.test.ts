@@ -43,11 +43,12 @@ async function harness(extra:Partial<BffConfig>={}){
     routes,acrValues:['strong'],returnPaths:['/',/^\/orders\/\d+$/],...extra} as BffConfig));
   await new Promise<void>(resolve=>bff.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+(bff.address() as {port:number}).port;
-  const signIn=async(query='',previous?:string)=>{
+  const signIn=async(query='',previous?:string,beforeCallback?:(login:Response)=>void)=>{
     const login=await fetch(base+'/login'+query,{redirect:'manual'});
     if(login.status!==302)return {status:login.status} as const;
     const target=new URL(login.headers.get('location')!);authorize.push(target.searchParams);
     nonce=target.searchParams.get('nonce')!;
+    beforeCallback?.(login);
     const callback=await fetch(base+'/callback?code=ok&state='+target.searchParams.get('state'),{headers:{cookie:login.headers.getSetCookie()[0]!.split(';')[0]!+(previous?'; '+previous:'')},redirect:'manual'});
     const set=callback.headers.getSetCookie()[0];
     return {status:callback.status,location:callback.headers.get('location'),cookie:set?.startsWith('test_session=')?set.split(';')[0]!:undefined};
@@ -62,6 +63,31 @@ async function harness(extra:Partial<BffConfig>={}){
   const close=async()=>{for(const server of [bff,provider])server.closeAllConnections();await Promise.all([bff,provider].map(server=>new Promise<void>(resolve=>server.close(()=>resolve()))));};
   return {providerOrigin,next,authorize,upstreamCalls,setChallenge:(value?:string)=>{challenge=value;},signIn,call,close};
 }
+
+test('the configured ordinary login window never extends a sensitive sign-in',async(t)=>{
+  const started=Date.now();
+  t.mock.timers.enable({apis:['Date'],now:started});
+  const defaults=await harness();
+  const configured=await harness({ordinaryLoginTimeoutSeconds:420});
+  try{
+    for(const [app,query,seconds,delay,expected] of [
+      [defaults,'',300,300,401],
+      [configured,'',420,366,303],
+      [configured,'',420,419,303],
+      [configured,'',420,420,401],
+      [configured,'?max_age=0',300,299,303],
+      [configured,'?max_age=0',300,300,401],
+      [configured,'?acr_values=strong',300,300,401],
+    ] as const){
+      const now=Date.now();
+      const answer=await app.signIn(query,undefined,(login)=>{
+        assert.match(login.headers.getSetCookie()[0]!,new RegExp('; Max-Age='+seconds+'(?:;|$)'));
+        t.mock.timers.setTime(now+delay*1000);
+      });
+      assert.equal(answer.status,expected,query+' at '+delay+' seconds');
+    }
+  }finally{await configured.close();await defaults.close();}
+});
 
 test('a route that needs a recent sign-in answers a typed step-up that never names the provider',async()=>{
   mock.timers.enable({apis:['Date'],now:Date.now()});

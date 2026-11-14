@@ -5,7 +5,10 @@ import {checkCatalogs,type Catalog,type CatalogProblem} from '@mpfrontend/i18n';
 import {InputError} from './core.js';
 
 type Registry={locales:readonly string[];defaultLocale:string};
-type CatalogSet={path:string;scope:string;locales:Record<string,string>};
+type CatalogFile={code:string;path:string;format:string};
+type CatalogSet={path:string;scope:string;files:CatalogFile[]};
+type CheckProblem=(CatalogProblem | {code:'UNSUPPORTED_CATALOG_FORMAT';locale:string;key?:never})&{catalog:string};
+const localeFile=/^([a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)\.(ts|json)$/;
 const sourceFile=/\.(?:ts|tsx|mts|cts|js|jsx|mjs)$/;
 const testFile=/\.test\.[a-z]+$/;
 const literal=/(['"`])((?:\\.|(?!\1)[^\\\n])*)\1/g;
@@ -34,30 +37,35 @@ function translatorKeys(file:string,source:string,sets:ReadonlySet<string>){
   return keys;
 }
 
-/** Every directory named `messages` under `src`, and every source file outside them; links are not followed. */
+/** Catalogs are locale files in `messages` directories. Visit neighboring sources without counting locale definitions as uses. */
 async function walk(root:string,directory:string,sets:CatalogSet[],sources:string[]){
+  const parts=relative(root,directory).split(sep);
+  const structuralRoot=parts.length===2&&['app','features','entities'].includes(parts[0]!);
+  const canContainCatalog=parts.at(-1)==='messages'&&!structuralRoot;
+  const files:CatalogFile[]=[];
   for(const entry of await readdir(directory,{withFileTypes:true})){
     const path=join(directory,entry.name);
     if(entry.isSymbolicLink())continue;
     if(entry.isDirectory()){
-      if(entry.name==='generated'||entry.name==='node_modules')continue;
-      if(entry.name==='messages'){
-        const locales:Record<string,string>={};
-        for(const file of await readdir(path,{withFileTypes:true}))if(file.isFile()&&/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*\.ts$/.test(file.name))locales[file.name.slice(0,-3)]=join(path,file.name);
-        // A feature's or an entity's catalog is used within that unit; the app catalog anywhere in src.
-        const parts=relative(root,path).split(sep);
-        const unit=parts[0]==='features'||parts[0]==='entities'?join(root,parts[0],parts[1]!):root;
-        sets.push({path,scope:unit,locales});
-      }else await walk(root,path,sets,sources);
-    }else if(entry.isFile()&&sourceFile.test(entry.name)&&!testFile.test(entry.name))sources.push(path);
+      if(entry.name!=='generated'&&entry.name!=='node_modules')await walk(root,path,sets,sources);
+    }else if(entry.isFile()){
+      const locale=canContainCatalog?localeFile.exec(entry.name):null;
+      if(locale)files.push({code:locale[1]!,path,format:locale[2]!});
+      else if(sourceFile.test(entry.name)&&!testFile.test(entry.name))sources.push(path);
+    }
   }
+  if(!files.length)return;
+  // A feature's or an entity's catalog is used within that unit; the app catalog anywhere in src.
+  const scope=parts[0]==='features'||parts[0]==='entities'?join(root,parts[0],parts[1]!):root;
+  sets.push({path:directory,scope,files});
 }
 
 /**
  * Checks every catalog set of an app against its locale registry: each registry locale has a catalog, each
  * catalog has exactly the base keys, every message parses and takes the base parameters, and code uses
  * every key. The registry is `localeRegistry` of `src/config/app.ts`; catalogs are the default exports of
- * `messages/<locale>.ts` files, read with Node's TypeScript type stripping.
+ * `messages/<locale>.ts` files, read with Node's TypeScript type stripping. JSON locale files are reported
+ * explicitly because consumers using direct property access are outside the translator contract.
  */
 export async function catalogCheck(appDirectory:string){
   const app=resolve(appDirectory),src=join(app,'src');
@@ -74,24 +82,26 @@ export async function catalogCheck(appDirectory:string){
     literals.set(file,values);
     for(const [set,keys] of translatorKeys(file,source,setPaths)){const all=requested.get(set)??new Set<string>();for(const key of keys)all.add(key);requested.set(set,all);}
   }
-  const problems:Array<CatalogProblem&{catalog:string}>=[];
+  const problems:CheckProblem[]=[];
   let keys=0;
   for(const set of sets){
+    const catalog=relative(app,set.path);
     const catalogs:Record<string,Catalog|undefined>={};
-    for(const [code,file] of Object.entries(set.locales)){
-      if(!registry.locales.includes(code)){problems.push({catalog:relative(app,set.path),code:'UNKNOWN_LOCALE',locale:code});continue;}
+    for(const {code,path,format} of set.files){
+      if(!registry.locales.includes(code)){problems.push({catalog,code:'UNKNOWN_LOCALE',locale:code});continue;}
+      if(format==='json'){problems.push({catalog,code:'UNSUPPORTED_CATALOG_FORMAT',locale:code});continue;}
       try{
-        const value=(await import(pathToFileURL(file).href) as {default?:unknown}).default;
+        const value=(await import(pathToFileURL(path).href) as {default?:unknown}).default;
         if(!value||typeof value!=='object'||Object.values(value).some(message=>typeof message!=='string'))throw new Error();
         catalogs[code]=value as Catalog;
-      }catch{problems.push({catalog:relative(app,set.path),code:'INVALID_MESSAGE',locale:code});}
+      }catch{problems.push({catalog,code:'INVALID_MESSAGE',locale:code});}
     }
     const used=new Set<string>();
     for(const [file,values] of literals)if(file.startsWith(set.scope+sep))for(const value of values)used.add(value);
     keys+=Object.keys(catalogs[registry.defaultLocale]??{}).length;
     // A key that code asks for and the base lacks is reported only once the base itself is readable.
     const usedKeys=catalogs[registry.defaultLocale]?requested.get(set.path)??[]:[];
-    for(const problem of checkCatalogs({defaultLocale:registry.defaultLocale,locales:registry.locales,catalogs,isUsed:key=>used.has(key),usedKeys}))problems.push({catalog:relative(app,set.path),...problem});
+    for(const problem of checkCatalogs({defaultLocale:registry.defaultLocale,locales:registry.locales,catalogs,isUsed:key=>used.has(key),usedKeys}))problems.push({catalog,...problem});
   }
   return {ok:problems.length===0,locales:registry.locales,defaultLocale:registry.defaultLocale,catalogs:sets.map(set=>relative(app,set.path)).sort(),keys,problems};
 }
