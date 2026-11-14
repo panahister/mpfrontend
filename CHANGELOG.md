@@ -9,6 +9,8 @@ The SHA-256 of each archive of a cohort is in its release notes or record under 
 - **Security BFF.** `ordinaryLoginTimeoutSeconds` lets an application set the absolute lifetime of an ordinary
   OIDC login transaction between 300 and 600 seconds. The transaction and its cookie expire together. The
   default stays at 300 seconds, and sign-ins that request `max_age` or `acr_values` always expire after 300 seconds.
+- **FTG CLI.** The catalog check distinguishes route and feature directories named `messages` from translation
+  catalogs, finds nested catalogs, and reports unsupported JSON locale files explicitly.
 
 ## 1.0.0 (2026-10-14)
 
