@@ -27,7 +27,7 @@ has an error state and never logs or stores the value.
 `ConfirmWithCode` confirms a sensitive action in a `Dialog`: `onConfirm(code, signal)` sends the code to
 the server through the BFF (a same-origin request with the CSRF token and an idempotency key), the browser
 never checks the code, and the code is cleared on close and on failure and never written to browser
-storage, a URL or a log. DOM behaviour (keyboard, focus, names, clearing) is tested with happy-dom 20.14.5,
+storage, a URL or a log. DOM behaviour (keyboard, focus, names, clearing) is tested with happy-dom 21.0.4,
 a test-only dependency chosen because the tests need focus and keyboard events without a browser.
 
 ## Tree
