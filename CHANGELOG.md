@@ -4,6 +4,12 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
+## 1.1.0
+
+- **Security BFF.** `ordinaryLoginTimeoutSeconds` lets an application set the absolute lifetime of an ordinary
+  OIDC login transaction between 300 and 600 seconds. The transaction and its cookie expire together. The
+  default stays at 300 seconds, and sign-ins that request `max_age` or `acr_values` always expire after 300 seconds.
+
 ## 1.0.0 (2026-10-14)
 
 The first stable version. From it on README "Versioning" holds: only a major version breaks the public API, and every
