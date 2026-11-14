@@ -83,3 +83,76 @@ test('a key that code asks a translator for and the base does not define fails t
     ]);
   }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('messages routes and feature folders are traversed without counting test or catalog definitions as uses',async()=>{
+  const root=await app({
+    'src/app/messages/page.tsx':"import { appMessages } from '../../i18n';\nconst t = appMessages.translator('en');\nexport const page = t('title');\n",
+    'src/i18n/messages/en.ts':base({title:'Messages',testOnly:'testOnly'}),
+    'src/i18n/messages/qps-plocm.ts':other({title:'x',testOnly:'y'}),
+    'src/features/messages/model/messages/en.ts':base({heading:'Message text'}),
+    'src/features/messages/model/messages/qps-plocm.ts':other({heading:'y'}),
+    'src/features/messages/model/messages/view/page.tsx':"export const heading = t('heading');\n",
+    'src/tests/features/messages/page.test.ts':"export const testOnly = t('testOnly');\n",
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.deepEqual(result.catalogs,['src/features/messages/model/messages','src/i18n/messages']);
+    assert.equal(result.keys,3);
+    assert.deepEqual(result.problems,[{catalog:'src/i18n/messages',code:'UNUSED_KEY',key:'testOnly'}]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('a nested catalog retains missing-default and unknown-locale checks',async()=>{
+  const root=await app({
+    'src/features/messages/model/messages/qps-plocm.ts':other({heading:'y'}),
+    'src/features/messages/model/messages/qaa.ts':other({heading:'z'}),
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.equal(result.ok,false);
+    assert.deepEqual(result.problems.map(problem=>[problem.catalog,problem.code,problem.locale]).sort(),[
+      ['src/features/messages/model/messages','MISSING_LOCALE','en'],
+      ['src/features/messages/model/messages','UNKNOWN_LOCALE','qaa'],
+    ]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('a nested catalog containing only the default locale still requires other registered locales',async()=>{
+  const root=await app({
+    'src/features/messages/model/messages/en.ts':base({heading:'Message text'}),
+    'src/features/messages/model/view.ts':"export const heading = t('heading');\n",
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.equal(result.ok,false);
+    assert.deepEqual(result.problems,[{
+      catalog:'src/features/messages/model/messages',code:'MISSING_LOCALE',locale:'qps-plocm',
+    }]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('a JSON locale is reported even when valid TypeScript catalogs are present',async()=>{
+  const root=await app({...clean,'src/i18n/messages/en.json':'{"title":"Unverified translation"}'});
+  try{
+    const result=await catalogCheck(root);
+    assert.equal(result.ok,false);
+    assert.deepEqual(result.problems,[{catalog:'src/i18n/messages',code:'UNSUPPORTED_CATALOG_FORMAT',locale:'en'}]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('a JSON-only catalog is discovered below a feature folder named messages',async()=>{
+  const root=await app({
+    'src/features/messages/messages/en.json':'{"heading":"Messages"}',
+    'src/features/messages/messages/qps-plocm.json':'{"heading":"x"}',
+  });
+  try{
+    const result=await catalogCheck(root);
+    assert.equal(result.ok,false);
+    assert.deepEqual(result.catalogs,['src/features/messages/messages']);
+    assert.deepEqual(result.problems.map(problem=>[problem.code,problem.locale]).sort(),[
+      ['MISSING_LOCALE','en'],
+      ['UNSUPPORTED_CATALOG_FORMAT','en'],
+      ['UNSUPPORTED_CATALOG_FORMAT','qps-plocm'],
+    ]);
+  }finally{await rm(root,{recursive:true,force:true});}
+});
