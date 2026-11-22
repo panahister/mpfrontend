@@ -1,6 +1,6 @@
 # Getting started
 
-MP Frontend 1.0.0 is on the public npm registry under `@mpfrontend`, one version for all its packages. To start a
+MP Frontend 1.2.0 is on the public npm registry under `@mpfrontend`, one version for all its packages. To start a
 product, follow the [Quick start](../README.md#quick-start-a-new-product-workspace) of the README. Use the reference
 product when you want a complete product example; use this guide when you want to evaluate or contribute to the
 foundation itself.

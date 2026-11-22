@@ -4,7 +4,7 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
-## 1.2.0
+## 1.2.0 (2026-11-22)
 
 - **Security BFF.** A route may list `negotiatedJson` media types; an explicit Accept for one of them is sent
   upstream and its answer keeps that type, with `Vary: Accept, Accept-Language`. Routes without it are unchanged.
@@ -12,7 +12,7 @@ The SHA-256 of each archive of a cohort is in its release notes or record under 
 - **Nx plugin.** The application template and the workspace pin `next` 16.4.6 instead of 16.4.1, which npm lists with
   seven moderate advisories; a generated application gets 16.4.6.
 
-## 1.1.0
+## 1.1.0 (2026-11-14)
 
 - **Security BFF.** `ordinaryLoginTimeoutSeconds` lets an application set the absolute lifetime of an ordinary
   OIDC login transaction between 300 and 600 seconds. The transaction and its cookie expire together. The

@@ -11,7 +11,7 @@ product ownership, or human review to generators or AI agents.
 [![License](https://img.shields.io/badge/license-Apache--2.0-4f46e5.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-24.19.0-0891b2.svg)](.node-version)
 [![pnpm](https://img.shields.io/badge/pnpm-11.25.0-0f766e.svg)](package.json)
-[![Version](https://img.shields.io/badge/version-1.0.0-7c3aed.svg)](#versioning)
+[![Version](https://img.shields.io/badge/version-1.2.0-7c3aed.svg)](#versioning)
 
 [Start here](#choose-your-starting-point) ·
 [Conventions](docs/FRONTEND-CONVENTIONS.md) ·
@@ -33,12 +33,12 @@ product ownership, or human review to generators or AI agents.
 </picture>
 
 > [!IMPORTANT]
-> **MP Frontend 1.0.0** is the first stable major version: from it on, only a major version breaks the public API
+> **MP Frontend 1.2.0** is the current version of the first stable major version: from 1.0.0 on, only a major version breaks the public API
 > ([Versioning](#versioning)). Its sixteen packages share one version and are released to the public npm registry under
 > `@mpfrontend` by a release workflow, with npm provenance; every build compares the API with the last published
 > archives. Start a product with the [Quick start](#quick-start-a-new-product-workspace). The
 > [Tiffin reference](https://github.com/panahister/mpfrontend-tiffin-reference) still uses its own vendored,
-> hash-checked development cohort until it moves to 1.0.0. See [Maturity and scope](#maturity-and-scope) for what a
+> hash-checked development cohort until it moves to a published 1.x version. See [Maturity and scope](#maturity-and-scope) for what a
 > product still owns before production.
 
 ## What MP Frontend is
@@ -90,7 +90,7 @@ MP Frontend makes those boundaries explicit:
 | Your product has no existing design system | Initialize with design source `none`; own tokens and composition in your product repository |
 | Your product already has a Figma file or DLS | Initialize with `existing`; attach a reviewed normalized export without changing or publishing the source file |
 | You want AI assistance | Install the Base or Design procedure profile into the consumer repository; keep the same human review gates |
-| You start a product | Follow the [Quick start](#quick-start-a-new-product-workspace): the CLI of `1.0.0` creates a workspace that pins the cohort from npm and binds the scope in `.npmrc` |
+| You start a product | Follow the [Quick start](#quick-start-a-new-product-workspace): the CLI of `1.2.0` creates a workspace that pins the cohort from npm and binds the scope in `.npmrc` |
 | You have a workspace created by `0.1.0` | Read [Upgrading from 0.1.0](#upgrading-from-010) |
 
 For a guided source walkthrough, read [Getting started](docs/GETTING-STARTED.md). For the exact current
@@ -102,7 +102,7 @@ You need Node.js 24 and pnpm `11.25.0`. The CLI of a release creates the workspa
 pinned to that exact version and the scope is bound to the public npm registry in `.npmrc`:
 
 ```bash
-pnpm --package=@mpfrontend/ftg-cli@1.0.0 dlx mpfrontend init --name my-product --directory ./my-product --design-source none
+pnpm --package=@mpfrontend/ftg-cli@1.2.0 dlx mpfrontend init --name my-product --directory ./my-product --design-source none
 cd my-product
 pnpm install
 pnpm exec mpfrontend create app --name customer --directory apps/customer
@@ -123,8 +123,8 @@ the version to `minimumReleaseAgeExclude` in its default mode.
 
 ## Upgrading from 0.1.0
 
-Set every `@mpfrontend/*` version of the workspace to `1.0.0` (they are exact pins in the root `package.json` and in
-each app and package), run `pnpm install`, then `pnpm check`. The [changelog](CHANGELOG.md), in its 1.0.0 section, lists
+Set every `@mpfrontend/*` version of the workspace to `1.2.0`, the current version (they are exact pins in the root
+`package.json` and in each app and package), run `pnpm install`, then `pnpm check`; 1.1.0 and 1.2.0 only add to 1.0.0. The [changelog](CHANGELOG.md), in its 1.0.0 section, lists
 every change since `0.1.0`, the behaviour changes first: a streamed answer that a browser would run as a document needs
 an attachment or a sandboxing policy; the server entry of the access bindings refuses to load where a `document` exists;
 server data seeds only the scope it was read in; the URL state keeps its sort and filters under a closed or expired
