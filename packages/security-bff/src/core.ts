@@ -34,6 +34,13 @@ export type ApiRoute={method:string;pattern:RegExp;roles?:readonly string[];orig
   /** A streamed body (see StreamPolicy); a route without it keeps the JSON contract. Not allowed with invoke. */
   stream?:StreamPolicy;
   invoke?:(input:{path:string;headers:Readonly<Record<string,string>>;body:Uint8Array|undefined})=>Promise<{status:number;body:unknown}>};
+/**
+ * An ordinary JSON route that also serves negotiated JSON representations, one media type per API version or projection.
+ * `negotiatedJson` lists 1 to 8 distinct `application/<name>+json` types in lower case. When the browser's Accept names one
+ * of them with a weight above 0, that one type is sent upstream as Accept, and a 200 in exactly that type keeps it, with
+ * `Vary: Accept, Accept-Language`. Not allowed with stream or invoke. A route of this type is an ApiRoute.
+ */
+export type NegotiatedJsonRoute=Omit<ApiRoute,'stream'|'invoke'>&Readonly<{stream?:never;invoke?:never;negotiatedJson:readonly string[]}>;
 /** The locales the BFF may send upstream as Accept-Language; anything else becomes the default. */
 export type ApiLocales=Readonly<{supported:readonly string[];defaultLocale:string}>;
 /** English only, MP Frontend's one built-in language; a product lists the locales its backends answer in. */
@@ -157,6 +164,63 @@ const mediaTypePattern=/^[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/[a-z0-9][a-z0-9!#$&^_
 function mediaType(value:string|null|undefined){const type=value?.split(';')[0]!.trim().toLowerCase();return type||undefined;}
 /** The longest timeout a streamed route may set: one day. */
 const STREAM_TIMEOUT_MAX_MS=86400000;
+/** A negotiated JSON type: `application/<name>+json`, lower case, without parameters. */
+const negotiatedJsonType=/^application\/[a-z0-9][a-z0-9!#$&^_.-]{0,121}\+json$/;
+/** The negotiated types of each route that lists them, checked and copied at startup; refuses a list that is not valid. */
+function negotiatedJson(routes:readonly ApiRoute[]){
+  const types=new Map<ApiRoute,ReadonlySet<string>>();
+  for(const route of routes){
+    const list=(route as {negotiatedJson?:unknown}).negotiatedJson;
+    if(list===undefined)continue;
+    // A streamed or an in-process route keeps its own contract; the selection is for an ordinary JSON route.
+    if(route.stream!==undefined||route.invoke!==undefined||!Array.isArray(list)||list.length<1||list.length>8||new Set(list).size!==list.length||
+      !list.every(type=>typeof type==='string'&&negotiatedJsonType.test(type)))throw new Error('INVALID_ROUTE_NEGOTIATED_JSON');
+    types.set(route,new Set(list as string[]));
+  }
+  return types;
+}
+/** The longest Accept value the BFF reads, in characters; a longer one selects nothing. */
+const ACCEPT_MAX_LENGTH=1024;
+const mediaRange=/^(?:\*\/\*|[a-z0-9][a-z0-9!#$&^_.+-]{0,126}\/(?:\*|[a-z0-9][a-z0-9!#$&^_.+-]{0,126}))$/i;
+const acceptParameter=/^([a-z0-9!#$%&'*+.^_`|~-]+)=([a-z0-9!#$%&'*+.^_`|~-]+)$/i;
+const weight=/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
+const ows=(value:string)=>value.replace(/^[ \t]+|[ \t]+$/g,'');
+/**
+ * The media ranges of an Accept value (RFC 9110 section 12.5.1), in lower case with their weight and whether they carry
+ * another parameter; undefined when the value is too long or is not such a list: an empty element, a quoted value or a
+ * weight outside 0 to 1 with at most three decimals make the whole value unread.
+ */
+function acceptRanges(value:string){
+  if(value.length>ACCEPT_MAX_LENGTH)return undefined;
+  const ranges:{type:string;q:number;parameters:boolean}[]=[];
+  for(const element of value.split(',')){
+    const [range,...parameters]=element.split(';').map(ows);
+    if(range===undefined||!mediaRange.test(range))return undefined;
+    let q=1,other=false;
+    for(const parameter of parameters){
+      const match=acceptParameter.exec(parameter);
+      if(!match)return undefined;
+      if(match[1]!.toLowerCase()!=='q'){other=true;continue;}
+      if(!weight.test(match[2]!))return undefined;
+      q=Number(match[2]);
+    }
+    ranges.push({type:range.toLowerCase(),q,parameters:other});
+  }
+  return ranges;
+}
+/**
+ * The one listed type to send upstream: of the types the Accept names without another parameter and with a weight above 0,
+ * the one with the highest weight, the first on a tie. A type the Accept also names with weight 0 is never chosen.
+ */
+function negotiate(accept:string|undefined,listed:ReadonlySet<string>){
+  const ranges=accept===undefined?undefined:acceptRanges(accept);
+  if(!ranges)return undefined;
+  const named=ranges.filter(range=>!range.parameters&&listed.has(range.type));
+  const refused=new Set(named.filter(range=>range.q===0).map(range=>range.type));
+  let chosen:{type:string;q:number}|undefined;
+  for(const range of named)if(range.q>0&&!refused.has(range.type)&&(chosen===undefined||range.q>chosen.q))chosen=range;
+  return chosen?.type;
+}
 /**
  * Media types whose document runs script when a browser shows it inline on the app's origin: HTML, XHTML, SVG, any
  * XML and script itself. A streamed answer of one of them must pass a Content-Disposition and a
@@ -254,6 +318,7 @@ export function createBff(config:BffConfig){
   const apiLocales=config.apiLocales??defaultApiLocales;
   if(!apiLocales.supported.length||apiLocales.supported.some(value=>!/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,3}$/.test(value))||!apiLocales.supported.includes(apiLocales.defaultLocale))throw new Error('INVALID_API_LOCALES');
   for(const route of config.routes){origin(route.origin);if(route.pattern.global||route.pattern.sticky)throw new Error('STATEFUL_ROUTE_PATTERN');if(route.stream!==undefined)checkStream(route);}
+  const negotiatedTypes=negotiatedJson(config.routes);
   // Production never uses the memory vault; development keeps it as its default.
   const vault=production?production.sessionVault:(config as DevelopmentBffConfig).sessionVault??createMemorySessionVault();
   let keys:{kid:string;jwk:JsonWebKey}[]=[],keysUntil=0;
@@ -643,6 +708,10 @@ export function createBff(config:BffConfig){
       if(route.roles&&!route.roles.some(role=>current.value.claims.realm_access?.roles?.includes(role)))fail(403,'FORBIDDEN');
       // Only an allowlisted token is ever sent upstream; the browser's header is never forwarded as given.
       const headers:Record<string,string>={authorization:'Bearer '+current.value.access,'Accept-Language':negotiateLocale(req.headers['accept-language'],apiLocales.supported,apiLocales.defaultLocale)};
+      // A route that lists negotiated types sends upstream the one the browser chose, never the browser's Accept as given.
+      const listed=negotiatedTypes.get(route);
+      const negotiated=listed?negotiate(req.headers.accept,listed):undefined;
+      if(negotiated!==undefined)headers.Accept=negotiated;
       const requestId=opaque();headers['X-Correlation-ID']=requestId;
       if(method!=='GET')headers['content-type']='application/json';
       const idempotency=req.headers['idempotency-key'];
@@ -657,10 +726,18 @@ export function createBff(config:BffConfig){
       const bytes=method==='GET'?undefined:await body(req);
       if(route.invoke){const reply=await route.invoke({path:url.pathname,headers,body:bytes});write(res,reply.status,reply.body);return;}
       const upstream=await fetch(target,{method,headers,...(bytes?{body:new Uint8Array(bytes)}:{}),redirect:'error',signal:AbortSignal.timeout(15000)});
+      // On a negotiated route a 200 keeps the type that was sent, or is JSON; any other type is refused whole.
+      let typed=false;
+      if(listed&&upstream.status===200){
+        const actual=mediaType(upstream.headers.get('content-type'));
+        typed=negotiated!==undefined&&actual===negotiated;
+        if(!typed&&actual!==undefined&&actual!=='application/json'){await upstream.body?.cancel().catch(()=>undefined);fail(502,'UPSTREAM_MEDIA_TYPE_REJECTED');}
+      }
       const raw=await upstream.text();
       const challenge=upstream.status===401?upstreamStepUp(upstream.headers.get('www-authenticate')):undefined;
       if(challenge){stepUp(res,challenge,resubmit);return;}
-      res.writeHead(upstream.status,{...jsonHeaders,'x-correlation-id':requestId,...(upstream.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})});res.end(raw);
+      res.writeHead(upstream.status,{...jsonHeaders,...(typed?{'content-type':negotiated,vary:'Accept, Accept-Language'}:{}),'x-correlation-id':requestId,
+        ...(upstream.headers.get('idempotency-replayed')?{'idempotency-replayed':'true'}:{})});res.end(raw);
     }catch(error){
       // A streamed answer that has started cannot become an error answer; its connection is cut.
       if(res.headersSent){res.destroy();return;}

@@ -53,10 +53,13 @@ directions: it never holds a whole body. `createRelay({bffOrigin, basePath, sess
 - Towards the BFF it forwards only what the BFF checks and the content headers: the session cookie named
   `sessionCookie` (no other cookie), Origin, `X-CSRF-Token`, `Idempotency-Key`, Accept-Language,
   Content-Type and Content-Length (`RELAY_REQUEST_HEADERS`). A body without Content-Length is refused by
-  the BFF with 411.
+  the BFF with 411. It also forwards Accept, unchanged, when it is a list of media ranges of at most 1024
+  characters with unquoted parameters and valid weights; any other Accept is not forwarded. The BFF selects
+  from it on a route that lists negotiated JSON types; the relay never adds or widens a type.
 - Back to the browser it passes the status, the content headers, the BFF's `X-Content-Type-Options`,
   `Cache-Control`, correlation id and `Idempotency-Replayed` (`RELAY_RESPONSE_HEADERS`), and a
-  `Set-Cookie` only when it sets the session cookie (a rotated session id). Content-Length is dropped
+  `Set-Cookie` only when it sets the session cookie (a rotated session id), and `Vary` only when the BFF
+  sent it (a negotiated JSON answer). Content-Length is dropped
   when fetch has decoded a content encoding.
 - Each path segment is encoded again, so that a segment cannot leave `basePath`; an empty, `.` or `..`
   segment is answered 404 without a call. A client that goes away aborts the call to the BFF, which ends
