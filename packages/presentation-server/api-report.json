@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/presentation-server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entries": {
     ".": {
       "AdmissionTicket": "export type AdmissionTicket = { cookieHash: string; revision: string; expires: number; };",

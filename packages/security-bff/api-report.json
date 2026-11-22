@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/security-bff",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entries": {
     ".": {
       "ApiLocales": "export type ApiLocales = Readonly<{ supported: readonly string[]; defaultLocale: string; }>;",
@@ -13,6 +13,7 @@
       "ClientAuthentication": "export type ClientAuthentication = Readonly<{ method: 'none'; publicClient: true; }> | Readonly<{ method: 'client_secret_basic'; secret: string | (() => string); }> | Readonly<{ method: 'private_key_jwt'; key: SigningKey | (() => SigningKey); }>;",
       "createBff": "export declare function createBff(config: BffConfig): (req: IncomingMessage, res: ServerResponse) => Promise<void>;",
       "DevelopmentBffConfig": "export type DevelopmentBffConfig = CommonConfig & { development: true; production?: never; sessionVault?: SessionVault; clientAuthentication?: ClientAuthentication; };",
+      "NegotiatedJsonRoute": "export type NegotiatedJsonRoute = Omit<ApiRoute, 'stream' | 'invoke'> & Readonly<{ stream?: never; invoke?: never; negotiatedJson: readonly string[]; }>;",
       "ProductionBffConfig": "export type ProductionBffConfig = CommonConfig & { production: ProductionProfile; development?: never; };",
       "ProductionProfile": "export type ProductionProfile = Readonly<{ sessionVault: SessionVault; clientAuthentication: ClientAuthentication; secureCookies: true; hostPrefix?: boolean; }>;",
       "productionRefusals": "export declare function productionRefusals(config: ProductionBffConfig): string[];",
