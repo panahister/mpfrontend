@@ -1,70 +1,70 @@
 {
-  "version": "1.0.0",
-  "commit": "330d271950fb14bdf9c4c5034c47feffbdf1efe7",
+  "version": "1.1.0",
+  "commit": "80cd6d4dfa9c5aa27c0d0f5e43e74b84fcfe360e",
   "packages": {
     "@mpfrontend/access-core": {
-      "file": "mpfrontend-access-core-1.0.0.tgz",
-      "integrity": "sha512-VHE6MfH26Iu+K8FZTN0lrCWqPU9kqFyEM2Jk0mbL+/80CEAp8eZz+jpcLD6lws+M2fawE3xujT/H4fy6PQlQaw=="
+      "file": "mpfrontend-access-core-1.1.0.tgz",
+      "integrity": "sha512-TzmzHm00/hPZ+e0HKaYU0StxbLM1mQjioBq6CJWQT1YRADckMBqhRQLyc6E3GBcQKP4TfddE3qUMx2W1/hvLxw=="
     },
     "@mpfrontend/access-react": {
-      "file": "mpfrontend-access-react-1.0.0.tgz",
-      "integrity": "sha512-rVfCJCfUZxZZWqNeLISCHhSgItCcb8B3qAVE2nfQv6nOtfXDKzK3f4me54zvoC4Sz3jv4HP7cgsB5igVmjBx4g=="
+      "file": "mpfrontend-access-react-1.1.0.tgz",
+      "integrity": "sha512-+mdTJiYpnrBFiwoCVTQIUWmaSvYdxNbFP2CHLmKAwsBcZTbQ7AkthQZq5CuMHjRrqzCDj4gdycrsR8k5w+osrg=="
     },
     "@mpfrontend/ai-skills": {
-      "file": "mpfrontend-ai-skills-1.0.0.tgz",
-      "integrity": "sha512-C+40cEsuJ8RpreKgCGE3XAOclhWCdUz+SVsGnyGzSsQh9DJDssDajOvQDX+1hdfDwz8bPhR3PUIEFSAmmwqjag=="
+      "file": "mpfrontend-ai-skills-1.1.0.tgz",
+      "integrity": "sha512-5OEy0uV67DnMau7AjYkzm/WRzDT5r3dwKSjSTsPRDMXqK05H2N6HYS6Jguy5PyClnjRTOXU/oaAPRUT+3wTIrA=="
     },
     "@mpfrontend/app-layout": {
-      "file": "mpfrontend-app-layout-1.0.0.tgz",
-      "integrity": "sha512-DjXjqxAPgEhXZBkiJ0p8Pm8O2GlkIC8UJd759XHtgMvL8qNfGjSaMGALUZ7EMoO2DBmvX8E9i0qg05LLeZGu9w=="
+      "file": "mpfrontend-app-layout-1.1.0.tgz",
+      "integrity": "sha512-JFw3ic0moJ4DfeU7JjMmkr5JYoqI5zGx8M8sr49XsXybGqlRPQ5G30TdqThqJeETRNBjGrto6lzi/r79Xf90JA=="
     },
     "@mpfrontend/data-react": {
-      "file": "mpfrontend-data-react-1.0.0.tgz",
-      "integrity": "sha512-P5IZ1j1lHIacYzVDGyhg0wvuLfOGbltCU4g+bEI7IsSLGGIpVQAzGSOAHiR+qzwu0wakTeW8ncn6qnlbeNsqiQ=="
+      "file": "mpfrontend-data-react-1.1.0.tgz",
+      "integrity": "sha512-bYBKoD4yqrVOyr5CtQUZTLLXkS9qTza3Jklg3zKcHVUWkQp5ZTBvOiV8yUB7sOFMZ0WlkydTm5wPjGdol6hEhg=="
     },
     "@mpfrontend/ftg-cli": {
-      "file": "mpfrontend-ftg-cli-1.0.0.tgz",
-      "integrity": "sha512-n2h9Y5obuWJnAsPiTra8O6LgEX2OCjZS1bFJJbbVD8HhKWjp+u/nF156oQhla4nx25fL4k36qXWvZYP+Zm/2Og=="
+      "file": "mpfrontend-ftg-cli-1.1.0.tgz",
+      "integrity": "sha512-j9tH7+S+zBThFEgJ8sqU4ru26Zqgjh33cmINYRyeazPVI1I0c7TXnQXoH9OiQvllQiGVJVJGjS5gsfWXQ1luGQ=="
     },
     "@mpfrontend/ftg-core": {
-      "file": "mpfrontend-ftg-core-1.0.0.tgz",
-      "integrity": "sha512-vi1t41bT5hMzqVmvoIlKIunXVXqxm2d2R9lf4bTt+o8OdtDa9Fl5kY+co/j+6rLsCj0iv0CmWG+xcuFji0tzZQ=="
+      "file": "mpfrontend-ftg-core-1.1.0.tgz",
+      "integrity": "sha512-QXcxvznmuOOf2wtRD4f7/Px57mg/0ZzE8UAgIBRLxnOcZUYTS7e5O/T1zyr9Dpxv+oUsmck4HrlqSXtff4yIBQ=="
     },
     "@mpfrontend/i18n": {
-      "file": "mpfrontend-i18n-1.0.0.tgz",
-      "integrity": "sha512-vhAV6BbEc7uGF/cyK4Mu7448WoP9Prke/bhioqoSxpgPDhsEzYbyVE93x1i3QnxVkiiReB+pkxZRean8HapXJw=="
+      "file": "mpfrontend-i18n-1.1.0.tgz",
+      "integrity": "sha512-HXkZdvxoOd56LdxxroO7BCa2XpuTffIPW3DJnVPc62gFZz+rt88oCMMBgRv6IVrsda7goOmZxUnseZmoW68Zlw=="
     },
     "@mpfrontend/nx-plugin": {
-      "file": "mpfrontend-nx-plugin-1.0.0.tgz",
-      "integrity": "sha512-bd2I8KBgZYVr/oaNw4OXpN/4loFDCnYcAQqfX7Dc7zbAEiOFB0368zufaCUDjiQqHN1xozlauPsDkFc4m4uHxw=="
+      "file": "mpfrontend-nx-plugin-1.1.0.tgz",
+      "integrity": "sha512-RTLAF5YvV8LPn+5LdQEJ55eADPQkZVz3WPmodwTDcDOPRWjluQxxpuGGfP8lIoBR5kCBqQfaafH573DSY6zuLw=="
     },
     "@mpfrontend/presentation-server": {
-      "file": "mpfrontend-presentation-server-1.0.0.tgz",
-      "integrity": "sha512-d6Lk/EOmDr7/2J0TTTfH+ehqN4ECinqxgORqGaHFdGCDO+7y8d9/3Ou7CH6ZpGbzwNHmZTJ/YYlYW3Bcy/0vBw=="
+      "file": "mpfrontend-presentation-server-1.1.0.tgz",
+      "integrity": "sha512-6xTEX8BBU5YPNXDbC178QXXmjyHpgU5RwyTWqYPFmOPvU8r5l+nskxF8PMW8Ae0joN1BLTcpOJvjfRif3mXOuA=="
     },
     "@mpfrontend/primitives": {
-      "file": "mpfrontend-primitives-1.0.0.tgz",
-      "integrity": "sha512-zDOu9ruvL7THh6GA68/LrpUE5DsItjz4pDEO2wZbqHcocKFy+PlZP3kwc92qRfl4x2WcJVDs1fnRAKsz7HOKcg=="
+      "file": "mpfrontend-primitives-1.1.0.tgz",
+      "integrity": "sha512-PUgVkfHgGHzVjf6F8kOFBNjBotK9a622lla7JqDFOWSeFYfgNFO+re5guWk8w8YGear+Z4aD+3CxSGOGDG+Ijg=="
     },
     "@mpfrontend/realtime-core": {
-      "file": "mpfrontend-realtime-core-1.0.0.tgz",
-      "integrity": "sha512-NQJ7CUbcOKMSfJA4Dl9GucAaB0LTi2+ZztcUumVsjR7mwoKowuM0rumFyA1LKQRdFvuXFKlbUUyTo4kFPGqTZw=="
+      "file": "mpfrontend-realtime-core-1.1.0.tgz",
+      "integrity": "sha512-3PwLYArU0e1QBjWRkdZtup9NE4QSil9dhuTymyeUvzDuqYn7J7u4LNKBV0LK2RrArt9Ptone8yQMe6Umpb9/HQ=="
     },
     "@mpfrontend/security-bff": {
-      "file": "mpfrontend-security-bff-1.0.0.tgz",
-      "integrity": "sha512-1sN7Cvn4W4+x55ke3FW7OBGi1U9UKos8lZRNS0Gj2u1zxIN/Oz2IwAwis+Dn85EPT10GSJOj07rViym6DzAuJg=="
+      "file": "mpfrontend-security-bff-1.1.0.tgz",
+      "integrity": "sha512-MorNsjtyMGXr0raULFDUlG+KGQwWQBIghFP89j4/0fXgolp5mROqXXDoK7ZbGJEXji5kE6MMKuxUgad4jljFZg=="
     },
     "@mpfrontend/tokens": {
-      "file": "mpfrontend-tokens-1.0.0.tgz",
-      "integrity": "sha512-y3yiTO/9q8/DvZ1YQ9SElr9lIdnOfnnVcE1sH6nyTXxWnmxjLthVQtcTp3yHm0Zo0x2LBVob+Nr6oCroSLL3CQ=="
+      "file": "mpfrontend-tokens-1.1.0.tgz",
+      "integrity": "sha512-Jevk9iLqi0sNQ9aekI1X9fkehGkyCLcvRWzxlt6Myh0d94djS0/4udQ5aLuNIg0dZMPs8Ge6j7bV4pSHX3PfRw=="
     },
     "@mpfrontend/ui": {
-      "file": "mpfrontend-ui-1.0.0.tgz",
-      "integrity": "sha512-JKGUjHfruFReAfMQC27lbP7f8rU31hJS1zGE0h6pS8zFbgANMruA1CtsOdZzwEHE+RCOvyURU1rrw3D6zbKqpQ=="
+      "file": "mpfrontend-ui-1.1.0.tgz",
+      "integrity": "sha512-JuIp0Yu5FqytiEeOB7XkpvS2nZKrJerRjo9MOzeRsfFH4cnJJAX8EDi85IVwsXYAhgVp7vF94umzYyKus7V90g=="
     },
     "@mpfrontend/workspace-config": {
-      "file": "mpfrontend-workspace-config-1.0.0.tgz",
-      "integrity": "sha512-l4lIndFo7v+MfeHEhy+gcfMLXIVVHvdHG2pH2/hO/D30Le4RuS5CPzLXjL93+wvlJI+b0N7axKvvaU2MFOA8LQ=="
+      "file": "mpfrontend-workspace-config-1.1.0.tgz",
+      "integrity": "sha512-rt7fUWtUO+8bO4FfMlcvtVHxLZQ6sEDF7B9OkgNKAGbhNau6zAH0R5HhnrWW9xl6dhlZlnA/gZcod2L3rmGAYA=="
     }
   }
 }
