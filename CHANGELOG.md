@@ -9,6 +9,8 @@ The SHA-256 of each archive of a cohort is in its release notes or record under 
 - **Security BFF.** A route may list `negotiatedJson` media types; an explicit Accept for one of them is sent
   upstream and its answer keeps that type, with `Vary: Accept, Accept-Language`. Routes without it are unchanged.
 - **Presentation server.** The relay forwards a valid Accept header to the BFF and returns its Vary header.
+- **Nx plugin.** The application template and the workspace pin `next` 16.4.6 instead of 16.4.1, which npm lists with
+  seven moderate advisories; a generated application gets 16.4.6.
 
 ## 1.1.0
 
