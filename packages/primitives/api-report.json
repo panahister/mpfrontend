@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "package": "@mpfrontend/primitives",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entries": {
     ".": {
       "ButtonState": "export type ButtonState = 'default' | 'disabled' | 'loading' | 'restricted';",

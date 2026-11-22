@@ -4,6 +4,12 @@ The change of each package, newest cohort first. From `0.1.0` on, one version na
 published version is never built again; before it, each package's version moved when anything it packed changed.
 The SHA-256 of each archive of a cohort is in its release notes or record under `docs/releases/`.
 
+## 1.2.0
+
+- **Security BFF.** A route may list `negotiatedJson` media types; an explicit Accept for one of them is sent
+  upstream and its answer keeps that type, with `Vary: Accept, Accept-Language`. Routes without it are unchanged.
+- **Presentation server.** The relay forwards a valid Accept header to the BFF and returns its Vary header.
+
 ## 1.1.0
 
 - **Security BFF.** `ordinaryLoginTimeoutSeconds` lets an application set the absolute lifetime of an ordinary
