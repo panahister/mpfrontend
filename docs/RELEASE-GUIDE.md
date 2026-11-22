@@ -8,6 +8,8 @@ corrected. [README "Versioning"](../README.md#versioning) states the version and
 `0.1.0` is the first release: one stable cohort version that ranks above every `0.1.0-dev.N` archive packed before it.
 It was published on 2026-10-12; its record is [releases/0.1.0.md](releases/0.1.0.md). `1.0.0`, the first stable major
 version, was published on 2026-10-14 by trusted publishing, with no token; its record is [releases/1.0.0.md](releases/1.0.0.md).
+`1.1.0` was published on 2026-11-14 and `1.2.0` on 2026-11-22, both by trusted publishing; their records are
+[releases/1.1.0.md](releases/1.1.0.md) and [releases/1.2.0.md](releases/1.2.0.md).
 
 ## What the workflow does
 
