@@ -5,7 +5,8 @@ Code with S256 PKCE, state and nonce, RS256 JWT/JWKS validation, opaque HttpOnly
 and CSRF checks, endpoint/method/role allowlists, bounded request bodies and server-held token refresh.
 The product supplies its API routes and identity-provider settings. No token crosses the presentation
 boundary, and no upstream response header crosses it except the content headers that a streamed route
-names (see "Streamed routes"). The browser calls Next.js; only its server calls this BFF.
+names (see "Streamed routes"); a negotiated route answers in the one listed type it sent (see "Negotiated
+JSON routes"). The browser calls Next.js; only its server calls this BFF.
 
 An application can declare an allowlist with `supportedUiLocales`. A matching `ui_locales` value on
 `/login`, or the matching value of an optional `uiLocaleCookie`, is forwarded through the standard OIDC
@@ -117,6 +118,41 @@ when its id is rotated at refresh, so that a failed index leaves no session that
 refuses the option at startup. The endpoint carries no browser session or CSRF token: route it only from
 the identity provider's network path, for example a separate internal listener or an ingress rule that
 admits the provider alone, and never expose it to browsers.
+
+## Negotiated JSON routes
+
+An upstream API may serve one resource in several JSON representations, one media type per API version or
+projection, selected by the request's `Accept` (proactive negotiation, RFC 9110 section 12.5.1, with the
+`+json` structured syntax suffix of RFC 6839). An ordinary route opts in with `negotiatedJson`, typed by
+`NegotiatedJsonRoute`; `ApiRoute` does not name the field, so declare the route as a typed constant (an object
+literal written inline in `routes` is checked against `ApiRoute` and refused by TypeScript):
+
+```ts
+const detail: NegotiatedJsonRoute = {
+  method: 'GET', pattern: /^\/v1\/orders\/[a-z0-9-]+$/, origin: 'https://orders.internal',
+  negotiatedJson: ['application/vnd.example.order.v2+json', 'application/vnd.example.order-summary.v1+json'],
+};
+createBff({ ...settings, routes: [detail, ...otherRoutes] });
+```
+
+- **Startup.** `negotiatedJson` lists 1 to 8 distinct `application/<name>+json` types, in lower case and
+  without parameters. An empty, longer, duplicated or invalid list, and the field on a streamed (`stream`) or
+  an in-process (`invoke`) route, refuse startup with `INVALID_ROUTE_NEGOTIATED_JSON`.
+- **Request.** The browser's `Accept` is read as a list of media ranges of at most 1024 characters; an empty
+  element, a quoted parameter value or a weight outside 0 to 1 with at most three decimals makes the whole
+  value unread. Of the listed types it names without another parameter and with `q` above 0, the one with the
+  highest weight is sent upstream as `Accept`, the first on a tie; a type it also names with `q=0` is never
+  sent. Otherwise no `Accept` is sent, as on every other route. The browser's value is never forwarded as
+  given.
+- **Answer.** A 200 in exactly the sent type is answered with that type and `Vary: Accept, Accept-Language`;
+  a 200 in `application/json`, or without a type, and every other status are answered `application/json`,
+  as on every other route. A 200 in any other type, another listed type included, is refused whole with 502
+  `UPSTREAM_MEDIA_TYPE_REJECTED` and its body is not read. `Cache-Control: no-store` and
+  `X-Content-Type-Options: nosniff` stay on every answer.
+
+A route without `negotiatedJson` is unchanged: whatever the browser's `Accept`, it sends none upstream and
+answers `application/json` with the same headers as before. The presentation server's relay forwards a valid
+`Accept` and returns this `Vary` (see `@mpfrontend/presentation-server`, "Transfer relay").
 
 ## Streamed routes
 

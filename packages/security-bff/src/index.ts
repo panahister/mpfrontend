@@ -8,6 +8,7 @@ export {
   type ClientAuthentication,
   createBff,
   type DevelopmentBffConfig,
+  type NegotiatedJsonRoute,
   type ProductionBffConfig,
   type ProductionProfile,
   productionRefusals,
